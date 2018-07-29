@@ -1,0 +1,12 @@
+[package]
+name = "untitled"
+version = "0.1.0"
+authors = ["Shane Osbourne <shane.osbourne8@gmail.com>"]
+
+[dependencies]
+env_logger = "0.5"
+futures = "0.1"
+
+actix = "0.7"
+actix-web = "^0.7"
+bytes = "0.4.9"
