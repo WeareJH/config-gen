@@ -17,6 +17,54 @@ fn main() {
 
 const STR: &str = "Hello world";
 
+#[derive(Clone)]
+struct ProxyOpts {
+    #[derive(Copy)]
+    target: String
+}
+
+impl ProxyOpts {
+    pub fn new(target: impl Into<String>) -> ProxyOpts {
+        ProxyOpts { target: target.into() }
+    }
+}
+
+// Stream client request response and then send body to a server response
+fn proxy_handler(_req: &HttpRequest, opts: ProxyOpts) -> Box<Future<Item = HttpResponse, Error = Error>> {
+    println!("proxy handler: {:#?}", _req.headers());
+
+    let mut outgoing = client::ClientRequest::get(format!("http://{}", opts.target.clone()).as_str());
+
+    // Copy headers from incoming request -> backend server
+    for (key, value) in _req.headers() {
+        outgoing.header(key.clone(), value.clone());
+    }
+
+    outgoing.set_header(header::HOST, opts.target.clone());
+
+    outgoing
+        .finish()
+        .unwrap()
+        .send()
+        .map_err(Error::from)
+        .and_then(|resp| {
+            println!("proxy RESP: {:#?}", resp.headers());
+            resp.body()
+                .from_err()
+                .and_then(move |body| {
+                    let mut outgoing = HttpResponse::Ok();
+
+                    // Copy headers from backend response to main response
+                    for (key, value) in resp.headers() {
+                        outgoing.header(key.clone(), value.clone());
+                    }
+
+                    Ok(outgoing.body(body))
+                })
+        })
+        .responder()
+}
+
 #[test]
 fn test_body() {
     let server = test::TestServer::new(|app| app.handler(|req: &HttpRequest| {
@@ -32,41 +80,7 @@ fn test_body() {
 
     let mut proxy = test::TestServer::new(move |app| {
         let addr = srv_address.clone();
-
-        app.handler(move |_req: &HttpRequest| -> Box<Future<Item=HttpResponse, Error=Error>> {
-            println!("proxy handler: {:#?}", _req.headers());
-
-            let mut outgoing = client::ClientRequest::get(format!("http://{}", addr.clone()).as_str());
-
-            // Copy headers from incoming request -> backend server
-            for (key, value) in _req.headers() {
-                outgoing.header(key.clone(), value.clone());
-            }
-
-            outgoing.set_header(header::HOST, addr.clone());
-
-            outgoing
-                .finish()
-                .unwrap()
-                .send()
-                .map_err(Error::from)
-                .and_then(|resp| {
-                    println!("proxy RESP: {:#?}", resp.headers());
-                    resp.body()
-                        .from_err()
-                        .and_then(move |body| {
-                            let mut outgoing = HttpResponse::Ok();
-
-                            // Copy headers from backend response to main response
-                            for (key, value) in resp.headers() {
-                                outgoing.header(key.clone(), value.clone());
-                            }
-
-                            Ok(outgoing.body(body))
-                        })
-                })
-                .responder()
-        });
+        app.handler(move |req| proxy_handler(req, ProxyOpts::new(addr.clone())));
     });
 
     let request = proxy.get()
