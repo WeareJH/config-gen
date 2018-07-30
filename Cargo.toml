@@ -1,5 +1,5 @@
 [package]
-name = "untitled"
+name = "bs_rust"
 version = "0.1.0"
 authors = ["Shane Osbourne <shane.osbourne8@gmail.com>"]
 
@@ -10,3 +10,7 @@ futures = "0.1"
 actix = "0.7"
 actix-web = "^0.7"
 bytes = "0.4.9"
+
+[lib]
+name = "bs_rust"
+path = "src/lib.rs"
