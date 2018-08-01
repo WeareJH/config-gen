@@ -14,16 +14,19 @@ use actix_web::http::header;
 use bs_rust::{ProxyOpts, proxy_transform};
 
 const STR: &str = "Hello world";
+const STR2: &str = "Hello world 2";
 
 #[test]
-fn test_body() {
-    let server = test::TestServer::new(|app| app.handler(|req: &HttpRequest| {
-        println!("headers received at proxy addr: {:#?}", req.headers());
-        assert_eq!(req.headers().get(header::ACCEPT).unwrap(), "text/html");
-        HttpResponse::Ok()
-            .header("shane", "kittens")
-            .body(STR)
-    }));
+fn test_forwards_headers() {
+    let server = test::TestServer::new(|app| {
+        app.handler(|req: &HttpRequest| {
+            println!("headers received at proxy addr: {:#?}", req.headers());
+            assert_eq!(req.headers().get(header::ACCEPT).unwrap(), "text/html");
+            HttpResponse::Ok()
+                .header("shane", "kittens")
+                .body(STR)
+        })
+    });
 
     let srv_address = server.addr().to_string();
     println!("orig address = {}", srv_address);
@@ -47,6 +50,4 @@ fn test_body() {
     let has_header = response.headers().get("shane").unwrap();
 
     assert_eq!(has_header, "kittens");
-
-    println!("byets=:{:#?}", _bytes);
 }

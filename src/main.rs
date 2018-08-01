@@ -1,11 +1,9 @@
 extern crate actix;
-extern crate actix_web;
 extern crate env_logger;
 extern crate futures;
+extern crate actix_web;
 
-use actix_web::server;
-use actix_web::App;
-use actix_web::middleware;
+use actix_web::{server, App, middleware};
 use lib::proxy_transform;
 use lib::ProxyOpts;
 
@@ -19,7 +17,7 @@ fn main() {
     server::new(|| {
         App::new()
             .middleware(middleware::Logger::default())
-            .resource("/", |r| r.f(move |req| proxy_transform(req, ProxyOpts::new("example.com"))))
+            .default_resource(|r| r.f(move |req| proxy_transform(req, ProxyOpts::new("yourmomentscaptured.co.uk"))))
     }).workers(1)
         .bind("127.0.0.1:8080")
         .unwrap()

@@ -1,13 +1,18 @@
 #![allow(unused_imports)]
 #![allow(dead_code)]
+extern crate actix;
 extern crate actix_web;
 extern crate futures;
+extern crate bytes;
 
-use actix_web::{HttpRequest, HttpResponse, Error, client, test, HttpMessage, AsyncResponder};
-use futures::Future;
+use actix_web::{
+    client, middleware, server, App, AsyncResponder, Body, Error, HttpMessage,
+    HttpRequest, HttpResponse, http
+};
+use futures::{Future, Stream};
+use std::path::PathBuf;
 use std::sync::Arc;
 use std::net::SocketAddr;
-use actix_web::http::header;
 
 ///
 /// # Examples
@@ -36,17 +41,18 @@ impl ProxyOpts {
 ///
 pub fn proxy_transform(_req: &HttpRequest, opts: ProxyOpts) -> Box<Future<Item = HttpResponse, Error = Error>> {
 
-    println!("proxy handler: {:#?}", _req.headers());
+    // this is a placeholder for some logic to determine if we need to
+    // modify the response body.
+    let rewrite_response = false;
 
-    // create a new request from the incoming
-    // this will copy method/header/cookies automatically
+    // building up the new request that we'll send to the backend
     let mut outgoing = client::ClientRequest::build_from(_req);
 
-    // reset the uri so that it points to the correct proxied host
-    outgoing.uri(format!("http://{}", opts.target.clone()).as_str());
+    // reset the uri so that it points to the correct proxied host + path
+    outgoing.uri(format!("http://{}{}", opts.target.clone(), _req.uri()).as_str());
 
     // ensure the 'host' header is re-written
-    outgoing.set_header(header::HOST, opts.target.clone());
+    outgoing.set_header(http::header::HOST, opts.target.clone());
 
     // now finish the request builder and execute it
     outgoing
@@ -54,20 +60,28 @@ pub fn proxy_transform(_req: &HttpRequest, opts: ProxyOpts) -> Box<Future<Item =
         .unwrap()
         .send()
         .map_err(Error::from)
-        .and_then(|resp| {
-            println!("proxy RESP: {:#?}", resp);
-            resp.body()
-                .from_err()
-                .and_then(move |body| {
-                    let mut outgoing = HttpResponse::Ok();
+        .and_then(move |resp| {
 
-                    // Copy headers from backend response to main response
-                    for (key, value) in resp.headers() {
-                        outgoing.header(key.clone(), value.clone());
-                    }
+            let mut outgoing = HttpResponse::Ok();
 
-                    Ok(outgoing.body(body))
-                })
+            // Copy headers from backend response to main response
+            for (key, value) in resp.headers() {
+                outgoing.header(key.clone(), value.clone());
+            }
+
+            // here, if I want to rewrite the response, I need to
+            // buffer the response body and then send it back
+            if rewrite_response {
+                resp.body()
+                    .from_err()
+                    .and_then(move |body| {
+                        Ok(HttpResponse::Ok().body(body))
+                    })
+            } else {
+                // otherwise, this will just stream all responses from the proxy
+                // back to the browser without touching them
+                Ok(outgoing.body(Body::Streaming(Box::new(resp.payload().from_err()))))
+            }
         })
         .responder()
 }
