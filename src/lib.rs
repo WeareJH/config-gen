@@ -4,6 +4,7 @@ extern crate actix;
 extern crate actix_web;
 extern crate futures;
 extern crate bytes;
+extern crate url;
 
 use actix_web::{
     client, middleware, server, App, AsyncResponder, Body, Error, HttpMessage,
@@ -47,8 +48,17 @@ pub fn proxy_transform(_req: &HttpRequest, opts: ProxyOpts) -> Box<Future<Item =
     // building up the new request that we'll send to the backend
     let mut outgoing = client::ClientRequest::build_from(_req);
 
+    let next_url = format!("{}://{}{}{}",
+                      _req.uri().scheme_part().unwrap(),
+                      opts.target.clone(),
+                      _req.path(),
+                      match _req.uri().query().as_ref() {
+                          Some(q) => format!("?{}", q),
+                          None => "".to_string()
+                      });
+
     // reset the uri so that it points to the correct proxied host + path
-    outgoing.uri(format!("http://{}{}", opts.target.clone(), _req.uri()).as_str());
+    outgoing.uri(next_url.as_str());
 
     // ensure the 'host' header is re-written
     outgoing.set_header(http::header::HOST, opts.target.clone());
@@ -62,6 +72,7 @@ pub fn proxy_transform(_req: &HttpRequest, opts: ProxyOpts) -> Box<Future<Item =
         // then we need to buffer the body into memory in order to apply regex's on the string
         setup.and_then(|resp| {
             resp.body()
+                .limit(1_000_000)
                 .from_err()
                 .and_then(move |body| {
                     // now we're not rewriting anything, but we could since

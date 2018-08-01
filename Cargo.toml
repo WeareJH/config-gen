@@ -6,9 +6,11 @@ authors = ["Shane Osbourne <shane.osbourne8@gmail.com>"]
 [dependencies]
 env_logger = "0.5"
 futures = "0.1"
+openssl = { version="0.10" }
+url = "1.7.1"
 
 actix = "0.7"
-actix-web = "^0.7"
+actix-web = { version = "0.7", features=["alpn"] }
 bytes = "0.4.9"
 
 [lib]
