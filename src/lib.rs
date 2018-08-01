@@ -54,34 +54,35 @@ pub fn proxy_transform(_req: &HttpRequest, opts: ProxyOpts) -> Box<Future<Item =
     // ensure the 'host' header is re-written
     outgoing.set_header(http::header::HOST, opts.target.clone());
 
-    // now finish the request builder and execute it
-    outgoing
-        .finish()
-        .unwrap()
-        .send()
-        .map_err(Error::from)
-        .and_then(move |resp| {
-
+    if rewrite_response {
+        // now finish the request builder and execute it
+        outgoing.finish().unwrap().send().map_err(Error::from).and_then(move |resp| {
             let mut outgoing = HttpResponse::Ok();
-
             // Copy headers from backend response to main response
             for (key, value) in resp.headers() {
                 outgoing.header(key.clone(), value.clone());
             }
-
             // here, if I want to rewrite the response, I need to
             // buffer the response body and then send it back
-            if rewrite_response {
-                resp.body()
-                    .from_err()
-                    .and_then(move |body| {
-                        Ok(HttpResponse::Ok().body(body))
-                    })
-            } else {
-                // otherwise, this will just stream all responses from the proxy
-                // back to the browser without touching them
-                Ok(outgoing.body(Body::Streaming(Box::new(resp.payload().from_err()))))
-            }
+            resp.body()
+                .from_err()
+                .and_then(move |body| {
+                    Ok(HttpResponse::Ok().body(body))
+                })
         })
         .responder()
+    } else {
+        // now finish the request builder and execute it
+        outgoing.finish().unwrap().send().map_err(Error::from).and_then(move |resp| {
+            let mut outgoing = HttpResponse::Ok();
+            // Copy headers from backend response to main response
+            for (key, value) in resp.headers() {
+                outgoing.header(key.clone(), value.clone());
+            }
+            // here, if I want to rewrite the response, I need to
+            // buffer the response body and then send it back
+            Ok(outgoing.body(Body::Streaming(Box::new(resp.payload().from_err()))))
+        })
+        .responder()
+    }
 }
