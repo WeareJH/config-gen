@@ -10,11 +10,10 @@ extern crate regex;
 use actix_web::{middleware, server, App};
 use openssl::ssl::{SslAcceptor, SslFiletype, SslMethod};
 
-mod lib;
-use lib::proxy_transform;
-use lib::ProxyOpts;
-
+mod fns;
 mod rewrites;
+use fns::proxy_transform;
+use fns::ProxyOpts;
 
 fn main() {
     ::std::env::set_var("RUST_LOG", "actix_web=info");
@@ -31,7 +30,7 @@ fn main() {
     server::new(|| {
         App::new()
             .middleware(middleware::Logger::default())
-            .default_resource(|r| r.f(move |req| proxy_transform(req, ProxyOpts::new("www.neomorganics.com"))))
+            .default_resource(|r| r.f(move |req| proxy_transform(req, ProxyOpts::new("www.neomorganics.com", "127.0.0.1:8080"))))
     }).bind_ssl("127.0.0.1:8080", builder)
         .unwrap()
         .start();

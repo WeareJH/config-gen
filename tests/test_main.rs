@@ -3,7 +3,6 @@
 extern crate actix_web;
 extern crate bytes;
 extern crate futures;
-extern crate bs_rust;
 
 use actix_web::{HttpRequest, HttpResponse, Error, client, test, HttpMessage, AsyncResponder};
 use bytes::Bytes;

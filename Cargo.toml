@@ -13,7 +13,3 @@ regex = "1.0.2"
 actix = "0.7"
 actix-web = { version = "0.7", features=["alpn"] }
 bytes = "0.4.9"
-
-[lib]
-name = "bs_rust"
-path = "src/lib.rs"

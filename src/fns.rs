@@ -1,11 +1,3 @@
-#![allow(unused_imports)]
-#![allow(dead_code)]
-extern crate actix;
-extern crate actix_web;
-extern crate futures;
-extern crate bytes;
-extern crate url;
-
 use actix_web::{
     client, middleware, server, App, AsyncResponder, Body, Error, HttpMessage,
     HttpRequest, HttpResponse, http, dev
@@ -14,24 +6,26 @@ use futures::{Future, Stream};
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::net::SocketAddr;
+use rewrites::replace_host;
 
 ///
 /// # Examples
 ///
 /// ```
 /// # use bs_rust::*;
-/// let opts = ProxyOpts::new("example.com");
+/// let opts = ProxyOpts::new("example.com", "127.0.0.:8000");
 /// assert_eq!(opts.target, "example.com".to_string());
 /// ```
 ///
 #[derive(Clone)]
 pub struct ProxyOpts {
-    pub target: String
+    pub target: String,
+    pub host: String,
 }
 
 impl ProxyOpts {
-    pub fn new(target: impl Into<String>) -> ProxyOpts {
-        ProxyOpts { target: target.into() }
+    pub fn new(target: impl Into<String>, host: impl Into<String>) -> ProxyOpts {
+        ProxyOpts { target: target.into(), host: host.into() }
     }
 }
 
@@ -43,7 +37,7 @@ pub fn proxy_transform(_req: &HttpRequest, opts: ProxyOpts) -> Box<Future<Item =
 
     // this is a placeholder for some logic to determine if we need to
     // modify the response body.
-    let rewrite_response = false;
+    let rewrite_response = _req.path() == "/";
 
     // building up the new request that we'll send to the backend
     let mut outgoing = client::ClientRequest::build_from(_req);
@@ -73,6 +67,7 @@ pub fn proxy_transform(_req: &HttpRequest, opts: ProxyOpts) -> Box<Future<Item =
     if rewrite_response {
         // if the client responds with a request we want to alter (such as HTML)
         // then we need to buffer the body into memory in order to apply regex's on the string
+        let next_target = opts.host.clone();
         setup.and_then(|resp| {
             resp.body()
                 .limit(1_000_000)
@@ -80,7 +75,11 @@ pub fn proxy_transform(_req: &HttpRequest, opts: ProxyOpts) -> Box<Future<Item =
                 .and_then(move |body| {
                     // now we're not rewriting anything, but we could since
                     // here the 'body' is the entire response body
-                    Ok(create_outgoing(&resp).body(body))
+                    use std::str;
+
+                    let next_body = replace_host(str::from_utf8(&body[..]).unwrap(), "www.neomorganics.com", &next_target);
+                    let as_string = next_body.to_string();
+                    Ok(create_outgoing(&resp).body(as_string))
                 })
         }).responder()
     } else {

@@ -1,13 +1,57 @@
 use regex::Regex;
+use regex::Captures;
+use std::borrow::Cow;
+use regex::Replacer;
+use url::{Url, ParseError};
+
+///
+/// Replace the host name in a string
+///
+/// # Examples
+///
+/// ```
+/// let bytes = "<a href=\"https://www.acme.com\">Home</a>";
+/// let expected = "<a href=\"https://127.0.0.1:8000\">Home</a>";
+/// assert_eq!(expected, replace_host(bytes, "www.acme.com", "127.0.0.1:8000"));
+/// ```
+///
+pub fn replace_host<'a>(bytes: &'a str, host: &'a str, target: &'a str) -> Cow<'a, str> {
+    let matcher = format!("https?://{}", host);
+    Regex::new(&matcher).unwrap().replace_all(bytes, |item: &Captures| main_replace(item, target))
+}
+
+fn main_replace(caps: &Captures, host: &str) -> String {
+    println!("called");
+    caps.iter().nth(0)
+        .map_or(String::from("nope1"),
+            // here there was a regex match
+            |capture_item| capture_item.map_or(String::from("nope2"),
+                   // here we have access to the individual match group
+                   |item| {
+                       // now we can try to parse the url
+                       match Url::parse(item.as_str()) {
+                           // if it parsed, we set the url to the value passed in
+                           Ok(mut url) => {
+                               match url.set_host(Some(host)) {
+                                   Ok(()) => url.to_string(),
+                                   Err(_) => String::from("nope4")
+                               }
+                           }
+                           Err(_) => String::from("nope5")
+                       }
+                   }))
+}
 
 #[test]
 fn test_rewrites() {
-    let re = Regex::new("neom.com").unwrap();
     let bytes = "
-    <a href=\"https://neom.com\">Home</a>
+    <a href=\"https://www.neomorganics.com\">Home</a>
+    <a href=\"http://www.neomorganics.com\">Home</a>
     ";
     let expected = "
-    <a href=\"https://127.0.0.1\">Home</a>
+    <a href=\"https://127.0.0.1/\">Home</a>
+    <a href=\"http://127.0.0.1/\">Home</a>
     ";
-    assert_eq!(re.replace_all(bytes, "127.0.0.1"), expected);
+    let matcher = format!("https?://{}", "https://www.neomorganics.com");
+    Regex::new(&matcher).unwrap().replace_all(bytes, |item: &Captures| main_replace(item, "127.0.0.1"));
 }
