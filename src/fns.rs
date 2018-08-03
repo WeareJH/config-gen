@@ -67,7 +67,8 @@ pub fn proxy_transform(_req: &HttpRequest, opts: ProxyOpts) -> Box<Future<Item =
     if rewrite_response {
         // if the client responds with a request we want to alter (such as HTML)
         // then we need to buffer the body into memory in order to apply regex's on the string
-        let next_target = opts.host.clone();
+        let next_target = opts.target.clone();
+        let next_host = opts.host.clone();
         setup.and_then(|resp| {
             resp.body()
                 .limit(1_000_000)
@@ -77,7 +78,7 @@ pub fn proxy_transform(_req: &HttpRequest, opts: ProxyOpts) -> Box<Future<Item =
                     // here the 'body' is the entire response body
                     use std::str;
 
-                    let next_body = replace_host(str::from_utf8(&body[..]).unwrap(), "www.neomorganics.com", &next_target);
+                    let next_body = replace_host(str::from_utf8(&body[..]).unwrap(), &next_host, &next_target);
                     let as_string = next_body.to_string();
                     Ok(create_outgoing(&resp).body(as_string))
                 })

@@ -21,11 +21,10 @@ pub fn replace_host<'a>(bytes: &'a str, host: &'a str, target: &'a str) -> Cow<'
 }
 
 fn main_replace(caps: &Captures, host: &str) -> String {
-    println!("called");
     caps.iter().nth(0)
-        .map_or(String::from("nope1"),
+        .map_or(String::from(""),
             // here there was a regex match
-            |capture_item| capture_item.map_or(String::from("nope2"),
+            |capture_item| capture_item.map_or(String::from(""),
                    // here we have access to the individual match group
                    |item| {
                        // now we can try to parse the url
@@ -34,10 +33,10 @@ fn main_replace(caps: &Captures, host: &str) -> String {
                            Ok(mut url) => {
                                match url.set_host(Some(host)) {
                                    Ok(()) => url.to_string(),
-                                   Err(_) => String::from("nope4")
+                                   Err(_) => String::from(item.as_str())
                                }
                            }
-                           Err(_) => String::from("nope5")
+                           Err(_) => String::from(item.as_str())
                        }
                    }))
 }
