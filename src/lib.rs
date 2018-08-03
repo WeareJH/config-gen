@@ -49,7 +49,10 @@ pub fn proxy_transform(_req: &HttpRequest, opts: ProxyOpts) -> Box<Future<Item =
     let mut outgoing = client::ClientRequest::build_from(_req);
 
     let next_url = format!("{}://{}{}{}",
-                      _req.uri().scheme_part().unwrap(),
+                      match _req.uri().scheme_part() {
+                          Some(scheme) => scheme.as_str(),
+                          None => "http"
+                      },
                       opts.target.clone(),
                       _req.path(),
                       match _req.uri().query().as_ref() {
