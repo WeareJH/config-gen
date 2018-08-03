@@ -5,6 +5,7 @@ extern crate futures;
 extern crate actix_web;
 extern crate openssl;
 extern crate url;
+extern crate regex;
 
 use actix_web::{middleware, server, App};
 use openssl::ssl::{SslAcceptor, SslFiletype, SslMethod};
@@ -12,6 +13,8 @@ use openssl::ssl::{SslAcceptor, SslFiletype, SslMethod};
 mod lib;
 use lib::proxy_transform;
 use lib::ProxyOpts;
+
+mod rewrites;
 
 fn main() {
     ::std::env::set_var("RUST_LOG", "actix_web=info");
