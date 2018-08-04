@@ -1,12 +1,9 @@
 use actix_web::{
-    client, middleware, server, App, AsyncResponder, Body, Error, HttpMessage,
+    client, AsyncResponder, Body, Error, HttpMessage,
     HttpRequest, HttpResponse, http, dev, test
 };
 use actix_web::http::header;
 use futures::{Future, Stream};
-use std::path::PathBuf;
-use std::sync::Arc;
-use std::net::SocketAddr;
 use rewrites::replace_host;
 
 ///
@@ -108,7 +105,6 @@ fn create_outgoing(client_response: &client::ClientResponse) -> dev::HttpRespons
 }
 
 const STR: &str = "Hello world";
-const STR2: &str = "Hello world 2";
 
 #[test]
 fn test_forwards_headers() {

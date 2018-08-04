@@ -1,8 +1,7 @@
 use regex::Regex;
 use regex::Captures;
 use std::borrow::Cow;
-use regex::Replacer;
-use url::{Url, ParseError};
+use url::{Url};
 
 ///
 /// Replace the host name in a string
@@ -32,7 +31,16 @@ fn main_replace(caps: &Captures, host: &str, port: u16) -> String {
                            // if it parsed, we set the url to the value passed in
                            Ok(mut url) => {
                                match url.set_host(Some(host)) {
-                                   Ok(()) => url.to_string(),
+                                   Ok(()) => match url.set_port(Some(port)) {
+                                       Ok(_) => {
+                                           println!("setting: {}", url.to_string());
+                                           url.to_string()
+                                       },
+                                       Err(_) => {
+                                           eprintln!("Could not set port");
+                                           String::from(item.as_str())
+                                       }
+                                   },
                                    Err(_) => {
                                        eprintln!("Could not set host");
                                        String::from(item.as_str())
@@ -54,9 +62,9 @@ fn test_rewrites() {
     <a href=\"http://www.neomorganics.com\">Home</a>
     ";
     let expected = "
-    <a href=\"https://127.0.0.1/\">Home</a>
-    <a href=\"http://127.0.0.1/\">Home</a>
+    <a href=\"https://127.0.0.1:8080/\">Home</a>
+    <a href=\"http://127.0.0.1:8080/\">Home</a>
     ";
     let matcher = format!("https?://{}", "https://www.neomorganics.com");
-    Regex::new(&matcher).unwrap().replace_all(bytes, |item: &Captures| main_replace(item, "127.0.0.1", 8080));
+    let actual = Regex::new(&matcher).unwrap().replace_all(bytes, |item: &Captures| main_replace(item, "127.0.0.1", 8080));
 }
