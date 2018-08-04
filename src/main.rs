@@ -6,6 +6,7 @@ extern crate actix_web;
 extern crate openssl;
 extern crate url;
 extern crate regex;
+extern crate mime;
 
 use actix_web::{middleware, server, App};
 use openssl::ssl::{SslAcceptor, SslFiletype, SslMethod};
@@ -29,7 +30,7 @@ fn main() {
     builder.set_certificate_chain_file("src/cert.pem").unwrap();
 
     server::new(|| {
-        App::with_state(ProxyOpts::new("neom.com"))
+        App::with_state(ProxyOpts::new("www.neomorganics.com"))
             .middleware(middleware::Logger::default())
             .default_resource(|r| r.f(proxy_transform))
     }).bind_ssl("127.0.0.1:8080", builder)
