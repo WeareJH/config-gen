@@ -11,6 +11,7 @@ use actix_web::{middleware, server, App};
 use openssl::ssl::{SslAcceptor, SslFiletype, SslMethod};
 
 mod fns;
+mod test;
 mod rewrites;
 use fns::proxy_transform;
 use fns::ProxyOpts;
@@ -28,9 +29,9 @@ fn main() {
     builder.set_certificate_chain_file("src/cert.pem").unwrap();
 
     server::new(|| {
-        App::new()
+        App::with_state(ProxyOpts::new("neom.com"))
             .middleware(middleware::Logger::default())
-            .default_resource(|r| r.f(move |req| proxy_transform(req, ProxyOpts::new("www.neomorganics.com"))))
+            .default_resource(|r| r.f(proxy_transform))
     }).bind_ssl("127.0.0.1:8080", builder)
         .unwrap()
         .start();

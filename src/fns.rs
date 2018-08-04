@@ -4,6 +4,7 @@ use actix_web::{
 };
 use actix_web::http::header;
 use futures::{Future, Stream};
+use futures::future::{Either, ok};
 use rewrites::replace_host;
 
 ///
@@ -15,7 +16,7 @@ use rewrites::replace_host;
 /// assert_eq!(opts.target, "example.com".to_string());
 /// ```
 ///
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct ProxyOpts {
     pub target: String,
 }
@@ -30,11 +31,7 @@ impl ProxyOpts {
 /// This function will clone incoming requests
 /// and pass them onto a backend specified via the `target` field on [ProxyOpts]
 ///
-pub fn proxy_transform(_req: &HttpRequest, opts: ProxyOpts) -> Box<Future<Item = HttpResponse, Error = Error>> {
-
-    // this is a placeholder for some logic to determine if we need to
-    // modify the response body.
-    let rewrite_response = _req.path() == "/";
+pub fn proxy_transform(_req: &HttpRequest<ProxyOpts>) -> Box<Future<Item = HttpResponse, Error = Error>> {
 
     // building up the new request that we'll send to the backend
     let mut outgoing = client::ClientRequest::build_from(_req);
@@ -44,7 +41,7 @@ pub fn proxy_transform(_req: &HttpRequest, opts: ProxyOpts) -> Box<Future<Item =
                           Some(scheme) => scheme.as_str(),
                           None => "http"
                       },
-                      opts.target.clone(),
+                      _req.state().target.clone(),
                       _req.path(),
                       match _req.uri().query().as_ref() {
                           Some(q) => format!("?{}", q),
@@ -55,44 +52,47 @@ pub fn proxy_transform(_req: &HttpRequest, opts: ProxyOpts) -> Box<Future<Item =
     outgoing.uri(next_url.as_str());
 
     // ensure the 'host' header is re-written
-    outgoing.set_header(http::header::HOST, opts.target.clone());
+    outgoing.set_header(http::header::HOST, _req.state().target.clone());
 
     // The shared parts of the response builder
     let setup = outgoing.finish().unwrap().send().map_err(Error::from);
 
     // now choose how to handle it
-    if rewrite_response {
         // if the client responds with a request we want to alter (such as HTML)
         // then we need to buffer the body into memory in order to apply regex's on the string
-        let next_target = opts.target.clone();
-        let next_host = _req.uri().clone();
-        setup.and_then(move |resp| {
-            resp.body()
-                .limit(1_000_000)
-                .from_err()
-                .and_then(move |body| {
-                    // now we're not rewriting anything, but we could since
-                    // here the 'body' is the entire response body
-                    use std::str;
+    let next_target = _req.state().target.clone();
+    let next_host = _req.uri().clone();
+    setup.and_then(move |resp| {
+        let rewrite_response = false;
+        if rewrite_response {
+            Either::A(
+                resp.body()
+                    .limit(1_000_000)
+                    .from_err()
+                    .and_then(move |body| {
+                        // now we're not rewriting anything, but we could since
+                        // here the 'body' is the entire response body
+                        use std::str;
 
-                    let req_host = next_host.host().unwrap_or("");
-                    let req_port = next_host.port().unwrap_or(80);
-                    let next_body = replace_host(
-                        str::from_utf8(&body[..]).unwrap(),
-                        &next_target,
-                        req_host, req_port
-                    );
-                    let as_string = next_body.to_string();
-                    Ok(create_outgoing(&resp).body(as_string))
-                })
-        }).responder()
-    } else {
-        // The streaming response is simpler, we just need to copy the headers
-        // over and then stream the result back
-        setup.and_then(|resp| {
-            Ok(create_outgoing(&resp).body(Body::Streaming(Box::new(resp.payload().from_err()))))
-        }).responder()
-    }
+                        let req_host = next_host.host().unwrap_or("");
+                        let req_port = next_host.port().unwrap_or(80);
+                        let next_body = replace_host(
+                            str::from_utf8(&body[..]).unwrap(),
+                            &next_target,
+                            req_host, req_port
+                        );
+                        let as_string = next_body.to_string();
+                        Ok(create_outgoing(&resp).body(as_string))
+                    })
+            )
+        } else {
+            Either::B(
+                ok(create_outgoing(&resp).body(Body::Streaming(Box::new(resp.payload().from_err()))))
+            )
+        }
+
+
+    }).responder()
 }
 
 fn create_outgoing(client_response: &client::ClientResponse) -> dev::HttpResponseBuilder {
@@ -121,10 +121,13 @@ fn test_forwards_headers() {
     let srv_address = server.addr().to_string();
     println!("orig address = {}", srv_address);
 
-    let mut proxy = test::TestServer::new(move |app| {
-        let addr = srv_address.clone();
-        app.handler(move |req| proxy_transform(req, ProxyOpts::new(addr.clone())));
-    });
+    let mut proxy = test::TestServer::build_with_state(move || {
+            let addr = srv_address.clone();
+            ProxyOpts::new(addr.clone())
+        })
+        .start(move |app| {
+            app.handler(proxy_transform);
+        });
 
     let request = proxy.get()
         .header(header::ACCEPT, "text/html")
