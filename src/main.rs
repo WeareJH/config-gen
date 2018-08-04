@@ -30,7 +30,7 @@ fn main() {
     server::new(|| {
         App::new()
             .middleware(middleware::Logger::default())
-            .default_resource(|r| r.f(move |req| proxy_transform(req, ProxyOpts::new("www.neomorganics.com", "127.0.0.1:8080"))))
+            .default_resource(|r| r.f(move |req| proxy_transform(req, ProxyOpts::new("www.neomorganics.com"))))
     }).bind_ssl("127.0.0.1:8080", builder)
         .unwrap()
         .start();
