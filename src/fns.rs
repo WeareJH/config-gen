@@ -1,12 +1,11 @@
 use actix_web::{
     client, AsyncResponder, Body, Error, HttpMessage,
-    HttpRequest, HttpResponse, http, dev, test,
+    HttpRequest, HttpResponse, http, dev,
 };
 use actix_web::http::header;
 use futures::{Future, Stream};
 use futures::future::{Either, ok};
 use rewrites::replace_host;
-use mime::TEXT_HTML;
 
 ///
 /// # Examples
@@ -124,44 +123,55 @@ fn create_outgoing(client_response: &client::ClientResponse) -> dev::HttpRespons
     outgoing
 }
 
-const STR: &str = "Hello world";
 
-#[test]
-fn test_forwards_headers() {
-    let server = test::TestServer::new(|app| {
-        app.handler(|req: &HttpRequest| {
-            println!("headers received at proxy addr: {:#?}", req.headers());
-            assert_eq!(req.headers().get(header::ACCEPT).unwrap(), "text/html");
-            HttpResponse::Ok()
-                .header("shane", "kittens")
-                .header(header::CONTENT_TYPE, TEXT_HTML)
-                .body(STR)
-        })
-    });
+#[cfg(test)]
+mod tests {
 
-    let srv_address = server.addr().to_string();
-    println!("orig address = {}", srv_address);
+    use super::*;
+    use actix_web::{test};
+    use mime::TEXT_HTML;
 
-    let mut proxy = test::TestServer::build_with_state(move || {
-        let addr = srv_address.clone();
-        ProxyOpts::new(addr.clone())
-    })
-        .start(move |app| {
-            app.handler(proxy_transform);
+    const STR: &str = "Hello world";
+
+    #[test]
+    fn test_forwards_headers() {
+        let server = test::TestServer::new(|app| {
+            app.handler(|req: &HttpRequest| {
+                println!("headers received at proxy addr: {:#?}", req.headers());
+                assert_eq!(req.headers().get(header::ACCEPT).unwrap(), "text/html");
+                HttpResponse::Ok()
+                    .header("shane", "kittens")
+                    .header(header::CONTENT_TYPE, TEXT_HTML)
+                    .body(STR)
+            })
         });
 
-    let request = proxy.get()
-        .header(header::ACCEPT, "text/html")
-        .uri(proxy.url("/"))
-        .finish()
-        .unwrap();
+        let srv_address = server.addr().to_string();
+        println!("orig address = {}", srv_address);
+        println!("orig html = {}", format!("<body><a href=\"http://{}\"></a></body>", srv_address));
 
-    let response = proxy.execute(request.send()).unwrap();
-    let _bytes = proxy.execute(response.body()).unwrap();
+        let mut proxy = test::TestServer::build_with_state(move || {
+            let addr = srv_address.clone();
+            ProxyOpts::new(addr.clone())
+        })
+            .start(move |app| {
+                app.handler(proxy_transform);
+            });
 
-    println!("main resp: {:#?}", response.headers());
+        let request = proxy.get()
+            .header(header::ACCEPT, "text/html")
+            .uri(proxy.url("/"))
+            .finish()
+            .unwrap();
 
-    let has_header = response.headers().get("shane").unwrap();
+        let response = proxy.execute(request.send()).unwrap();
+        let _bytes = proxy.execute(response.body()).unwrap();
 
-    assert_eq!(has_header, "kittens");
+        println!("main resp: {:#?}", response.headers());
+        println!("bytes={:#?}", _bytes);
+
+        let has_header = response.headers().get("shane").unwrap();
+
+        assert_eq!(has_header, "kittens");
+    }
 }

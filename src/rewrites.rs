@@ -1,7 +1,8 @@
 use regex::Regex;
 use regex::Captures;
 use std::borrow::Cow;
-use url::{Url};
+use url::Url;
+use url::ParseError;
 
 ///
 /// Replace the host name in a string
@@ -16,43 +17,24 @@ use url::{Url};
 ///
 pub fn replace_host<'a>(bytes: &'a str, host_to_replace: &'a str, target_host: &'a str, target_port: u16) -> Cow<'a, str> {
     let matcher = format!("https?://{}", host_to_replace);
-    Regex::new(&matcher).unwrap().replace_all(bytes, |item: &Captures| main_replace(item, target_host, target_port))
+    Regex::new(&matcher)
+        .unwrap()
+        .replace_all(bytes,
+                     |item: &Captures|
+                         modify_url(item, target_host, target_port).unwrap_or(String::from("")))
 }
 
-fn main_replace(caps: &Captures, host: &str, port: u16) -> String {
-    caps.iter().nth(0)
-        .map_or(String::from(""),
-            // here there was a regex match
-            |capture_item| capture_item.map_or(String::from(""),
-                   // here we have access to the individual match group
-                   |item| {
-                       // now we can try to parse the url
-                       match Url::parse(item.as_str()) {
-                           // if it parsed, we set the url to the value passed in
-                           Ok(mut url) => {
-                               match url.set_host(Some(host)) {
-                                   Ok(()) => match url.set_port(Some(port)) {
-                                       Ok(_) => {
-                                           println!("setting: {}", url.to_string());
-                                           url.to_string()
-                                       },
-                                       Err(_) => {
-                                           eprintln!("Could not set port");
-                                           String::from(item.as_str())
-                                       }
-                                   },
-                                   Err(_) => {
-                                       eprintln!("Could not set host");
-                                       String::from(item.as_str())
-                                   }
-                               }
-                           }
-                           Err(_) => {
-                               eprintln!("Could not parse url");
-                               String::from(item.as_str())
-                           }
-                       }
-                   }))
+fn modify_url(caps: &Captures, host: &str, port: u16) -> Option<String> {
+    let first_match = caps.iter().nth(0)?;
+    let match_item = first_match?;
+
+    if let Ok(mut url) = Url::parse(match_item.as_str()) {
+        url.set_host(Some(host)).ok();
+        url.set_port(Some(port)).ok();
+        Some(url.to_string())
+    } else {
+        None
+    }
 }
 
 #[test]
@@ -65,6 +47,6 @@ fn test_rewrites() {
     <a href=\"https://127.0.0.1:8080/\">Home</a>
     <a href=\"http://127.0.0.1:8080/\">Home</a>
     ";
-    let matcher = format!("https?://{}", "https://www.neomorganics.com");
-    let actual = Regex::new(&matcher).unwrap().replace_all(bytes, |item: &Captures| main_replace(item, "127.0.0.1", 8080));
+    let actual = replace_host(bytes, "www.neomorganics.com", "127.0.0.1", 8080);
+    assert_eq!(actual, expected);
 }
