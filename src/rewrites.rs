@@ -35,7 +35,9 @@ fn modify_url(caps: &Captures, host: &str, port: u16) -> Option<String> {
 
     url.set_host(Some(host)).ok()?;
     url.set_port(Some(port)).ok()?;
-    Some(url.to_string())
+    let mut as_string = url.to_string();
+    as_string.pop();
+    Some(as_string)
 }
 
 #[test]
