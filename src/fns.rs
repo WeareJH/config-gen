@@ -85,7 +85,6 @@ pub fn proxy_transform(_req: &HttpRequest<ProxyOpts>) -> Box<Future<Item=HttpRes
             if rewrite_response {
                 Either::A(
                     resp.body()
-                        .limit(1_000_000)
                         .from_err()
                         .and_then(move |body| {
 
