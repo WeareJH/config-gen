@@ -24,17 +24,18 @@ pub fn replace_host<'a>(bytes: &'a str, host_to_replace: &'a str, target_host: &
                          modify_url(item, target_host, target_port).unwrap_or(String::from("")))
 }
 
+// Attempt to modify the matched URL,
+// note: this can fail at multiple points
+// and if it does we just want a None and we move on
+// there's no benefit to handling the error in any case here
 fn modify_url(caps: &Captures, host: &str, port: u16) -> Option<String> {
     let first_match = caps.iter().nth(0)?;
     let match_item = first_match?;
+    let mut url = Url::parse(match_item.as_str()).ok()?;
 
-    if let Ok(mut url) = Url::parse(match_item.as_str()) {
-        url.set_host(Some(host)).ok();
-        url.set_port(Some(port)).ok();
-        Some(url.to_string())
-    } else {
-        None
-    }
+    url.set_host(Some(host)).ok()?;
+    url.set_port(Some(port)).ok()?;
+    Some(url.to_string())
 }
 
 #[test]
@@ -44,8 +45,8 @@ fn test_rewrites() {
     <a href=\"http://www.neomorganics.com\">Home</a>
     ";
     let expected = "
-    <a href=\"https://127.0.0.1:8080/\">Home</a>
-    <a href=\"http://127.0.0.1:8080/\">Home</a>
+    <a href=\"https://127.0.0.1:8080\">Home</a>
+    <a href=\"http://127.0.0.1:8080\">Home</a>
     ";
     let actual = replace_host(bytes, "www.neomorganics.com", "127.0.0.1", 8080);
     assert_eq!(actual, expected);
