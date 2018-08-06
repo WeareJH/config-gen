@@ -2,7 +2,6 @@ use regex::Regex;
 use regex::Captures;
 use std::borrow::Cow;
 use url::Url;
-use url::ParseError;
 
 ///
 /// Replace the host name in a string
@@ -16,7 +15,7 @@ use url::ParseError;
 /// ```
 ///
 pub fn replace_host<'a>(bytes: &'a str, host_to_replace: &'a str, target_host: &'a str, target_port: u16) -> Cow<'a, str> {
-    let matcher = format!("https?://{}", host_to_replace);
+    let matcher = format!("https?:(?:\\\\)?/(?:\\\\)?/{}", host_to_replace);
     Regex::new(&matcher)
         .unwrap()
         .replace_all(bytes,
@@ -43,13 +42,25 @@ fn modify_url(caps: &Captures, host: &str, port: u16) -> Option<String> {
 #[test]
 fn test_rewrites() {
     let bytes = "
-    <a href=\"https://www.neomorganics.com\">Home</a>
-    <a href=\"http://www.neomorganics.com\">Home</a>
+    <a href=\"https://www.acme.com\">Home</a>
+    <a href=\"http://www.acme.com\">Home</a>
     ";
     let expected = "
     <a href=\"https://127.0.0.1:8080\">Home</a>
     <a href=\"http://127.0.0.1:8080\">Home</a>
     ";
-    let actual = replace_host(bytes, "www.neomorganics.com", "127.0.0.1", 8080);
+    let actual = replace_host(bytes, "www.acme.com", "127.0.0.1", 8080);
+    assert_eq!(actual, expected);
+}
+#[test]
+fn test_rewrites_within_escaped_json() {
+    let bytes = r#"
+    {"url": "https:\/\/www.acme.com\/checkout\/cart\/\"}
+    "#;
+    let expected = r#"
+    {"url": "https://127.0.0.1:8080\/checkout\/cart\/\"}
+    "#;
+    let actual = replace_host(bytes, "www.acme.com", "127.0.0.1", 8080);
+    println!("actual={}", actual);
     assert_eq!(actual, expected);
 }
