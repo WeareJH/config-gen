@@ -8,6 +8,7 @@ extern crate url;
 extern crate regex;
 extern crate mime;
 extern crate clap;
+extern crate bytes;
 
 use actix_web::{middleware, server, App};
 use openssl::ssl::{SslAcceptor, SslFiletype, SslMethod};
