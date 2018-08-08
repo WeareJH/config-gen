@@ -6,26 +6,7 @@ use actix_web::http::header;
 use futures::{Future, Stream};
 use futures::future::{Either, ok};
 use rewrites::replace_host;
-
-///
-/// # Examples
-///
-/// ```
-/// # use bs_rust::*;
-/// let opts = ProxyOpts::new("example.com", "127.0.0.1:8000");
-/// assert_eq!(opts.target, "example.com".to_string());
-/// ```
-///
-#[derive(Clone, Debug)]
-pub struct ProxyOpts {
-    pub target: String,
-}
-
-impl ProxyOpts {
-    pub fn new(target: impl Into<String>) -> ProxyOpts {
-        ProxyOpts { target: target.into() }
-    }
-}
+use options::ProxyOpts;
 
 ///
 /// This function will clone incoming requests

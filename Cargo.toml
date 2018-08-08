@@ -14,3 +14,4 @@ actix = "0.7"
 actix-web = { version = "0.7", features=["alpn"] }
 bytes = "0.4.9"
 mime = "0.3.8"
+clap = "2.32.0"
