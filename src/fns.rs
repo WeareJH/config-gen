@@ -68,11 +68,12 @@ pub fn proxy_transform(_req: &HttpRequest<ProxyOpts>) -> Box<Future<Item = HttpR
         Box::new(outgoing)
     } else {
         outgoing.finish().unwrap().send().map_err(Error::from)
-            .and_then(move |resp| {
+            .and_then(move |proxy_response| {
+
                 // Should we rewrite this response?
                 // just check for the correct content-type header for now.
                 // This will need fleshing out to provide stricter checks
-                let rewrite_response = match resp.headers().get(header::CONTENT_TYPE) {
+                let rewrite_response = match proxy_response.headers().get(header::CONTENT_TYPE) {
                     Some(t) => {
                         match t.to_str().unwrap_or("") {
                             "text/html" | "text/html; charset=UTF-8" => true,
@@ -86,7 +87,7 @@ pub fn proxy_transform(_req: &HttpRequest<ProxyOpts>) -> Box<Future<Item = HttpR
                 // response into memory (text files only)
                 if rewrite_response {
                     Either::A(
-                        resp.body()
+                        proxy_response.body()
                             .from_err()
                             .and_then(move |body| {
 
@@ -102,14 +103,14 @@ pub fn proxy_transform(_req: &HttpRequest<ProxyOpts>) -> Box<Future<Item = HttpR
                                     req_host, req_port,
                                 );
                                 let as_string = next_body.to_string();
-                                Ok(create_outgoing(&resp.headers()).body(as_string))
+                                Ok(create_outgoing(&proxy_response.headers()).body(as_string))
                             })
                     )
                 } else {
                     // If we get here, we decided not to re-write the response
                     // so we just stream it back to the client
                     Either::B(
-                        ok(create_outgoing(&resp.headers()).body(Body::Streaming(Box::new(resp.payload().from_err()))))
+                        ok(create_outgoing(&proxy_response.headers()).body(Body::Streaming(Box::new(proxy_response.payload().from_err()))))
                     )
                 }
             })
@@ -117,10 +118,10 @@ pub fn proxy_transform(_req: &HttpRequest<ProxyOpts>) -> Box<Future<Item = HttpR
     }
 }
 
-fn create_outgoing(req_headers: &HeaderMap) -> dev::HttpResponseBuilder {
+fn create_outgoing(resp_headers: &HeaderMap) -> dev::HttpResponseBuilder {
     let mut outgoing = HttpResponse::Ok();
     // Copy headers from backend response to main response
-    for (key, value) in req_headers {
+    for (key, value) in resp_headers {
         outgoing.header(key.clone(), value.clone());
     }
     outgoing
@@ -133,6 +134,7 @@ mod tests {
     use super::*;
     use actix_web::{test};
     use mime::TEXT_HTML;
+    use actix_web::http::Cookie;
 
     const STR: &str = "Hello world";
 
