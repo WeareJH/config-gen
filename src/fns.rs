@@ -8,7 +8,10 @@ use futures::future::{Either, ok};
 use rewrites::replace_host;
 use options::ProxyOpts;
 use std::str;
-use actix_web::http::HeaderMap;
+use actix_web::http::{HeaderMap};
+use regex::Regex;
+use regex::Captures;
+use http::header::HeaderValue;
 
 ///
 /// This function will clone incoming requests
@@ -60,7 +63,10 @@ pub fn proxy_transform(_req: &HttpRequest<ProxyOpts>) -> Box<Future<Item = HttpR
                         proxy_response.body()
                             .from_err()
                             .and_then(move |proxy_response_body| {
-                                Ok(create_outgoing(&proxy_response.headers()).body(proxy_response_body))
+                                Ok(create_outgoing(
+                                    &proxy_response.headers(),
+                                    next_target.to_string(),
+                                ).body(proxy_response_body))
                             })
                     })
             });
@@ -103,14 +109,14 @@ pub fn proxy_transform(_req: &HttpRequest<ProxyOpts>) -> Box<Future<Item = HttpR
                                     req_host, req_port,
                                 );
                                 let as_string = next_body.to_string();
-                                Ok(create_outgoing(&proxy_response.headers()).body(as_string))
+                                Ok(create_outgoing(&proxy_response.headers(), next_target.to_string()).body(as_string))
                             })
                     )
                 } else {
                     // If we get here, we decided not to re-write the response
                     // so we just stream it back to the client
                     Either::B(
-                        ok(create_outgoing(&proxy_response.headers()).body(Body::Streaming(Box::new(proxy_response.payload().from_err()))))
+                        ok(create_outgoing(&proxy_response.headers(), next_target.to_string()).body(Body::Streaming(Box::new(proxy_response.payload().from_err()))))
                     )
                 }
             })
@@ -118,8 +124,9 @@ pub fn proxy_transform(_req: &HttpRequest<ProxyOpts>) -> Box<Future<Item = HttpR
     }
 }
 
-fn create_outgoing(resp_headers: &HeaderMap) -> dev::HttpResponseBuilder {
+fn create_outgoing(resp_headers: &HeaderMap, target: String) -> dev::HttpResponseBuilder {
     let mut outgoing = HttpResponse::Ok();
+    let c = clone_headers(resp_headers, target);
     // Copy headers from backend response to main response
     for (key, value) in resp_headers {
         outgoing.header(key.clone(), value.clone());
@@ -127,6 +134,33 @@ fn create_outgoing(resp_headers: &HeaderMap) -> dev::HttpResponseBuilder {
     outgoing
 }
 
+fn clone_headers(headers: &HeaderMap, target: String) -> HeaderMap {
+    let regex = Regex::new(target.as_str()).unwrap();
+    let mut hm = HeaderMap::new();
+    let replacer_string = format!("{}:{}", "127.0.0.1", 8080);
+    for (key, value) in headers.iter() {
+        let strs = value.to_str().unwrap();
+        let next = regex.replace(strs, replacer_string.as_str());
+        let hv = HeaderValue::from_str(&next);
+        hm.insert(key.clone(), hv.unwrap());
+    }
+    hm
+}
+
+#[test]
+pub fn test_clone_headers() {
+    let mut hm = HeaderMap::new();
+    hm.insert("set-cookie", "form_key=123456; domain=www.neom.com".parse().unwrap());
+
+    // cloned header map with domain re-written
+    let cloned = clone_headers(&hm, "www.neom.com".to_string());
+
+    // expected header map
+    let mut expected = HeaderMap::new();
+    expected.insert("set-cookie", "form_key=123456; domain=127.0.0.1:8080".parse().unwrap());
+
+    assert_eq!(expected, cloned);
+}
 
 #[cfg(test)]
 mod tests {
@@ -195,6 +229,7 @@ mod tests {
                         Ok(
                             HttpResponse::Ok()
                                 .header(header::CONTENT_TYPE, "application/json")
+                                .header(header::SET_COOKIE, "form_key=40je6TqaB2SDRBeV; expires=Thu, 09-Aug-2018 10:23:41 GMT; Max-Age=10800; path=/; domain=www.neomorganics.com")
                                 .body(format!("REC-->{}", str::from_utf8(&bytes[..]).unwrap().to_string()))
                         )
                     })
@@ -226,5 +261,17 @@ mod tests {
         println!("bytes={:#?}", _bytes);
 
         assert_eq!(_bytes, r#"REC-->{"hello": "world"}"#)
+    }
+
+    #[test]
+    fn test_strip_domain_from_cookies () {
+        let cookie_value = "form_key=40je6TqaB2SDRBeV; expires=Thu, 09-Aug-2018 10:23:41 GMT; Max-Age=10800; path=/; domain=www.neomorganics.com";
+        let cookie = Cookie::build("form_key", "40je6TqaB2SDRBeV")
+            .domain("www.neomorganics.com")
+            .finish();
+        println!("{}", cookie);
+        let mut parsed = Cookie::parse(cookie_value).unwrap();
+        parsed.set_domain("");
+        println!("{}", parsed.to_string());
     }
 }
