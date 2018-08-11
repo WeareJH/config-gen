@@ -16,6 +16,7 @@ use openssl::ssl::{SslAcceptor, SslFiletype, SslMethod};
 
 mod fns;
 mod test;
+mod headers;
 mod rewrites;
 mod options;
 use fns::proxy_transform;
@@ -58,7 +59,7 @@ fn run(opts: ProxyOpts) {
 
     server::new(move || {
         App::with_state(opts.clone())
-            .middleware(middleware::Logger::default())
+//            .middleware(middleware::Logger::default())
             .default_resource(|r| r.f(proxy_transform))
     }).bind_ssl(&local_addr, builder)
         .unwrap()

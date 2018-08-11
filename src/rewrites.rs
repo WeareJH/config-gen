@@ -23,6 +23,34 @@ pub fn replace_host<'a>(bytes: &'a str, host_to_replace: &'a str, target_host: &
                          modify_url(item, target_host, target_port).unwrap_or(String::from("")))
 }
 
+pub fn replace_cookie_domain_on_page<'a>(bytes: &'a str, host_to_replace: &str) -> Cow<'a, str> {
+    let matcher = format!(r#""domain": ".{}","#, host_to_replace);
+    Regex::new(&matcher)
+        .unwrap()
+        .replace_all(bytes, "")
+}
+
+#[test]
+fn test_replace_cookie_domain_on_page() {
+    let bytes = r#"
+        <script type="text/x-magento-init">
+            {
+                "*": {
+                    "mage/cookies": {
+                        "expires": null,
+                        "path": "/",
+                        "domain": ".www.neomorganics.com",
+                        "secure": false,
+                        "lifetime": "10800"
+                    }
+                }
+            }
+        </script>
+    "#;
+    let replaced = replace_cookie_domain_on_page(&bytes, "www.neomorganics.com");
+    println!("-> {}", replaced);
+}
+
 // Attempt to modify the matched URL,
 // note: this can fail at multiple points
 // and if it does we just want a None and we move on
