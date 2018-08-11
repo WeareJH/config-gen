@@ -58,16 +58,21 @@ pub fn proxy_transform(_req: &HttpRequest<ProxyOpts>) -> Box<Future<Item=HttpRes
         outgoing.header(key.clone(), value.clone());
     }
 
+    // ensure the 'host' header is re-written
+    outgoing.set_header(http::header::HOST, _req.state().target.clone());
+
+    // ensure the origin header is set
+    outgoing.set_header(http::header::ORIGIN, _req.state().target.clone());
 
     if original_method == "POST" {
-        println!("POST SEND-> {:?}", outgoing);
+//        println!("POST SEND-> {:?}", outgoing);
         let outgoing = _req.body()
             .from_err()
             .and_then(move |incoming_body| {
-                println!("POST SEND BODY-> {:?}", incoming_body);
+//                println!("POST SEND BODY-> {:?}", incoming_body);
                 outgoing.body(incoming_body).unwrap().send().map_err(Error::from)
                     .and_then(move |proxy_response| {
-                        println!("POST resp from proxy {:?}", &proxy_response);
+//                        println!("POST resp from proxy {:?}", &proxy_response);
                         let req_host = next_host.host().unwrap_or("");
                         let req_port = next_host.port().unwrap_or(80);
                         let req_target = format!("{}:{}", req_host, req_host);
