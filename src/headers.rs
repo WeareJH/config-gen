@@ -35,8 +35,6 @@ pub fn test_clone_headers() {
     // cloned header map with domain re - written
     let cloned = clone_headers(&hm, "www.neom.com".to_string(), "127.0.0.1:8080".to_string());
 
-//    println!("{:#?}", cloned);
-
     // expected header map
     let mut expected = HeaderMap::new();
     expected.append("none-dup", "form_key=123456".parse().unwrap());
@@ -50,6 +48,7 @@ pub fn test_clone_headers() {
 pub fn test_ignores_cookie() {
     let mut hm = HeaderMap::new();
     hm.append("cookie", "form_key=123456".parse().unwrap());
+    hm.append("cookie", "shane=human".parse().unwrap());
 
     let cloned = clone_headers(&hm, "www.neom.com".to_string(), "127.0.0.1:8080".to_string());
     let expected = HeaderMap::new();

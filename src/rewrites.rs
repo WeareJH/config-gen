@@ -3,6 +3,12 @@ use regex::Captures;
 use std::borrow::Cow;
 use url::Url;
 
+pub struct RewriteContext<'a> {
+    pub host_to_replace: &'a str,
+    pub target_host: &'a str,
+    pub target_port: u16
+}
+
 ///
 /// Replace the host name in a string
 ///
@@ -14,17 +20,17 @@ use url::Url;
 /// assert_eq!(expected, replace_host(bytes, "www.acme.com", "127.0.0.1:8000"));
 /// ```
 ///
-pub fn replace_host<'a>(bytes: &'a str, host_to_replace: &'a str, target_host: &'a str, target_port: u16) -> Cow<'a, str> {
-    let matcher = format!("https?:(?:\\\\)?/(?:\\\\)?/{}", host_to_replace);
+pub fn replace_host<'a>(bytes: &'a str, context: &RewriteContext<'a>) -> Cow<'a, str> {
+    let matcher = format!("https?:(?:\\\\)?/(?:\\\\)?/{}", context.host_to_replace);
     Regex::new(&matcher)
         .unwrap()
         .replace_all(bytes,
                      |item: &Captures|
-                         modify_url(item, target_host, target_port).unwrap_or(String::from("")))
+                         modify_url(item, context.target_host, context.target_port).unwrap_or(String::from("")))
 }
 
-pub fn replace_cookie_domain_on_page<'a>(bytes: &'a str, host_to_replace: &str) -> Cow<'a, str> {
-    let matcher = format!(r#""domain": ".{}","#, host_to_replace);
+pub fn replace_cookie_domain_on_page<'a>(bytes: &'a str, context: &RewriteContext<'a>) -> Cow<'a, str> {
+    let matcher = format!(r#""domain": ".{}","#, context.host_to_replace);
     Regex::new(&matcher)
         .unwrap()
         .replace_all(bytes, "")
@@ -47,7 +53,11 @@ fn test_replace_cookie_domain_on_page() {
             }
         </script>
     "#;
-    let replaced = replace_cookie_domain_on_page(&bytes, "www.neomorganics.com");
+    let replaced = replace_cookie_domain_on_page(&bytes, &RewriteContext{
+        host_to_replace: "www.neomorganics.com",
+        target_host: "127.0.0.1",
+        target_port: 80,
+    });
     println!("-> {}", replaced);
 }
 
@@ -77,7 +87,12 @@ fn test_rewrites() {
     <a href=\"https://127.0.0.1:8080\">Home</a>
     <a href=\"http://127.0.0.1:8080\">Home</a>
     ";
-    let actual = replace_host(bytes, "www.acme.com", "127.0.0.1", 8080);
+    let context = RewriteContext{
+        host_to_replace: "www.acme.com",
+        target_host: "127.0.0.1",
+        target_port: 8080,
+    };
+    let actual = replace_host(bytes, &context);
     assert_eq!(actual, expected);
 }
 #[test]
@@ -88,7 +103,12 @@ fn test_rewrites_within_escaped_json() {
     let expected = r#"
     {"url": "https://127.0.0.1:8080\/checkout\/cart\/\"}
     "#;
-    let actual = replace_host(bytes, "www.acme.com", "127.0.0.1", 8080);
+    let context = RewriteContext{
+        host_to_replace: "www.acme.com",
+        target_host: "127.0.0.1",
+        target_port: 8080,
+    };
+    let actual = replace_host(bytes, &context);
     println!("actual={}", actual);
     assert_eq!(actual, expected);
 }

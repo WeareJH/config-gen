@@ -16,34 +16,32 @@ use http::header::HeaderValue;
 use actix_web::client::ClientRequest;
 use actix_web::http::Cookie;
 use headers::clone_headers;
-use rewrites::replace_cookie_domain_on_page;
+use rewrites::{replace_cookie_domain_on_page, RewriteContext};
+use with_body::{forward_request_with_body};
+use without_body::forward_request_without_body;
 
 ///
 /// This function will clone incoming requests
 /// and pass them onto a backend specified via the `target` field on [ProxyOpts]
 ///
-pub fn proxy_transform(_req: &HttpRequest<ProxyOpts>) -> Box<Future<Item=HttpResponse, Error=Error>> {
+pub fn proxy_transform(original_request: &HttpRequest<ProxyOpts>) -> Box<Future<Item=HttpResponse, Error=Error>> {
 
-    let req_headers = _req.headers().clone();
-    let joined_cookie = req_headers.get_all(header::COOKIE).iter().map(|hdr| {
-        let s = str::from_utf8(hdr.as_bytes()).unwrap_or("");
-        s.to_string()
-    }).collect::<Vec<String>>().join("; ");
-    let next_host = _req.uri().clone();
+    let original_req_headers = original_request.headers().clone();
+    let next_host = original_request.uri().clone();
     let req_host = next_host.host().unwrap_or("");
     let req_port = next_host.port().unwrap_or(80);
     let req_target = format!("{}:{}", req_host, req_port);
-    let cloned = clone_headers(&req_headers, req_target, _req.state().target.clone());
+    let cloned = clone_headers(&original_req_headers, req_target, original_request.state().target.clone());
 
     // build up the next outgoing URL (for the back-end)
     let next_url = format!("{}://{}{}{}",
-                           match _req.uri().scheme_part() {
+                           match original_request.uri().scheme_part() {
                                Some(scheme) => scheme.as_str(),
                                None => "http"
                            },
-                           _req.state().target.clone(),
-                           _req.path(),
-                           match _req.uri().query().as_ref() {
+                           original_request.state().target.clone(),
+                           original_request.path(),
+                           match original_request.uri().query().as_ref() {
                                Some(q) => format!("?{}", q),
                                None => "".to_string()
                            });
@@ -51,106 +49,36 @@ pub fn proxy_transform(_req: &HttpRequest<ProxyOpts>) -> Box<Future<Item=HttpRes
     // now choose how to handle it
     // if the client responds with a request we want to alter (such as HTML)
     // then we need to buffer the body into memory in order to apply regex's on the string
-    let next_target = _req.state().target.clone();
-    let next_host = _req.uri().clone();
-    let original_method = _req.method().as_str().clone();
+    let next_target = original_request.state().target.clone();
+    let next_host = original_request.uri().clone();
+    let original_method = original_request.method().as_str().clone();
 
     let mut outgoing = client::ClientRequest::build();
-    outgoing.method(_req.method().clone()).uri(next_url);
+    outgoing.method(original_request.method().clone()).uri(next_url);
 
     for (key, value) in cloned.iter() {
         outgoing.header(key.clone(), value.clone());
     }
 
     // ensure the 'host' header is re-written
-    outgoing.set_header(http::header::HOST, _req.state().target.clone());
+    outgoing.set_header(http::header::HOST, original_request.state().target.clone());
 
     // ensure the origin header is set
-    outgoing.set_header(http::header::ORIGIN, _req.state().target.clone());
+    outgoing.set_header(http::header::ORIGIN, original_request.state().target.clone());
 
+    let joined_cookie = original_req_headers.get_all(header::COOKIE).iter().map(|hdr| {
+        let s = str::from_utf8(hdr.as_bytes()).unwrap_or("");
+        s.to_string()
+    }).collect::<Vec<String>>().join("; ");
     outgoing.set_header(http::header::COOKIE, joined_cookie);
 
-    if original_method == "POST" {
-        let outgoing = _req.body()
-            .from_err()
-            .and_then(move |incoming_body| {
-                outgoing.body(incoming_body).unwrap().send().map_err(Error::from)
-                    .and_then(move |proxy_response| {
-                        let req_host = next_host.host().unwrap_or("");
-                        let req_port = next_host.port().unwrap_or(80);
-                        let req_target = format!("{}:{}", req_host, req_host);
-                        proxy_response.body()
-                            .from_err()
-                            .and_then(move |proxy_response_body| {
-                                Ok(create_outgoing(
-                                    &proxy_response.headers(),
-                                    next_target.to_string(),
-                                    req_target
-                                ).body(proxy_response_body))
-                            })
-                    })
-            });
-
-        Box::new(outgoing)
-    } else {
-        outgoing.finish().unwrap().send().map_err(Error::from)
-            .and_then(move |proxy_response| {
-
-//                println!("resp from proxy {:?}", &proxy_response);
-
-                // Should we rewrite this response?
-                // just check for the correct content-type header for now.
-                // This will need fleshing out to provide stricter checks
-                let rewrite_response = match proxy_response.headers().get(header::CONTENT_TYPE) {
-                    Some(t) => {
-                        match t.to_str().unwrap_or("") {
-                            "text/html" | "text/html; charset=UTF-8" => true,
-                            _ => false,
-                        }
-                    }
-                    _ => false
-                };
-
-                // If we decide to modify the response, we need to buffer the entire
-                // response into memory (text files only)
-                if rewrite_response {
-                    Either::A(
-                        proxy_response.body()
-                            .from_err()
-                            .and_then(move |body| {
-                                use std::str;
-
-                                // In here, we now have a ful buffered response body
-                                // so we can go ahead and apply URL replacements
-                                let req_host = next_host.host().unwrap_or("");
-                                let req_port = next_host.port().unwrap_or(80);
-                                let req_target = format!("{}:{}", req_host, req_host);
-                                let next_body = replace_host(
-                                    str::from_utf8(&body[..]).unwrap(),
-                                    &next_target,
-                                    req_host, req_port,
-                                );
-                                let next_body = replace_cookie_domain_on_page(&next_body, &next_target);
-                                let as_string = next_body.to_string();
-                                Ok(create_outgoing(&proxy_response.headers(), next_target.to_string(), req_target).body(as_string))
-                            })
-                    )
-                } else {
-                    let req_host = next_host.host().unwrap_or("");
-                    let req_port = next_host.port().unwrap_or(80);
-                    let req_target = format!("{}:{}", req_host, req_host);
-                    // If we get here, we decided not to re-write the response
-                    // so we just stream it back to the client
-                    Either::B(
-                        ok(create_outgoing(&proxy_response.headers(), next_target.to_string(), req_target).body(Body::Streaming(Box::new(proxy_response.payload().from_err()))))
-                    )
-                }
-            })
-            .responder()
+    match original_method {
+        "POST" => forward_request_with_body(original_request, outgoing),
+        _ => forward_request_without_body(original_request, outgoing)
     }
 }
 
-fn create_outgoing(resp_headers: &HeaderMap, target: String, replacer: String) -> dev::HttpResponseBuilder {
+pub fn create_outgoing(resp_headers: &HeaderMap, target: String, replacer: String) -> dev::HttpResponseBuilder {
     let mut outgoing = HttpResponse::Ok();
     let c = clone_headers(resp_headers, target, replacer);
     // Copy headers from backend response to main response

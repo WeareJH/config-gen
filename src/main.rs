@@ -19,6 +19,8 @@ mod test;
 mod headers;
 mod rewrites;
 mod options;
+mod with_body;
+mod without_body;
 use fns::proxy_transform;
 use options::ProxyOpts;
 use clap::App as ClapApp;
