@@ -11,7 +11,7 @@ extern crate clap;
 extern crate bytes;
 extern crate http;
 
-use actix_web::{middleware, server, App};
+use actix_web::{server, App};
 use openssl::ssl::{SslAcceptor, SslFiletype, SslMethod};
 
 mod fns;
@@ -36,7 +36,8 @@ fn main() {
 
     match get_host(matches.value_of("input").unwrap_or("")) {
         Ok(host) => {
-            let opts = ProxyOpts::new(host);
+            let opts = ProxyOpts::new(host)
+                .with_port(matches.value_of("port").unwrap_or("8080").parse().unwrap());
             run(opts);
         },
         Err(err) => println!("{}", err)

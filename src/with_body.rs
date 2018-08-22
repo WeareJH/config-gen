@@ -1,13 +1,18 @@
-use futures::{Future, Stream};
-use futures::future::{Either, ok};
+use futures::{Future};
 use actix_web::{
-    client, AsyncResponder, Body, Error, HttpMessage,
-    HttpRequest, HttpResponse, http, dev
+    Error, HttpMessage,
+    HttpRequest, HttpResponse
 };
 use options::ProxyOpts;
 use actix_web::client::ClientRequestBuilder;
 use fns::create_outgoing;
 
+///
+/// This case handles incoming POST requests
+/// that contain a body.
+///
+/// Note: This is not tested in any way with large uploads
+///
 pub fn forward_request_with_body(_req: &HttpRequest<ProxyOpts>, mut outgoing: ClientRequestBuilder) -> Box<Future<Item=HttpResponse, Error=Error>> {
     let next_target = _req.state().target.clone();
     let next_host = _req.uri().clone();

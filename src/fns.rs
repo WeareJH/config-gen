@@ -1,22 +1,13 @@
 use actix_web::{
-    client, AsyncResponder, Body, Error, HttpMessage,
+    client, Error, HttpMessage,
     HttpRequest, HttpResponse, http, dev
 };
-use actix::run;
 use actix_web::http::header;
-use futures::{Future, Stream};
-use futures::future::{Either, ok};
-use rewrites::replace_host;
+use futures::{Future};
 use options::ProxyOpts;
 use std::str;
 use actix_web::http::HeaderMap;
-use regex::Regex;
-use regex::Captures;
-use http::header::HeaderValue;
-use actix_web::client::ClientRequest;
-use actix_web::http::Cookie;
 use headers::clone_headers;
-use rewrites::{replace_cookie_domain_on_page, RewriteContext};
 use with_body::{forward_request_with_body};
 use without_body::forward_request_without_body;
 
@@ -94,7 +85,6 @@ mod tests {
     use actix_web::test;
     use mime::TEXT_HTML;
     use actix_web::http::Cookie;
-    use actix_web::http::Method;
 
     const STR: &str = "Hello world";
 
@@ -143,6 +133,9 @@ mod tests {
     #[test]
     fn test_forwards_post_requests() {
         use bytes::Bytes;
+        use actix_web::{
+            AsyncResponder
+        };
 
         let server = test::TestServer::new(|app| {
             app.handler(|req: &HttpRequest| {
