@@ -162,7 +162,7 @@ mod tests {
                         Ok(
                             HttpResponse::Ok()
                                 .header(header::CONTENT_TYPE, "application/json")
-                                .header(header::SET_COOKIE, "form_key=40je6TqaB2SDRBeV; expires=Thu, 09-Aug-2018 10:23:41 GMT; Max-Age=10800; path=/; domain=www.neomorganics.com")
+                                .header(header::SET_COOKIE, "form_key=40je6TqaB2SDRBeV; expires=Thu, 09-Aug-2018 10:23:41 GMT; Max-Age=10800; path=/; domain=www.acme.com")
                                 .body(format!("REC-->{}", str::from_utf8(&bytes[..]).unwrap().to_string()))
                         )
                     })
@@ -197,9 +197,9 @@ mod tests {
 
     #[test]
     fn test_strip_domain_from_cookies() {
-        let cookie_value = "form_key=40je6TqaB2SDRBeV; expires=Thu, 09-Aug-2018 10:23:41 GMT; Max-Age=10800; path=/; domain=www.neomorganics.com";
+        let cookie_value = "form_key=40je6TqaB2SDRBeV; expires=Thu, 09-Aug-2018 10:23:41 GMT; Max-Age=10800; path=/; domain=www.acme.com";
         let cookie = Cookie::build("form_key", "40je6TqaB2SDRBeV")
-            .domain("www.neomorganics.com")
+            .domain("www.acme.com")
             .finish();
         println!("{}", cookie);
         let mut parsed = Cookie::parse(cookie_value).unwrap();

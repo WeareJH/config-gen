@@ -1675,7 +1675,7 @@ var requirejs, require, define;
                     url = (url.charAt(0) === '/' || url.match(/^[\w\+\.\-]+:/) ? '' : config.baseUrl) + url;
                 }
 
-                return url + '?bs_track=' + encodeURIComponent(JSON.stringify({url, id: moduleName, ref: window.location.pathname}));
+                return url + '?bs_track=' + encodeURIComponent(JSON.stringify({url, id: moduleName, referrer: window.location.pathname}));
 
                 return config.urlArgs && !/^blob\:/.test(url) ?
                     url + config.urlArgs(moduleName, url) : url;

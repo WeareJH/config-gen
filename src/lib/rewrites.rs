@@ -107,7 +107,7 @@ mod tests {
                     "mage/cookies": {
                         "expires": null,
                         "path": "/",
-                        "domain": ".www.neomorganics.com",
+                        "domain": ".www.acme.com",
                         "secure": false,
                         "lifetime": "10800"
                     }
@@ -118,7 +118,7 @@ mod tests {
         let replaced = replace_cookie_domain_on_page(
             &bytes,
             &RewriteContext {
-                host_to_replace: String::from("www.neomorganics.com"),
+                host_to_replace: String::from("www.acme.com"),
                 target_host: String::from("127.0.0.1"),
                 target_port: 80,
             },

@@ -18,10 +18,16 @@ use clap::Arg;
 use openssl::ssl::{SslAcceptor, SslFiletype, SslMethod};
 
 use actix_web::http::Method;
+use actix_web::middleware::Finished;
+use actix_web::middleware::Middleware;
+use actix_web::middleware::Started;
 use actix_web::HttpRequest;
 use actix_web::HttpResponse;
 use bs::fns::proxy_transform;
 use bs::options::{get_host, ProxyOpts};
+use bs::preset_m2::ReqCatcher;
+use bs::preset_m2::M2Prest;
+use url::Url;
 
 fn main() {
     let matches = ClapApp::new("bs-rust")
@@ -60,32 +66,26 @@ fn run(opts: ProxyOpts) {
     let local_addr = format!("127.0.0.1:{}", opts.port);
 
     server::new(move || {
-        App::with_state(opts.clone())
-            //            .middleware(middleware::Logger::default())
+        let res = M2Prest::new();
 
-            // Serve a modified version of RequireJS
+        // add innitial state & middleware
+        let app = App::with_state(opts.clone());
+        let app = app.middleware(ReqCatcher::new());
 
-            // /static/{version}/frontend/{vendor}/{theme}/{locale}/requirejs/require.js"
-            .resource(
-                "/static/{version}/frontend/{vendor}/{theme}/{locale}/requirejs/require.js",
-                |r| r.method(Method::GET).f(with_param),
-            )
-            // Handle all proxy requests here
-            .default_resource(|r| r.f(proxy_transform))
+        // add any additional resource methods
+        let app = res.resources.into_iter().fold(app, |acc_app, (path, cb)| {
+            acc_app.resource(&path, move |r| r.method(Method::GET).f(cb))
+        });
+
+        // now add the default response type
+        let app = app.default_resource(|r| r.f(proxy_transform));
+
+        // finally return the App
+        app
     }).bind_ssl(&local_addr, builder)
     .unwrap()
     .start();
 
     println!("Started https server: https://{}", local_addr);
     let _ = sys.run();
-}
-
-/// handler with path parameters like `/user/{name}/`
-fn with_param(req: &HttpRequest<ProxyOpts>) -> HttpResponse {
-    println!("{:?}", req);
-    let bytes = include_str!("./static/requirejs.js");
-
-    HttpResponse::Ok()
-        .content_type("application/javascript")
-        .body(bytes)
 }

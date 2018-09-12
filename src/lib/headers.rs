@@ -38,17 +38,17 @@ mod tests {
         hm.append("none-dup", "form_key=123456".parse().unwrap());
         hm.append(
             "set-cookie",
-            "form_key=123456; domain=www.neom.com".parse().unwrap(),
+            "form_key=123456; domain=www.acme.com".parse().unwrap(),
         );
         hm.append(
             "set-cookie",
-            "key=value; domain=www.neom.com".parse().unwrap(),
+            "key=value; domain=www.acme.com".parse().unwrap(),
         );
 
         // cloned header map with domain re - written
         let cloned = clone_headers(
             &hm,
-            "www.neom.com".to_string(),
+            "www.acme.com".to_string(),
             "127.0.0.1:8080".to_string(),
         );
 
@@ -69,7 +69,7 @@ mod tests {
 
         let cloned = clone_headers(
             &hm,
-            "www.neom.com".to_string(),
+            "www.acme.com".to_string(),
             "127.0.0.1:8080".to_string(),
         );
         let expected = HeaderMap::new();
