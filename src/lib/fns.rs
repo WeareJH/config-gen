@@ -1,41 +1,45 @@
-use actix_web::{
-    client, Error, HttpMessage,
-    HttpRequest, HttpResponse, http, dev
-};
 use actix_web::http::header;
-use futures::{Future};
+use actix_web::http::HeaderMap;
+use actix_web::{client, dev, http, Error, HttpMessage, HttpRequest, HttpResponse};
+use futures::Future;
+use headers::clone_headers;
 use options::ProxyOpts;
 use std::str;
-use actix_web::http::HeaderMap;
-use headers::clone_headers;
-use with_body::{forward_request_with_body};
+use with_body::forward_request_with_body;
 use without_body::forward_request_without_body;
 
 ///
 /// This function will clone incoming requests
 /// and pass them onto a backend specified via the `target` field on [ProxyOpts]
 ///
-pub fn proxy_transform(original_request: &HttpRequest<ProxyOpts>) -> Box<Future<Item=HttpResponse, Error=Error>> {
-
+pub fn proxy_transform(
+    original_request: &HttpRequest<ProxyOpts>,
+) -> Box<Future<Item = HttpResponse, Error = Error>> {
     let original_req_headers = original_request.headers().clone();
     let next_host = original_request.uri().clone();
     let req_host = next_host.host().unwrap_or("");
     let req_port = next_host.port().unwrap_or(80);
     let req_target = format!("{}:{}", req_host, req_port);
-    let cloned = clone_headers(&original_req_headers, req_target, original_request.state().target.clone());
+    let cloned = clone_headers(
+        &original_req_headers,
+        req_target,
+        original_request.state().target.clone(),
+    );
 
     // build up the next outgoing URL (for the back-end)
-    let next_url = format!("{}://{}{}{}",
-                           match original_request.uri().scheme_part() {
-                               Some(scheme) => scheme.as_str(),
-                               None => "http"
-                           },
-                           original_request.state().target.clone(),
-                           original_request.path(),
-                           match original_request.uri().query().as_ref() {
-                               Some(q) => format!("?{}", q),
-                               None => "".to_string()
-                           });
+    let next_url = format!(
+        "{}://{}{}{}",
+        match original_request.uri().scheme_part() {
+            Some(scheme) => scheme.as_str(),
+            None => "http",
+        },
+        original_request.state().target.clone(),
+        original_request.path(),
+        match original_request.uri().query().as_ref() {
+            Some(q) => format!("?{}", q),
+            None => "".to_string(),
+        }
+    );
 
     // now choose how to handle it
     // if the client responds with a request we want to alter (such as HTML)
@@ -43,7 +47,9 @@ pub fn proxy_transform(original_request: &HttpRequest<ProxyOpts>) -> Box<Future<
     let original_method = original_request.method().as_str().clone();
 
     let mut outgoing = client::ClientRequest::build();
-    outgoing.method(original_request.method().clone()).uri(next_url);
+    outgoing
+        .method(original_request.method().clone())
+        .uri(next_url);
 
     for (key, value) in cloned.iter() {
         outgoing.header(key.clone(), value.clone());
@@ -53,21 +59,32 @@ pub fn proxy_transform(original_request: &HttpRequest<ProxyOpts>) -> Box<Future<
     outgoing.set_header(http::header::HOST, original_request.state().target.clone());
 
     // ensure the origin header is set
-    outgoing.set_header(http::header::ORIGIN, original_request.state().target.clone());
+    outgoing.set_header(
+        http::header::ORIGIN,
+        original_request.state().target.clone(),
+    );
 
-    let joined_cookie = original_req_headers.get_all(header::COOKIE).iter().map(|hdr| {
-        let s = str::from_utf8(hdr.as_bytes()).unwrap_or("");
-        s.to_string()
-    }).collect::<Vec<String>>().join("; ");
+    let joined_cookie = original_req_headers
+        .get_all(header::COOKIE)
+        .iter()
+        .map(|hdr| {
+            let s = str::from_utf8(hdr.as_bytes()).unwrap_or("");
+            s.to_string()
+        }).collect::<Vec<String>>()
+        .join("; ");
     outgoing.set_header(http::header::COOKIE, joined_cookie);
 
     match original_method {
         "POST" => forward_request_with_body(original_request, outgoing),
-        _ => forward_request_without_body(original_request, outgoing)
+        _ => forward_request_without_body(original_request, outgoing),
     }
 }
 
-pub fn create_outgoing(resp_headers: &HeaderMap, target: String, replacer: String) -> dev::HttpResponseBuilder {
+pub fn create_outgoing(
+    resp_headers: &HeaderMap,
+    target: String,
+    replacer: String,
+) -> dev::HttpResponseBuilder {
     let mut outgoing = HttpResponse::Ok();
     let c = clone_headers(resp_headers, target, replacer);
     // Copy headers from backend response to main response
@@ -80,9 +97,9 @@ pub fn create_outgoing(resp_headers: &HeaderMap, target: String, replacer: Strin
 #[cfg(test)]
 mod tests {
     use super::*;
+    use actix_web::http::Cookie;
     use actix_web::test;
     use mime::TEXT_HTML;
-    use actix_web::http::Cookie;
 
     const STR: &str = "Hello world";
 
@@ -104,15 +121,17 @@ mod tests {
         let mut proxy = test::TestServer::build_with_state(move || {
             let addr = srv_address.clone();
             ProxyOpts::new(addr.clone())
-        })
-            .start(move |app| {
-                app.handler(proxy_transform);
-            });
+        }).start(move |app| {
+            app.handler(proxy_transform);
+        });
 
-        let request = proxy.get()
+        let request = proxy
+            .get()
             .header(header::ACCEPT, "text/html")
-            .set_header(header::ORIGIN, format!("https://{}", proxy.addr().to_string()))
-            .uri(proxy.url("/"))
+            .set_header(
+                header::ORIGIN,
+                format!("https://{}", proxy.addr().to_string()),
+            ).uri(proxy.url("/"))
             .finish()
             .unwrap();
 
@@ -129,10 +148,8 @@ mod tests {
 
     #[test]
     fn test_forwards_post_requests() {
+        use actix_web::AsyncResponder;
         use bytes::Bytes;
-        use actix_web::{
-            AsyncResponder
-        };
 
         let server = test::TestServer::new(|app| {
             app.handler(|req: &HttpRequest| {
@@ -157,12 +174,12 @@ mod tests {
         let mut proxy = test::TestServer::build_with_state(move || {
             let addr = srv_address.clone();
             ProxyOpts::new(addr.clone())
-        })
-            .start(move |app| {
-                app.handler(proxy_transform);
-            });
+        }).start(move |app| {
+            app.handler(proxy_transform);
+        });
 
-        let request = proxy.post()
+        let request = proxy
+            .post()
             .uri(proxy.url("/"))
             .header(header::ACCEPT, "text/html")
             .body(r#"{"hello": "world"}"#)

@@ -1,5 +1,5 @@
-use regex::Regex;
 use regex::Captures;
+use regex::Regex;
 use url::Url;
 
 ///
@@ -21,11 +21,11 @@ use url::Url;
 pub struct RewriteContext {
     pub host_to_replace: String,
     pub target_host: String,
-    pub target_port: u16
+    pub target_port: u16,
 }
 
 impl RewriteContext {
-    pub fn new (host: impl Into<String>) -> RewriteContext {
+    pub fn new(host: impl Into<String>) -> RewriteContext {
         RewriteContext {
             host_to_replace: host.into(),
             ..Default::default()
@@ -59,12 +59,10 @@ pub fn replace_host(bytes: &str, context: &RewriteContext) -> String {
     let matcher = format!("https?:(?:\\\\)?/(?:\\\\)?/{}", context.host_to_replace);
     Regex::new(&matcher)
         .unwrap()
-        .replace_all(bytes,
-                     |item: &Captures|
-                         modify_url(item, &context).unwrap_or(String::from("")))
-        .to_string()
+        .replace_all(bytes, |item: &Captures| {
+            modify_url(item, &context).unwrap_or(String::from(""))
+        }).to_string()
 }
-
 
 ///
 /// Remove an on-page cookie domain (usually in JSON blobs with Magento)
@@ -117,11 +115,14 @@ mod tests {
             }
         </script>
     "#;
-        let replaced = replace_cookie_domain_on_page(&bytes, &RewriteContext {
-            host_to_replace: String::from("www.neomorganics.com"),
-            target_host: String::from("127.0.0.1"),
-            target_port: 80,
-        });
+        let replaced = replace_cookie_domain_on_page(
+            &bytes,
+            &RewriteContext {
+                host_to_replace: String::from("www.neomorganics.com"),
+                target_host: String::from("127.0.0.1"),
+                target_port: 80,
+            },
+        );
         println!("-> {}", replaced);
     }
 

@@ -1,39 +1,42 @@
 #![allow(unused_variables)]
 extern crate actix;
 extern crate actix_web;
+extern crate bs;
+extern crate bytes;
+extern crate clap;
 extern crate env_logger;
 extern crate futures;
-extern crate openssl;
-extern crate url;
-extern crate regex;
-extern crate mime;
-extern crate clap;
-extern crate bytes;
 extern crate http;
-extern crate bs;
+extern crate mime;
+extern crate openssl;
+extern crate regex;
+extern crate url;
 
 use actix_web::{server, App};
-use openssl::ssl::{SslAcceptor, SslFiletype, SslMethod};
 use clap::App as ClapApp;
 use clap::Arg;
+use openssl::ssl::{SslAcceptor, SslFiletype, SslMethod};
 
 use bs::fns::proxy_transform;
 use bs::options::{get_host, ProxyOpts};
 
 fn main() {
-
     let matches = ClapApp::new("bs-rust")
         .arg(Arg::with_name("input").required(true))
-        .arg(Arg::with_name("port").short("p").long("port").takes_value(true))
-        .get_matches();
+        .arg(
+            Arg::with_name("port")
+                .short("p")
+                .long("port")
+                .takes_value(true),
+        ).get_matches();
 
     match get_host(matches.value_of("input").unwrap_or("")) {
         Ok(host) => {
             let opts = ProxyOpts::new(host)
                 .with_port(matches.value_of("port").unwrap_or("8080").parse().unwrap());
             run(opts);
-        },
-        Err(err) => println!("{}", err)
+        }
+        Err(err) => println!("{}", err),
     }
 }
 
@@ -55,11 +58,11 @@ fn run(opts: ProxyOpts) {
 
     server::new(move || {
         App::with_state(opts.clone())
-//            .middleware(middleware::Logger::default())
+            //            .middleware(middleware::Logger::default())
             .default_resource(|r| r.f(proxy_transform))
     }).bind_ssl(&local_addr, builder)
-        .unwrap()
-        .start();
+    .unwrap()
+    .start();
 
     println!("Started https server: {}", local_addr);
     let _ = sys.run();

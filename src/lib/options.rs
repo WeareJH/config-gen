@@ -1,5 +1,5 @@
-use url::Url;
 use std::fmt;
+use url::Url;
 
 #[derive(Clone, Debug)]
 pub struct ProxyOpts {
@@ -24,7 +24,7 @@ impl Default for ProxyOpts {
     fn default() -> Self {
         ProxyOpts {
             target: String::new(),
-            port: 8080
+            port: 8080,
         }
     }
 }
@@ -41,7 +41,7 @@ pub fn get_host(url: &str) -> Result<String, ConfigError> {
 #[derive(Debug)]
 pub enum ConfigError {
     UrlInvalid,
-    UrlInvalidHost
+    UrlInvalidHost,
 }
 
 impl fmt::Display for ConfigError {

@@ -1,6 +1,6 @@
+use actix_web::http::Cookie;
 use actix_web::http::HeaderMap;
 use http::header::HeaderValue;
-use actix_web::http::Cookie;
 use regex::Regex;
 
 pub fn clone_headers(headers: &HeaderMap, target: String, replacer: String) -> HeaderMap {
@@ -14,8 +14,8 @@ pub fn clone_headers(headers: &HeaderMap, target: String, replacer: String) -> H
                 let mut c = Cookie::parse_encoded(strs).unwrap();
                 c.set_domain("");
                 c.to_string()
-            },
-            _ => strs.to_string()
+            }
+            _ => strs.to_string(),
         };
 
         let next = regex.replace(&next_string, replacer.as_str());
@@ -32,11 +32,21 @@ mod tests {
     pub fn test_clone_headers() {
         let mut hm = HeaderMap::new();
         hm.append("none-dup", "form_key=123456".parse().unwrap());
-        hm.append("set-cookie", "form_key=123456; domain=www.neom.com".parse().unwrap());
-        hm.append("set-cookie", "key=value; domain=www.neom.com".parse().unwrap());
+        hm.append(
+            "set-cookie",
+            "form_key=123456; domain=www.neom.com".parse().unwrap(),
+        );
+        hm.append(
+            "set-cookie",
+            "key=value; domain=www.neom.com".parse().unwrap(),
+        );
 
         // cloned header map with domain re - written
-        let cloned = clone_headers(&hm, "www.neom.com".to_string(), "127.0.0.1:8080".to_string());
+        let cloned = clone_headers(
+            &hm,
+            "www.neom.com".to_string(),
+            "127.0.0.1:8080".to_string(),
+        );
 
         // expected header map
         let mut expected = HeaderMap::new();
@@ -53,7 +63,11 @@ mod tests {
         hm.append("cookie", "form_key=123456".parse().unwrap());
         hm.append("cookie", "shane=human".parse().unwrap());
 
-        let cloned = clone_headers(&hm, "www.neom.com".to_string(), "127.0.0.1:8080".to_string());
+        let cloned = clone_headers(
+            &hm,
+            "www.neom.com".to_string(),
+            "127.0.0.1:8080".to_string(),
+        );
         let expected = HeaderMap::new();
 
         assert_eq!(expected, cloned);

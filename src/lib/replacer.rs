@@ -26,7 +26,9 @@ impl Replacer for Subject {
     type Output = String;
 
     fn apply(self, opts: &Self::Options, items: Vec<Self::Item>) -> Self::Output {
-        items.iter().fold(self.0, |acc, item_fn| item_fn(&acc, &opts))
+        items
+            .iter()
+            .fold(self.0, |acc, item_fn| item_fn(&acc, &opts))
     }
 }
 
@@ -38,7 +40,7 @@ mod tests {
     #[test]
     fn test_subject_replacer() {
         let s = Subject::new(r#"<a href="https://acme.m2/path">Click</a>"#);
-        let ctx = RewriteContext{
+        let ctx = RewriteContext {
             host_to_replace: String::from("acme.m2"),
             target_host: String::from("127.0.0.1"),
             target_port: 8080,
@@ -49,8 +51,6 @@ mod tests {
                 .replace_all(input, opts.target_host.as_str())
                 .to_string()
         }
-        let _updated = s.apply(&ctx, vec![
-            replacer
-        ]);
+        let _updated = s.apply(&ctx, vec![replacer]);
     }
 }
