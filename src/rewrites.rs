@@ -3,9 +3,9 @@ use regex::Captures;
 use std::borrow::Cow;
 use url::Url;
 
-pub struct RewriteContext<'a> {
-    pub host_to_replace: &'a str,
-    pub target_host: &'a str,
+pub struct RewriteContext {
+    pub host_to_replace: String,
+    pub target_host: String,
     pub target_port: u16
 }
 
@@ -20,20 +20,22 @@ pub struct RewriteContext<'a> {
 /// assert_eq!(expected, replace_host(bytes, "www.acme.com", "127.0.0.1:8000"));
 /// ```
 ///
-pub fn replace_host<'a>(bytes: &'a str, context: &RewriteContext<'a>) -> Cow<'a, str> {
+pub fn replace_host(bytes: &str, context: &RewriteContext) -> String {
     let matcher = format!("https?:(?:\\\\)?/(?:\\\\)?/{}", context.host_to_replace);
     Regex::new(&matcher)
         .unwrap()
         .replace_all(bytes,
                      |item: &Captures|
-                         modify_url(item, context.target_host, context.target_port).unwrap_or(String::from("")))
+                         modify_url(item, &context.target_host, context.target_port).unwrap_or(String::from("")))
+        .to_string()
 }
 
-pub fn replace_cookie_domain_on_page<'a>(bytes: &'a str, context: &RewriteContext<'a>) -> Cow<'a, str> {
+pub fn replace_cookie_domain_on_page(bytes: &str, context: &RewriteContext) -> String {
     let matcher = format!(r#""domain": ".{}","#, context.host_to_replace);
     Regex::new(&matcher)
         .unwrap()
         .replace_all(bytes, "")
+        .to_string()
 }
 
 #[test]
@@ -54,8 +56,8 @@ fn test_replace_cookie_domain_on_page() {
         </script>
     "#;
     let replaced = replace_cookie_domain_on_page(&bytes, &RewriteContext{
-        host_to_replace: "www.neomorganics.com",
-        target_host: "127.0.0.1",
+        host_to_replace: String::from("www.neomorganics.com"),
+        target_host: String::from("127.0.0.1"),
         target_port: 80,
     });
     println!("-> {}", replaced);
@@ -65,12 +67,12 @@ fn test_replace_cookie_domain_on_page() {
 // note: this can fail at multiple points
 // and if it does we just want a None and we move on
 // there's no benefit to handling the error in any case here
-fn modify_url(caps: &Captures, host: &str, port: u16) -> Option<String> {
+fn modify_url(caps: &Captures, host: &String, port: u16) -> Option<String> {
     let first_match = caps.iter().nth(0)?;
     let match_item = first_match?;
     let mut url = Url::parse(match_item.as_str()).ok()?;
 
-    url.set_host(Some(host)).ok()?;
+    url.set_host(Some(&host)).ok()?;
     url.set_port(Some(port)).ok()?;
     let mut as_string = url.to_string();
     as_string.pop();
@@ -88,8 +90,8 @@ fn test_rewrites() {
     <a href=\"http://127.0.0.1:8080\">Home</a>
     ";
     let context = RewriteContext{
-        host_to_replace: "www.acme.com",
-        target_host: "127.0.0.1",
+        host_to_replace: String::from("www.acme.com"),
+        target_host: String::from("127.0.0.1"),
         target_port: 8080,
     };
     let actual = replace_host(bytes, &context);
@@ -104,8 +106,8 @@ fn test_rewrites_within_escaped_json() {
     {"url": "https://127.0.0.1:8080\/checkout\/cart\/\"}
     "#;
     let context = RewriteContext{
-        host_to_replace: "www.acme.com",
-        target_host: "127.0.0.1",
+        host_to_replace: String::from("www.acme.com"),
+        target_host: String::from("127.0.0.1"),
         target_port: 8080,
     };
     let actual = replace_host(bytes, &context);

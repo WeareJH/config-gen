@@ -20,6 +20,7 @@ mod headers;
 mod rewrites;
 mod options;
 mod with_body;
+mod replacer;
 mod without_body;
 use fns::proxy_transform;
 use options::ProxyOpts;

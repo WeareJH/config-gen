@@ -8,11 +8,12 @@ use options::ProxyOpts;
 use actix_web::http::header;
 use actix_web::client::ClientRequestBuilder;
 use fns::create_outgoing;
-use rewrites::{replace_cookie_domain_on_page, RewriteContext};
-use rewrites::replace_host;
+use rewrites::{replace_host, replace_cookie_domain_on_page, RewriteContext};
 use actix_web::http::HeaderMap;
 use actix_web::http::uri::Uri;
 use actix_web::client::ClientResponse;
+use std::borrow::Cow;
+use replacer::{Subject, Replacer};
 
 ///
 /// Process regular GET requests where we don't need to consider
@@ -25,7 +26,7 @@ pub fn forward_request_without_body(incoming_request: &HttpRequest<ProxyOpts>, m
     outgoing.finish().unwrap().send().map_err(Error::from)
         .and_then(move |proxy_response| {
             // If we decide to modify the response, we need to buffer the entire
-            // response into memory (text files only)
+            // response into memory (text content only)
             if should_rewrite_body(proxy_response.headers()) {
                 Either::A(response_from_rewrite(proxy_response, req_uri, target_domain))
             } else {
@@ -70,17 +71,17 @@ fn response_from_rewrite(proxy_response: ClientResponse, req_uri: Uri, target_do
             let req_port = next_host.port().unwrap_or(80);
             let req_target = format!("{}:{}", req_host, req_host);
             let context = RewriteContext {
-                host_to_replace: &target_domain,
-                target_host: req_host,
+                host_to_replace: target_domain.clone(),
+                target_host: String::from(req_host),
                 target_port: req_port
             };
-            let next_body = replace_host(
-                str::from_utf8(&body[..]).unwrap(),
-                &context
-            );
-            let next_body = replace_cookie_domain_on_page(&next_body, &context);
-            let as_string = next_body.to_string();
-            Ok(create_outgoing(&proxy_response.headers(), target_domain.to_string(), req_target).body(as_string))
+            let body_content = str::from_utf8(&body[..]).unwrap();
+            let subject = Subject::new(body_content)
+                .apply(&context, vec![
+                    replace_host,
+                    replace_cookie_domain_on_page
+                ]);
+            Ok(create_outgoing(&proxy_response.headers(), target_domain.to_string(), req_target).body(subject))
         });
 
     Box::new(output)
