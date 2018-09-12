@@ -85,6 +85,7 @@ mod tests {
     use actix_web::test;
     use mime::TEXT_HTML;
     use actix_web::http::Cookie;
+    use bytes::Bytes;
 
     const STR: &str = "Hello world";
 

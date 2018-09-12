@@ -1,14 +1,6 @@
 use url::Url;
 use std::fmt;
 
-///
-/// # Examples
-///
-/// ```
-/// let opts = ProxyOpts::new("example.com");
-/// assert_eq!(opts.target, "example.com".to_string());
-/// ```
-///
 #[derive(Clone, Debug)]
 pub struct ProxyOpts {
     pub target: String,

@@ -3,6 +3,14 @@ name = "bs_rust"
 version = "0.1.0"
 authors = ["Shane Osbourne <shane.osbourne8@gmail.com>"]
 
+[[bin]]
+name = "bsrs"
+path = "src/main.rs"
+
+[lib]
+name = "bs"
+path = "src/lib/bs.rs"
+
 [dependencies]
 env_logger = "0.5"
 futures = "0.1"

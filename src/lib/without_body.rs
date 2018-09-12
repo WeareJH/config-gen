@@ -4,15 +4,16 @@ use actix_web::{
     AsyncResponder, Body, Error, HttpMessage,
     HttpRequest, HttpResponse
 };
-use options::ProxyOpts;
 use actix_web::http::header;
 use actix_web::client::ClientRequestBuilder;
-use fns::create_outgoing;
-use rewrites::{replace_host, replace_cookie_domain_on_page, RewriteContext};
 use actix_web::http::HeaderMap;
 use actix_web::http::uri::Uri;
 use actix_web::client::ClientResponse;
 use std::borrow::Cow;
+
+use fns::create_outgoing;
+use rewrites::{replace_host, replace_cookie_domain_on_page, RewriteContext};
+use options::ProxyOpts;
 use replacer::{Subject, Replacer};
 
 ///

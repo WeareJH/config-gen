@@ -3,10 +3,33 @@ use regex::Captures;
 use std::borrow::Cow;
 use url::Url;
 
+///
+/// Examples
+///
+/// ```
+/// let opts = RewriteContext::new("www.acme.com")
+///     .with_target("127.0.0.1", 8000);
+/// ```
+///
+#[derive(Default)]
 pub struct RewriteContext {
     pub host_to_replace: String,
     pub target_host: String,
     pub target_port: u16
+}
+
+impl RewriteContext {
+    pub fn new (host: impl Into<String>) -> RewriteContext {
+        RewriteContext {
+            host_to_replace: host.into(),
+            ..Default::default()
+        }
+    }
+    pub fn with_target(mut self, host: impl Into<String>, port: u16) -> RewriteContext {
+        self.target_host = host.into();
+        self.target_port = port;
+        self
+    }
 }
 
 ///
@@ -15,9 +38,15 @@ pub struct RewriteContext {
 /// # Examples
 ///
 /// ```rust
+/// use bs::rewrites::*;
+///
 /// let bytes = "<a href=\"https://www.acme.com\">Home</a>";
 /// let expected = "<a href=\"https://127.0.0.1:8000\">Home</a>";
-/// assert_eq!(expected, replace_host(bytes, "www.acme.com", "127.0.0.1:8000"));
+///
+/// let opts = RewriteContext::new("www.acme.com")
+///     .with_target("127.0.0.1", 8000);
+///
+/// assert_eq!(expected, replace_host(bytes, &opts));
 /// ```
 ///
 pub fn replace_host(bytes: &str, context: &RewriteContext) -> String {

@@ -10,23 +10,15 @@ extern crate mime;
 extern crate clap;
 extern crate bytes;
 extern crate http;
+extern crate bs;
 
 use actix_web::{server, App};
 use openssl::ssl::{SslAcceptor, SslFiletype, SslMethod};
-
-mod fns;
-mod test;
-mod headers;
-mod rewrites;
-mod options;
-mod with_body;
-mod replacer;
-mod without_body;
-use fns::proxy_transform;
-use options::ProxyOpts;
 use clap::App as ClapApp;
 use clap::Arg;
-use options::get_host;
+
+use bs::fns::proxy_transform;
+use bs::options::{get_host, ProxyOpts};
 
 fn main() {
 
