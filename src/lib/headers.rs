@@ -3,6 +3,10 @@ use actix_web::http::HeaderMap;
 use http::header::HeaderValue;
 use regex::Regex;
 
+///
+/// Clone a HeaderMap, whilst removing the domain
+/// from any set-cookies
+///
 pub fn clone_headers(headers: &HeaderMap, target: String, replacer: String) -> HeaderMap {
     let regex = Regex::new(target.as_str()).unwrap();
     let mut hm = HeaderMap::new();

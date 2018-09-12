@@ -17,6 +17,9 @@ use clap::App as ClapApp;
 use clap::Arg;
 use openssl::ssl::{SslAcceptor, SslFiletype, SslMethod};
 
+use actix_web::http::Method;
+use actix_web::HttpRequest;
+use actix_web::HttpResponse;
 use bs::fns::proxy_transform;
 use bs::options::{get_host, ProxyOpts};
 
@@ -41,7 +44,7 @@ fn main() {
 }
 
 fn run(opts: ProxyOpts) {
-    ::std::env::set_var("RUST_LOG", "actix_web=info");
+    ::std::env::set_var("RUST_LOG", "actix_web=warn");
     env_logger::init();
 
     let sys = actix::System::new("https-proxy");
@@ -59,11 +62,30 @@ fn run(opts: ProxyOpts) {
     server::new(move || {
         App::with_state(opts.clone())
             //            .middleware(middleware::Logger::default())
+
+            // Serve a modified version of RequireJS
+
+            // /static/{version}/frontend/{vendor}/{theme}/{locale}/requirejs/require.js"
+            .resource(
+                "/static/{version}/frontend/{vendor}/{theme}/{locale}/requirejs/require.js",
+                |r| r.method(Method::GET).f(with_param),
+            )
+            // Handle all proxy requests here
             .default_resource(|r| r.f(proxy_transform))
     }).bind_ssl(&local_addr, builder)
     .unwrap()
     .start();
 
-    println!("Started https server: {}", local_addr);
+    println!("Started https server: https://{}", local_addr);
     let _ = sys.run();
+}
+
+/// handler with path parameters like `/user/{name}/`
+fn with_param(req: &HttpRequest<ProxyOpts>) -> HttpResponse {
+    println!("{:?}", req);
+    let bytes = include_str!("./static/requirejs.js");
+
+    HttpResponse::Ok()
+        .content_type("application/javascript")
+        .body(bytes)
 }

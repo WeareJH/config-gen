@@ -64,6 +64,7 @@ pub fn proxy_transform(
         original_request.state().target.clone(),
     );
 
+    // combine all cookie headers into a single one
     let joined_cookie = original_req_headers
         .get_all(header::COOKIE)
         .iter()
