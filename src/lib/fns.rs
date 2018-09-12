@@ -40,8 +40,6 @@ pub fn proxy_transform(original_request: &HttpRequest<ProxyOpts>) -> Box<Future<
     // now choose how to handle it
     // if the client responds with a request we want to alter (such as HTML)
     // then we need to buffer the body into memory in order to apply regex's on the string
-    let next_target = original_request.state().target.clone();
-    let next_host = original_request.uri().clone();
     let original_method = original_request.method().as_str().clone();
 
     let mut outgoing = client::ClientRequest::build();
@@ -85,7 +83,6 @@ mod tests {
     use actix_web::test;
     use mime::TEXT_HTML;
     use actix_web::http::Cookie;
-    use bytes::Bytes;
 
     const STR: &str = "Hello world";
 
@@ -103,7 +100,6 @@ mod tests {
         });
 
         let srv_address = server.addr().to_string();
-        let srv_address2 = server.addr().to_string();
 
         let mut proxy = test::TestServer::build_with_state(move || {
             let addr = srv_address.clone();
@@ -157,7 +153,6 @@ mod tests {
         });
 
         let srv_address = server.addr().to_string();
-        let srv_address2 = server.addr().to_string();
 
         let mut proxy = test::TestServer::build_with_state(move || {
             let addr = srv_address.clone();

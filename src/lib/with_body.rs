@@ -23,7 +23,7 @@ pub fn forward_request_with_body(_req: &HttpRequest<ProxyOpts>, mut outgoing: Cl
                 .and_then(move |proxy_response| {
                     let req_host = next_host.host().unwrap_or("");
                     let req_port = next_host.port().unwrap_or(80);
-                    let req_target = format!("{}:{}", req_host, req_host);
+                    let req_target = format!("{}:{}", req_host, req_port);
                     proxy_response.body()
                         .from_err()
                         .and_then(move |proxy_response_body| {

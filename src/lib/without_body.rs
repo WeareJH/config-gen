@@ -9,7 +9,6 @@ use actix_web::client::ClientRequestBuilder;
 use actix_web::http::HeaderMap;
 use actix_web::http::uri::Uri;
 use actix_web::client::ClientResponse;
-use std::borrow::Cow;
 
 use fns::create_outgoing;
 use rewrites::{replace_host, replace_cookie_domain_on_page, RewriteContext};
@@ -44,7 +43,7 @@ fn pass_through_response(proxy_response: ClientResponse, req_uri: Uri, target_do
 
     let req_host = req_uri.host().unwrap_or("");
     let req_port = req_uri.port().unwrap_or(80);
-    let req_target = format!("{}:{}", req_host, req_host);
+    let req_target = format!("{}:{}", req_host, req_port);
 
     let output = ok(
         create_outgoing(&proxy_response.headers(), target_domain.to_string(), req_target)

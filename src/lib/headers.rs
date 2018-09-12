@@ -25,33 +25,37 @@ pub fn clone_headers(headers: &HeaderMap, target: String, replacer: String) -> H
     hm
 }
 
-#[test]
-pub fn test_clone_headers() {
-    let mut hm = HeaderMap::new();
-    hm.append("none-dup", "form_key=123456".parse().unwrap());
-    hm.append("set-cookie", "form_key=123456; domain=www.neom.com".parse().unwrap());
-    hm.append("set-cookie", "key=value; domain=www.neom.com".parse().unwrap());
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    pub fn test_clone_headers() {
+        let mut hm = HeaderMap::new();
+        hm.append("none-dup", "form_key=123456".parse().unwrap());
+        hm.append("set-cookie", "form_key=123456; domain=www.neom.com".parse().unwrap());
+        hm.append("set-cookie", "key=value; domain=www.neom.com".parse().unwrap());
 
-    // cloned header map with domain re - written
-    let cloned = clone_headers(&hm, "www.neom.com".to_string(), "127.0.0.1:8080".to_string());
+        // cloned header map with domain re - written
+        let cloned = clone_headers(&hm, "www.neom.com".to_string(), "127.0.0.1:8080".to_string());
 
-    // expected header map
-    let mut expected = HeaderMap::new();
-    expected.append("none-dup", "form_key=123456".parse().unwrap());
-    expected.append("set-cookie", "form_key=123456; Domain=".parse().unwrap());
-    expected.append("set-cookie", "key=value; Domain=".parse().unwrap());
+        // expected header map
+        let mut expected = HeaderMap::new();
+        expected.append("none-dup", "form_key=123456".parse().unwrap());
+        expected.append("set-cookie", "form_key=123456; Domain=".parse().unwrap());
+        expected.append("set-cookie", "key=value; Domain=".parse().unwrap());
 
-    assert_eq!(expected, cloned);
-}
+        assert_eq!(expected, cloned);
+    }
 
-#[test]
-pub fn test_ignores_cookie() {
-    let mut hm = HeaderMap::new();
-    hm.append("cookie", "form_key=123456".parse().unwrap());
-    hm.append("cookie", "shane=human".parse().unwrap());
+    #[test]
+    pub fn test_ignores_cookie() {
+        let mut hm = HeaderMap::new();
+        hm.append("cookie", "form_key=123456".parse().unwrap());
+        hm.append("cookie", "shane=human".parse().unwrap());
 
-    let cloned = clone_headers(&hm, "www.neom.com".to_string(), "127.0.0.1:8080".to_string());
-    let expected = HeaderMap::new();
+        let cloned = clone_headers(&hm, "www.neom.com".to_string(), "127.0.0.1:8080".to_string());
+        let expected = HeaderMap::new();
 
-    assert_eq!(expected, cloned);
+        assert_eq!(expected, cloned);
+    }
 }

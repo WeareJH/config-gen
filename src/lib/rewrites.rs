@@ -1,14 +1,20 @@
 use regex::Regex;
 use regex::Captures;
-use std::borrow::Cow;
 use url::Url;
 
 ///
-/// Examples
+/// A struct containing values that may be of
+/// interest to a replacer function
 ///
-/// ```
+/// # Examples
+///
+/// ```rust
+/// use bs::rewrites::*;
+///
 /// let opts = RewriteContext::new("www.acme.com")
 ///     .with_target("127.0.0.1", 8000);
+///
+/// assert_eq!(opts.host_to_replace, String::from("www.acme.com"))
 /// ```
 ///
 #[derive(Default)]
@@ -55,10 +61,14 @@ pub fn replace_host(bytes: &str, context: &RewriteContext) -> String {
         .unwrap()
         .replace_all(bytes,
                      |item: &Captures|
-                         modify_url(item, &context.target_host, context.target_port).unwrap_or(String::from("")))
+                         modify_url(item, &context).unwrap_or(String::from("")))
         .to_string()
 }
 
+
+///
+/// Remove an on-page cookie domain (usually in JSON blobs with Magento)
+///
 pub fn replace_cookie_domain_on_page(bytes: &str, context: &RewriteContext) -> String {
     let matcher = format!(r#""domain": ".{}","#, context.host_to_replace);
     Regex::new(&matcher)
@@ -67,9 +77,32 @@ pub fn replace_cookie_domain_on_page(bytes: &str, context: &RewriteContext) -> S
         .to_string()
 }
 
-#[test]
-fn test_replace_cookie_domain_on_page() {
-    let bytes = r#"
+///
+/// Attempt to modify a URL,
+///
+/// note: this can fail at multiple points
+/// and if it does we just want a None and we move on
+/// there's no benefit to handling the error in any case here
+///
+pub fn modify_url(caps: &Captures, context: &RewriteContext) -> Option<String> {
+    let first_match = caps.iter().nth(0)?;
+    let match_item = first_match?;
+    let mut url = Url::parse(match_item.as_str()).ok()?;
+
+    url.set_host(Some(&context.target_host)).ok()?;
+    url.set_port(Some(context.target_port)).ok()?;
+    let mut as_string = url.to_string();
+    as_string.pop();
+    Some(as_string)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_replace_cookie_domain_on_page() {
+        let bytes = r#"
         <script type="text/x-magento-init">
             {
                 "*": {
@@ -84,62 +117,48 @@ fn test_replace_cookie_domain_on_page() {
             }
         </script>
     "#;
-    let replaced = replace_cookie_domain_on_page(&bytes, &RewriteContext{
-        host_to_replace: String::from("www.neomorganics.com"),
-        target_host: String::from("127.0.0.1"),
-        target_port: 80,
-    });
-    println!("-> {}", replaced);
-}
+        let replaced = replace_cookie_domain_on_page(&bytes, &RewriteContext {
+            host_to_replace: String::from("www.neomorganics.com"),
+            target_host: String::from("127.0.0.1"),
+            target_port: 80,
+        });
+        println!("-> {}", replaced);
+    }
 
-// Attempt to modify the matched URL,
-// note: this can fail at multiple points
-// and if it does we just want a None and we move on
-// there's no benefit to handling the error in any case here
-fn modify_url(caps: &Captures, host: &String, port: u16) -> Option<String> {
-    let first_match = caps.iter().nth(0)?;
-    let match_item = first_match?;
-    let mut url = Url::parse(match_item.as_str()).ok()?;
-
-    url.set_host(Some(&host)).ok()?;
-    url.set_port(Some(port)).ok()?;
-    let mut as_string = url.to_string();
-    as_string.pop();
-    Some(as_string)
-}
-
-#[test]
-fn test_rewrites() {
-    let bytes = "
+    #[test]
+    fn test_rewrites() {
+        let bytes = "
     <a href=\"https://www.acme.com\">Home</a>
     <a href=\"http://www.acme.com\">Home</a>
     ";
-    let expected = "
+        let expected = "
     <a href=\"https://127.0.0.1:8080\">Home</a>
     <a href=\"http://127.0.0.1:8080\">Home</a>
     ";
-    let context = RewriteContext{
-        host_to_replace: String::from("www.acme.com"),
-        target_host: String::from("127.0.0.1"),
-        target_port: 8080,
-    };
-    let actual = replace_host(bytes, &context);
-    assert_eq!(actual, expected);
-}
-#[test]
-fn test_rewrites_within_escaped_json() {
-    let bytes = r#"
+        let context = RewriteContext {
+            host_to_replace: String::from("www.acme.com"),
+            target_host: String::from("127.0.0.1"),
+            target_port: 8080,
+        };
+        let actual = replace_host(bytes, &context);
+        assert_eq!(actual, expected);
+    }
+
+    #[test]
+    fn test_rewrites_within_escaped_json() {
+        let bytes = r#"
     {"url": "https:\/\/www.acme.com\/checkout\/cart\/\"}
     "#;
-    let expected = r#"
+        let expected = r#"
     {"url": "https://127.0.0.1:8080\/checkout\/cart\/\"}
     "#;
-    let context = RewriteContext{
-        host_to_replace: String::from("www.acme.com"),
-        target_host: String::from("127.0.0.1"),
-        target_port: 8080,
-    };
-    let actual = replace_host(bytes, &context);
-    println!("actual={}", actual);
-    assert_eq!(actual, expected);
+        let context = RewriteContext {
+            host_to_replace: String::from("www.acme.com"),
+            target_host: String::from("127.0.0.1"),
+            target_port: 8080,
+        };
+        let actual = replace_host(bytes, &context);
+        println!("actual={}", actual);
+        assert_eq!(actual, expected);
+    }
 }

@@ -1,5 +1,4 @@
 use rewrites::RewriteContext;
-use regex::Regex;
 
 ///
 /// # Examples
@@ -31,23 +30,27 @@ impl Replacer for Subject {
     }
 }
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use regex::Regex;
 
-#[test]
-fn test_subject_replacer() {
-    let s = Subject::new(r#"<a href="https://acme.m2/path">Click</a>"#);
-    let ctx = RewriteContext{
-        host_to_replace: String::from("acme.m2"),
-        target_host: String::from("127.0.0.1"),
-        target_port: 8080,
-    };
-    fn replacer(input: &str, opts: &RewriteContext) -> String {
-        Regex::new(&opts.host_to_replace)
-            .unwrap()
-            .replace_all(input, opts.target_host.as_str())
-            .to_string()
+    #[test]
+    fn test_subject_replacer() {
+        let s = Subject::new(r#"<a href="https://acme.m2/path">Click</a>"#);
+        let ctx = RewriteContext{
+            host_to_replace: String::from("acme.m2"),
+            target_host: String::from("127.0.0.1"),
+            target_port: 8080,
+        };
+        fn replacer(input: &str, opts: &RewriteContext) -> String {
+            Regex::new(&opts.host_to_replace)
+                .unwrap()
+                .replace_all(input, opts.target_host.as_str())
+                .to_string()
+        }
+        let _updated = s.apply(&ctx, vec![
+            replacer
+        ]);
     }
-    let updated = s.apply(&ctx, vec![
-        replacer
-    ]);
-    println!("{}", updated);
 }
