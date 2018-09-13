@@ -65,17 +65,6 @@ pub fn replace_host(bytes: &str, context: &RewriteContext) -> String {
 }
 
 ///
-/// Remove an on-page cookie domain (usually in JSON blobs with Magento)
-///
-pub fn replace_cookie_domain_on_page(bytes: &str, context: &RewriteContext) -> String {
-    let matcher = format!(r#""domain": ".{}","#, context.host_to_replace);
-    Regex::new(&matcher)
-        .unwrap()
-        .replace_all(bytes, "")
-        .to_string()
-}
-
-///
 /// Attempt to modify a URL,
 ///
 /// note: this can fail at multiple points
@@ -97,34 +86,6 @@ pub fn modify_url(caps: &Captures, context: &RewriteContext) -> Option<String> {
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn test_replace_cookie_domain_on_page() {
-        let bytes = r#"
-        <script type="text/x-magento-init">
-            {
-                "*": {
-                    "mage/cookies": {
-                        "expires": null,
-                        "path": "/",
-                        "domain": ".www.acme.com",
-                        "secure": false,
-                        "lifetime": "10800"
-                    }
-                }
-            }
-        </script>
-    "#;
-        let replaced = replace_cookie_domain_on_page(
-            &bytes,
-            &RewriteContext {
-                host_to_replace: String::from("www.acme.com"),
-                target_host: String::from("127.0.0.1"),
-                target_port: 80,
-            },
-        );
-        println!("-> {}", replaced);
-    }
 
     #[test]
     fn test_rewrites() {

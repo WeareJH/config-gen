@@ -1,19 +1,20 @@
-use actix_web::middleware::Finished;
-use actix_web::middleware::Middleware;
+use actix_web::App;
 use actix_web::HttpRequest;
 use actix_web::HttpResponse;
 use options::ProxyOpts;
+use rewrites::RewriteContext;
 
 pub trait Preset<T> {
-    fn resources(&self) -> Vec<(String, fn(&HttpRequest<T>) -> HttpResponse)> {
-        vec![]
-    }
-    fn before_middleware(&self) -> Vec<Box<Middleware<T>>> {
-        vec![]
-    }
-    fn after_middleware(&self) -> Vec<Box<Middleware<T>>> {
+    fn enhance(&self, app: App<T>) -> App<T>;
+    fn rewrites(&self) -> RewriteFns {
         vec![]
     }
 }
+pub type RewriteFns = Vec<fn(&str, &RewriteContext) -> String>;
+pub type Resource = (String, fn(&HttpRequest<AppState>) -> HttpResponse);
 
-pub type Resource = (String, fn(&HttpRequest<ProxyOpts>) -> HttpResponse);
+#[derive(Default)]
+pub struct AppState {
+    pub opts: ProxyOpts,
+    pub rewrites: RewriteFns,
+}

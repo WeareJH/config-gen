@@ -3,6 +3,7 @@ use actix_web::{Error, HttpMessage, HttpRequest, HttpResponse};
 use fns::create_outgoing;
 use futures::Future;
 use options::ProxyOpts;
+use preset::AppState;
 
 ///
 /// This case handles incoming POST requests
@@ -11,10 +12,10 @@ use options::ProxyOpts;
 /// Note: This is not tested in any way with large uploads
 ///
 pub fn forward_request_with_body(
-    _req: &HttpRequest<ProxyOpts>,
+    _req: &HttpRequest<AppState>,
     mut outgoing: ClientRequestBuilder,
 ) -> Box<Future<Item = HttpResponse, Error = Error>> {
-    let next_target = _req.state().target.clone();
+    let next_target = _req.state().opts.target.clone();
     let next_host = _req.uri().clone();
     let output = _req.body().from_err().and_then(move |incoming_body| {
         outgoing

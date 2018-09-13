@@ -9,19 +9,22 @@ use futures::{Future, Stream};
 
 use fns::create_outgoing;
 use options::ProxyOpts;
+use preset::AppState;
+use preset::RewriteFns;
 use replacer::{Replacer, Subject};
-use rewrites::{replace_cookie_domain_on_page, replace_host, RewriteContext};
+use rewrites::{replace_host, RewriteContext};
 
 ///
 /// Process regular GET requests where we don't need to consider
 /// the request BODY
 ///
 pub fn forward_request_without_body(
-    incoming_request: &HttpRequest<ProxyOpts>,
+    incoming_request: &HttpRequest<AppState>,
     mut outgoing: ClientRequestBuilder,
 ) -> Box<Future<Item = HttpResponse, Error = Error>> {
-    let target_domain = incoming_request.state().target.clone();
+    let target_domain = incoming_request.state().opts.target.clone();
     let req_uri = incoming_request.uri().clone();
+    let rewrites = incoming_request.state().rewrites.clone();
 
     outgoing
         .finish()
@@ -36,6 +39,7 @@ pub fn forward_request_without_body(
                     proxy_response,
                     req_uri,
                     target_domain,
+                    rewrites,
                 ))
             } else {
                 // If we get here, we decided not to re-write the response
@@ -78,6 +82,7 @@ fn response_from_rewrite(
     proxy_response: ClientResponse,
     req_uri: Uri,
     target_domain: String,
+    rewrites: RewriteFns,
 ) -> Box<Future<Item = HttpResponse, Error = Error>> {
     let next_host = req_uri.clone();
 
@@ -94,9 +99,16 @@ fn response_from_rewrite(
             target_host: String::from(req_host),
             target_port: req_port,
         };
+
+        // Convert the response body to a str
         let body_content = str::from_utf8(&body[..]).unwrap();
-        let subject = Subject::new(body_content)
-            .apply(&context, vec![replace_host, replace_cookie_domain_on_page]);
+
+        // Append any rewrites from presets
+        let mut fns: RewriteFns = vec![replace_host];
+        fns.extend(rewrites);
+
+        let subject = Subject::new(body_content).apply(&context, fns);
+
         Ok(create_outgoing(
             &proxy_response.headers(),
             target_domain.to_string(),

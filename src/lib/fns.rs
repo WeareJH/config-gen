@@ -4,6 +4,7 @@ use actix_web::{client, dev, http, Error, HttpMessage, HttpRequest, HttpResponse
 use futures::Future;
 use headers::clone_headers;
 use options::ProxyOpts;
+use preset::AppState;
 use std::str;
 use with_body::forward_request_with_body;
 use without_body::forward_request_without_body;
@@ -13,7 +14,7 @@ use without_body::forward_request_without_body;
 /// and pass them onto a backend specified via the `target` field on [ProxyOpts]
 ///
 pub fn proxy_transform(
-    original_request: &HttpRequest<ProxyOpts>,
+    original_request: &HttpRequest<AppState>,
 ) -> Box<Future<Item = HttpResponse, Error = Error>> {
     let original_req_headers = original_request.headers().clone();
     let next_host = original_request.uri().clone();
@@ -23,7 +24,7 @@ pub fn proxy_transform(
     let cloned = clone_headers(
         &original_req_headers,
         req_target,
-        original_request.state().target.clone(),
+        original_request.state().opts.target.clone(),
     );
 
     // build up the next outgoing URL (for the back-end)
@@ -33,7 +34,7 @@ pub fn proxy_transform(
             Some(scheme) => scheme.as_str(),
             None => "http",
         },
-        original_request.state().target.clone(),
+        original_request.state().opts.target.clone(),
         original_request.path(),
         match original_request.uri().query().as_ref() {
             Some(q) => format!("?{}", q),
@@ -56,12 +57,15 @@ pub fn proxy_transform(
     }
 
     // ensure the 'host' header is re-written
-    outgoing.set_header(http::header::HOST, original_request.state().target.clone());
+    outgoing.set_header(
+        http::header::HOST,
+        original_request.state().opts.target.clone(),
+    );
 
     // ensure the origin header is set
     outgoing.set_header(
         http::header::ORIGIN,
-        original_request.state().target.clone(),
+        original_request.state().opts.target.clone(),
     );
 
     // combine all cookie headers into a single one
@@ -121,7 +125,11 @@ mod tests {
 
         let mut proxy = test::TestServer::build_with_state(move || {
             let addr = srv_address.clone();
-            ProxyOpts::new(addr.clone())
+            let opts = ProxyOpts::new(addr.clone());
+            AppState {
+                opts,
+                ..Default::default()
+            }
         }).start(move |app| {
             app.handler(proxy_transform);
         });
@@ -174,7 +182,11 @@ mod tests {
 
         let mut proxy = test::TestServer::build_with_state(move || {
             let addr = srv_address.clone();
-            ProxyOpts::new(addr.clone())
+            let opts = ProxyOpts::new(addr.clone());
+            AppState {
+                opts,
+                ..Default::default()
+            }
         }).start(move |app| {
             app.handler(proxy_transform);
         });

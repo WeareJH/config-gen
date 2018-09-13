@@ -17,18 +17,11 @@ use clap::App as ClapApp;
 use clap::Arg;
 use openssl::ssl::{SslAcceptor, SslFiletype, SslMethod};
 
-use actix_web::http::Method;
-use actix_web::middleware::Finished;
-use actix_web::middleware::Middleware;
-use actix_web::middleware::Started;
-use actix_web::HttpRequest;
-use actix_web::HttpResponse;
 use bs::fns::proxy_transform;
 use bs::options::{get_host, ProxyOpts};
+use bs::preset::AppState;
 use bs::preset::Preset;
 use bs::preset_m2::M2Preset;
-use bs::preset_m2::ReqCatcher;
-use url::Url;
 
 fn main() {
     let matches = ClapApp::new("bs-rust")
@@ -69,22 +62,19 @@ fn run(opts: ProxyOpts) {
     server::new(move || {
         let preset = M2Preset::new();
 
-        // add innitial state & middleware
-        let app = App::with_state(opts.clone());
+        // AppState is available to all Middleware
+        // and response handlers
+        let app_state = AppState {
+            opts: opts.clone(),
+            rewrites: preset.rewrites(),
+        };
 
-        // Add any "before" middleware
-        let app = preset
-            .before_middleware()
-            .into_iter()
-            .fold(app, |acc_app, mw| acc_app.middleware(mw));
+        // add initial state & middleware
+        let app = App::with_state(app_state);
 
-        // add any additional resource methods
-        let app = preset
-            .resources()
-            .into_iter()
-            .fold(app, |acc_app, (path, cb)| {
-                acc_app.resource(&path, move |r| r.method(Method::GET).f(cb))
-            });
+        // Enhance the app by allowing this preset to add middleware
+        // or resources
+        let app = preset.enhance(app);
 
         // now add the default response type
         let app = app.default_resource(|r| r.f(proxy_transform));
