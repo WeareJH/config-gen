@@ -6,7 +6,41 @@ use actix_web::middleware::Middleware;
 use actix_web::HttpRequest;
 use actix_web::HttpResponse;
 use options::ProxyOpts;
+use preset::Preset;
 use url::Url;
+use preset::Resource;
+
+///
+/// The Magento 2 Preset
+///
+/// This contains some common middlewares and
+/// resources specific to dealing with Magento 2 Websites
+///
+pub struct M2Preset {
+
+}
+
+impl M2Preset {
+    pub fn new() -> M2Preset {
+        M2Preset {}
+    }
+}
+
+impl Preset<ProxyOpts> for M2Preset {
+    fn resources(&self) -> Vec<Resource> {
+        vec![(
+            String::from(
+                "/static/{version}/frontend/{vendor}/{theme}/{locale}/requirejs/require.js",
+            ),
+            serve_instrumented_require_js,
+        )]
+    }
+    fn before_middleware(&self) -> Vec<Box<Middleware<ProxyOpts>>> {
+        vec![
+            Box::new(ReqCatcher::new())
+        ]
+    }
+}
 
 #[derive(Debug, Deserialize, PartialEq)]
 pub(crate) struct Data {
@@ -46,31 +80,10 @@ impl ReqCatcher {
     }
 }
 
-impl<S> Middleware<S> for ReqCatcher {
-    fn finish(&self, req: &HttpRequest<S>, resp: &HttpResponse) -> Finished {
+impl Middleware<ProxyOpts> for ReqCatcher {
+    fn finish(&self, req: &HttpRequest<ProxyOpts>, resp: &HttpResponse) -> Finished {
         println!("{:?}", extract_data(&req.uri().to_string()));
         Finished::Done
-    }
-}
-
-pub struct M2Prest {
-    pub resources: Vec<(String, fn(&HttpRequest<ProxyOpts>) -> HttpResponse)>,
-    pub middleware: Vec<Box<Middleware<ProxyOpts>>>
-}
-
-impl M2Prest {
-    pub fn new() -> M2Prest {
-        M2Prest {
-            resources: vec![(
-                String::from(
-                    "/static/{version}/frontend/{vendor}/{theme}/{locale}/requirejs/require.js",
-                ),
-                serve_instrumented_require_js,
-            )],
-            middleware: vec![
-                Box::new(ReqCatcher::new())
-            ]
-        }
     }
 }
 

@@ -25,8 +25,9 @@ use actix_web::HttpRequest;
 use actix_web::HttpResponse;
 use bs::fns::proxy_transform;
 use bs::options::{get_host, ProxyOpts};
+use bs::preset::Preset;
+use bs::preset_m2::M2Preset;
 use bs::preset_m2::ReqCatcher;
-use bs::preset_m2::M2Prest;
 use url::Url;
 
 fn main() {
@@ -66,16 +67,24 @@ fn run(opts: ProxyOpts) {
     let local_addr = format!("127.0.0.1:{}", opts.port);
 
     server::new(move || {
-        let res = M2Prest::new();
+        let preset = M2Preset::new();
 
         // add innitial state & middleware
         let app = App::with_state(opts.clone());
-        let app = app.middleware(ReqCatcher::new());
+
+        // Add any "before" middleware
+        let app = preset
+            .before_middleware()
+            .into_iter()
+            .fold(app, |acc_app, mw| acc_app.middleware(mw));
 
         // add any additional resource methods
-        let app = res.resources.into_iter().fold(app, |acc_app, (path, cb)| {
-            acc_app.resource(&path, move |r| r.method(Method::GET).f(cb))
-        });
+        let app = preset
+            .resources()
+            .into_iter()
+            .fold(app, |acc_app, (path, cb)| {
+                acc_app.resource(&path, move |r| r.method(Method::GET).f(cb))
+            });
 
         // now add the default response type
         let app = app.default_resource(|r| r.f(proxy_transform));
