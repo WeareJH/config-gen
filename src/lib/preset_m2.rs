@@ -36,8 +36,7 @@ impl M2Preset {
         })
     }
 
-    pub fn add_before_middleware(&self, app: App<AppState>) -> App<AppState>
-    {
+    pub fn add_before_middleware(&self, app: App<AppState>) -> App<AppState> {
         app.middleware(ReqCatcher::new())
     }
 }
@@ -48,7 +47,6 @@ impl M2Preset {
 ///
 impl Preset<AppState> for M2Preset {
     fn enhance(&self, app: App<AppState>) -> App<AppState> {
-//        let app = self.add_middleware(app);
         self.add_resources(app)
     }
     fn rewrites(&self) -> RewriteFns {
@@ -60,7 +58,7 @@ impl Preset<AppState> for M2Preset {
 /// This is the data type that is comes from each request
 /// in a query param
 ///
-#[derive(Debug, Deserialize, PartialEq)]
+#[derive(Debug, Deserialize, PartialEq, Default, Clone)]
 pub struct ModuleData {
     pub url: String,
     pub id: String,
@@ -113,12 +111,28 @@ impl ReqCatcher {
     }
 }
 
+///
+/// The ReqCatcher Middleware is responsible for checking if URLs
+/// contain the bs_track payload, deserialising it's data and
+/// then adding that data to the global vec of module data
+///
 impl Middleware<AppState> for ReqCatcher {
+    /// This middleware handler will extract JSON blobs from URLS
     fn finish(&self, req: &HttpRequest<AppState>, _resp: &HttpResponse) -> Finished {
-        let md: Option<ModuleData> = extract_data(&req.uri().to_string());
-        md.map(|module_data| {
-            println!("module_id: {}", module_data.id);
+        // try to convert some JSON into a valid ModuleData
+        let module_data: Option<ModuleData> = extract_data(&req.uri().to_string());
+
+        // We only care if we got a Some(ModuleData)
+        // so we can use .map to unwrap & ignore the none;
+        module_data.map(move |module_data| {
+            // Get a reference to the Mutex wrapper
+            let modules = &req.state().module_items;
+            // acquire lock on the data so we can mutate it
+            let mut data = modules.lock().unwrap();
+            // append the module_data
+            data.push(module_data);
         });
+
         Finished::Done
     }
 }

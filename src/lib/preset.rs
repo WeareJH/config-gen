@@ -2,7 +2,9 @@ use actix_web::App;
 use actix_web::HttpRequest;
 use actix_web::HttpResponse;
 use options::ProxyOpts;
+use preset_m2::ModuleData;
 use rewrites::RewriteContext;
+use std::sync::Mutex;
 
 pub trait Preset<T> {
     fn enhance(&self, app: App<T>) -> App<T>;
@@ -27,4 +29,5 @@ pub type Resource = (String, fn(&HttpRequest<AppState>) -> HttpResponse);
 pub struct AppState {
     pub opts: ProxyOpts,
     pub rewrites: RewriteFns,
+    pub module_items: Mutex<Vec<ModuleData>>,
 }

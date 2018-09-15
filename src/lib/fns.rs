@@ -104,6 +104,7 @@ mod tests {
     use actix_web::http::Cookie;
     use actix_web::test;
     use mime::TEXT_HTML;
+    use options::ProxyOpts;
 
     const STR: &str = "Hello world";
 

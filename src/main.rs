@@ -23,6 +23,9 @@ use bs::options::{get_host, ProxyOpts};
 use bs::preset::AppState;
 use bs::preset::Preset;
 use bs::preset_m2::M2Preset;
+use std::cell::Cell;
+use std::sync::Arc;
+use std::sync::Mutex;
 
 fn main() {
     let matches = ClapApp::new("bs-rust")
@@ -68,6 +71,7 @@ fn run(opts: ProxyOpts) {
         let app_state = AppState {
             opts: opts.clone(),
             rewrites: preset.rewrites(),
+            module_items: Mutex::new(vec![]),
         };
 
         // add initial state & middleware
