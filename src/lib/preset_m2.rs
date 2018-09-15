@@ -7,7 +7,6 @@ use actix_web::middleware::Middleware;
 use actix_web::App;
 use actix_web::HttpRequest;
 use actix_web::HttpResponse;
-use options::ProxyOpts;
 use preset::AppState;
 use preset::Preset;
 use preset::RewriteFns;
@@ -37,7 +36,7 @@ impl M2Preset {
         })
     }
 
-    pub fn add_before_middleware(&self, mut app: App<AppState>) -> App<AppState>
+    pub fn add_before_middleware(&self, app: App<AppState>) -> App<AppState>
     {
         app.middleware(ReqCatcher::new())
     }
@@ -125,7 +124,7 @@ impl Middleware<AppState> for ReqCatcher {
 }
 
 /// handler with path parameters like `/user/{name}/`
-fn serve_instrumented_require_js(req: &HttpRequest<AppState>) -> HttpResponse {
+fn serve_instrumented_require_js(_req: &HttpRequest<AppState>) -> HttpResponse {
     let bytes = include_str!("./static/requirejs.js");
 
     HttpResponse::Ok()

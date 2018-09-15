@@ -2,7 +2,6 @@ use actix_web::client::ClientRequestBuilder;
 use actix_web::{Error, HttpMessage, HttpRequest, HttpResponse};
 use fns::create_outgoing;
 use futures::Future;
-use options::ProxyOpts;
 use preset::AppState;
 
 ///

@@ -8,7 +8,6 @@ use futures::future::{ok, Either};
 use futures::{Future, Stream};
 
 use fns::create_outgoing;
-use options::ProxyOpts;
 use preset::AppState;
 use preset::RewriteFns;
 use replacer::{Replacer, Subject};

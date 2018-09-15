@@ -3,7 +3,6 @@ use actix_web::http::HeaderMap;
 use actix_web::{client, dev, http, Error, HttpMessage, HttpRequest, HttpResponse};
 use futures::Future;
 use headers::clone_headers;
-use options::ProxyOpts;
 use preset::AppState;
 use std::str;
 use with_body::forward_request_with_body;
