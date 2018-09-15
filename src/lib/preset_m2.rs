@@ -36,6 +36,11 @@ impl M2Preset {
             acc_app.resource(&path, move |r| r.method(Method::GET).f(cb))
         })
     }
+
+    pub fn add_before_middleware(&self, mut app: App<AppState>) -> App<AppState>
+    {
+        app.middleware(ReqCatcher::new())
+    }
 }
 
 ///
@@ -44,7 +49,7 @@ impl M2Preset {
 ///
 impl Preset<AppState> for M2Preset {
     fn enhance(&self, app: App<AppState>) -> App<AppState> {
-        let app = app.middleware(ReqCatcher::new());
+//        let app = self.add_middleware(app);
         self.add_resources(app)
     }
     fn rewrites(&self) -> RewriteFns {

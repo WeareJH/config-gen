@@ -1,4 +1,5 @@
 #![allow(unused_variables)]
+#![allow(unused_imports)]
 extern crate actix;
 extern crate actix_web;
 extern crate bs;
@@ -71,6 +72,8 @@ fn run(opts: ProxyOpts) {
 
         // add initial state & middleware
         let app = App::with_state(app_state);
+
+        let app = preset.add_before_middleware(app);
 
         // Enhance the app by allowing this preset to add middleware
         // or resources

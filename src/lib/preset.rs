@@ -9,7 +9,17 @@ pub trait Preset<T> {
     fn rewrites(&self) -> RewriteFns {
         vec![]
     }
+    fn add_before_middleware(&self, app: App<T>) -> App<T> {
+        app
+    }
+    fn add_after_middleware(&self, app: App<T>) -> App<T> {
+        app
+    }
 }
+
+///
+/// The following are just aliases
+///
 pub type RewriteFns = Vec<fn(&str, &RewriteContext) -> String>;
 pub type Resource = (String, fn(&HttpRequest<AppState>) -> HttpResponse);
 
