@@ -88,7 +88,8 @@ fn run(opts: ProxyOpts) {
 
         // finally return the App
         app
-    }).bind_ssl(&local_addr, builder)
+    }).workers(1)
+    .bind_ssl(&local_addr, builder)
     .unwrap()
     .start();
 

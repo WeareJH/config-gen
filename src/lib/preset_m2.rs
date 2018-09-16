@@ -9,11 +9,13 @@ use actix_web::HttpRequest;
 use actix_web::HttpResponse;
 use preset::AppState;
 use preset::Preset;
+use preset::ResourceDef;
 use preset::RewriteFns;
+use preset_m2_config_gen;
+use preset_m2_config_gen::ConfigItems;
 use regex::Regex;
 use rewrites::RewriteContext;
 use url::Url;
-use preset::ResourceDef;
 
 ///
 /// The Magento 2 Preset
@@ -28,13 +30,14 @@ impl M2Preset {
         M2Preset {}
     }
     pub fn add_resources(&self, app: App<AppState>) -> App<AppState> {
-        let resources: Vec<ResourceDef> = vec![(
-            "/static/{version}/frontend/{vendor}/{theme}/{locale}/requirejs/require.js",
-            serve_instrumented_require_js,
-        ), (
-            "/__bs/reqs",
-            serve_req_dump
-        )];
+        let resources: Vec<ResourceDef> = vec![
+            (
+                "/static/{version}/frontend/{vendor}/{theme}/{locale}/requirejs/require.js",
+                serve_instrumented_require_js,
+            ),
+            ("/__bs/reqs.json", serve_req_dump_json),
+            ("/__bs/config.json", serve_config_dump_json),
+        ];
         resources.into_iter().fold(app, |acc_app, (path, cb)| {
             acc_app.resource(&path, move |r| r.method(Method::GET).f(cb))
         })
@@ -133,8 +136,17 @@ impl Middleware<AppState> for ReqCatcher {
             let modules = &req.state().module_items;
             // acquire lock on the data so we can mutate it
             let mut data = modules.lock().unwrap();
-            // append the module_data
-            data.push(module_data);
+            let mut exists = false;
+
+            for d in data.iter() {
+                if d == &module_data {
+                    exists = true;
+                }
+            }
+
+            if !exists {
+                data.push(module_data);
+            }
         });
 
         Finished::Done
@@ -151,25 +163,47 @@ fn serve_instrumented_require_js(_req: &HttpRequest<AppState>) -> HttpResponse {
 }
 
 /// serve a JSON dump of the current accumulated
-fn serve_req_dump(req: &HttpRequest<AppState>) -> HttpResponse {
-
+fn serve_req_dump_json(req: &HttpRequest<AppState>) -> HttpResponse {
     let modules = &req.state().module_items;
     let modules = modules.lock().unwrap();
-    let mut output: Vec<ModuleData> = vec![];
 
-    for m in modules.iter() {
-        output.push(m.clone());
-    }
+    let j = serde_json::to_string_pretty(&*modules).unwrap();
 
-    println!("GOT REQ = {}", output.len());
+    HttpResponse::Ok().content_type("application/json").body(j)
+}
 
-    drop(modules);
+/// serve a JSON dump of the current accumulated config
+fn serve_config_dump_json(req: &HttpRequest<AppState>) -> HttpResponse {
+    let modules = &req.state().module_items;
+    let mut modules = modules.lock().unwrap();
+    let c: ConfigItems = r#"
+    [
+      {
+        "name": "requirejs/require",
+        "urls": [
+          "/",
+          "/nav/new-in.html"
+        ],
+        "children": [
+          {
+            "name": "bundles/product",
+            "urls": [
+              "/wellbeing-essential-oil-blends-collection.html"
+            ],
+            "children": [
 
-    let j = serde_json::to_string(&output).unwrap();
+            ]
+          }
+        ]
+      }
+    ]
+    "#.into();
+
+    let config_as_string = preset_m2_config_gen::run(modules.to_vec(), c);
 
     HttpResponse::Ok()
         .content_type("application/json")
-        .body(j)
+        .body(config_as_string)
 }
 
 ///
