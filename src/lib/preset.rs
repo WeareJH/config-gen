@@ -23,7 +23,7 @@ pub trait Preset<T> {
 /// The following are just aliases
 ///
 pub type RewriteFns = Vec<fn(&str, &RewriteContext) -> String>;
-pub type Resource = (String, fn(&HttpRequest<AppState>) -> HttpResponse);
+pub type ResourceDef<'a> = (&'a str, fn(&HttpRequest<AppState>) -> HttpResponse);
 
 #[derive(Default)]
 pub struct AppState {

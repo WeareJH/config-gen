@@ -48,7 +48,7 @@ fn main() {
 }
 
 fn run(opts: ProxyOpts) {
-    ::std::env::set_var("RUST_LOG", "actix_web=warn");
+    ::std::env::set_var("RUST_LOG", "actix_web=info");
     env_logger::init();
 
     let sys = actix::System::new("https-proxy");

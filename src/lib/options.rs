@@ -1,7 +1,7 @@
 use std::fmt;
 use url::Url;
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize)]
 pub struct ProxyOpts {
     pub target: String,
     pub port: u16,

@@ -17,7 +17,7 @@ use url::Url;
 /// assert_eq!(opts.host_to_replace, String::from("www.acme.com"))
 /// ```
 ///
-#[derive(Default)]
+#[derive(Default, Serialize)]
 pub struct RewriteContext {
     pub host_to_replace: String,
     pub target_host: String,

@@ -13,6 +13,7 @@ use preset::RewriteFns;
 use regex::Regex;
 use rewrites::RewriteContext;
 use url::Url;
+use preset::ResourceDef;
 
 ///
 /// The Magento 2 Preset
@@ -27,9 +28,12 @@ impl M2Preset {
         M2Preset {}
     }
     pub fn add_resources(&self, app: App<AppState>) -> App<AppState> {
-        let resources = vec![(
+        let resources: Vec<ResourceDef> = vec![(
             "/static/{version}/frontend/{vendor}/{theme}/{locale}/requirejs/require.js",
             serve_instrumented_require_js,
+        ), (
+            "/__bs/reqs",
+            serve_req_dump
         )];
         resources.into_iter().fold(app, |acc_app, (path, cb)| {
             acc_app.resource(&path, move |r| r.method(Method::GET).f(cb))
@@ -58,7 +62,7 @@ impl Preset<AppState> for M2Preset {
 /// This is the data type that is comes from each request
 /// in a query param
 ///
-#[derive(Debug, Deserialize, PartialEq, Default, Clone)]
+#[derive(Debug, Serialize, Deserialize, PartialEq, Default, Clone)]
 pub struct ModuleData {
     pub url: String,
     pub id: String,
@@ -144,6 +148,28 @@ fn serve_instrumented_require_js(_req: &HttpRequest<AppState>) -> HttpResponse {
     HttpResponse::Ok()
         .content_type("application/javascript")
         .body(bytes)
+}
+
+/// serve a JSON dump of the current accumulated
+fn serve_req_dump(req: &HttpRequest<AppState>) -> HttpResponse {
+
+    let modules = &req.state().module_items;
+    let modules = modules.lock().unwrap();
+    let mut output: Vec<ModuleData> = vec![];
+
+    for m in modules.iter() {
+        output.push(m.clone());
+    }
+
+    println!("GOT REQ = {}", output.len());
+
+    drop(modules);
+
+    let j = serde_json::to_string(&output).unwrap();
+
+    HttpResponse::Ok()
+        .content_type("application/json")
+        .body(j)
 }
 
 ///
