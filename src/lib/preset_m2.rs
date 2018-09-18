@@ -16,6 +16,7 @@ use preset_m2_config_gen::ConfigItems;
 use regex::Regex;
 use rewrites::RewriteContext;
 use url::Url;
+use preset_m2_opts::M2PresetOptions;
 
 ///
 /// The Magento 2 Preset
@@ -23,11 +24,15 @@ use url::Url;
 /// This contains some common middlewares and
 /// resources specific to dealing with Magento 2 Websites
 ///
-pub struct M2Preset {}
+pub struct M2Preset {
+    options: M2PresetOptions
+}
 
 impl M2Preset {
-    pub fn new() -> M2Preset {
-        M2Preset {}
+    pub fn new(options: M2PresetOptions) -> M2Preset {
+        M2Preset {
+            options,
+        }
     }
     pub fn add_resources(&self, app: App<AppState>) -> App<AppState> {
         let resources: Vec<ResourceDef> = vec![

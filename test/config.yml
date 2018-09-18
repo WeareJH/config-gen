@@ -1,0 +1,4 @@
+presets:
+  - name: m2
+    options:
+      require_path: "/static/{version}/frontend/{vendor}/{theme}/{locale}/requirejs/require.js"
