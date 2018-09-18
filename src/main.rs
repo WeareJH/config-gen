@@ -1,5 +1,4 @@
 #![allow(unused_variables)]
-#![allow(unused_imports)]
 extern crate actix;
 extern crate actix_web;
 extern crate bs;
@@ -14,31 +13,21 @@ extern crate regex;
 extern crate url;
 extern crate serde_yaml;
 
-#[macro_use]
-extern crate serde_derive;
-
 use actix_web::{server, App};
-use clap::App as ClapApp;
-use clap::Arg;
 use openssl::ssl::{SslAcceptor, SslFiletype, SslMethod};
 
 use bs::fns::proxy_transform;
-use bs::options::{get_host, ProxyOpts};
+use bs::options::{ProxyOpts};
 use bs::preset::AppState;
 use bs::preset::Preset;
 use bs::preset_m2::M2Preset;
 use bs::config::get_program_config_from_string;
-use std::cell::Cell;
-use std::sync::Arc;
 use std::sync::Mutex;
-use bs::options::ConfigError;
-use bs::preset::RewriteFns;
 use bs::preset_m2_opts::M2PresetOptions;
 use std::collections::HashMap;
 use openssl::ssl::SslAcceptorBuilder;
 use bs::config::get_program_config_from_cli;
 use bs::config::ProgramStartError;
-use bs::config::PresetConfig;
 
 fn main() {
     match get_program_config_from_cli().and_then(run_with_opts) {
