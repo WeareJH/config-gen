@@ -38,6 +38,7 @@ use std::collections::HashMap;
 use openssl::ssl::SslAcceptorBuilder;
 use bs::config::get_program_config_from_cli;
 use bs::config::ProgramStartError;
+use bs::config::PresetConfig;
 
 fn main() {
     match get_program_config_from_cli().and_then(run_with_opts) {
@@ -96,7 +97,7 @@ fn run_with_opts(opts: ProxyOpts) -> Result<(), ProgramStartError> {
         // Use a HashMap + index lookup for anything
         // that implements Preset
         //
-        let mut presets: HashMap<usize, Box<Preset<AppState>>> = HashMap::new();
+        let mut presets_map: HashMap<usize, Box<Preset<AppState>>> = HashMap::new();
 
         //
         // Loop through any presets and create an instance
@@ -111,7 +112,7 @@ fn run_with_opts(opts: ProxyOpts) -> Result<(), ProgramStartError> {
                     let cloned_opts = p.options.clone();
                     let preset_opts: M2PresetOptions = cloned_opts.into();
                     let preset = M2Preset::new(preset_opts);
-                    presets.insert(index, Box::new(preset));
+                    presets_map.insert(index, Box::new(preset));
                 }
                 _ => println!("unsupported")
             }
@@ -125,7 +126,7 @@ fn run_with_opts(opts: ProxyOpts) -> Result<(), ProgramStartError> {
 
         // Add rewrites phase
         for (index, _) in program_config.presets.iter().enumerate() {
-            let subject_preset = presets.get(&index).expect("Missing preset");
+            let subject_preset = presets_map.get(&index).expect("Missing preset");
             app_state.rewrites.extend(subject_preset.rewrites());
         }
 
@@ -133,13 +134,13 @@ fn run_with_opts(opts: ProxyOpts) -> Result<(), ProgramStartError> {
 
         // before middlewares
         for (index, _) in program_config.presets.iter().enumerate() {
-            let subject_preset = presets.get(&index).expect("Missing preset");
+            let subject_preset = presets_map.get(&index).expect("Missing preset");
             app = subject_preset.add_before_middleware(app);
         }
 
         // enhances
         for (index, _) in program_config.presets.iter().enumerate() {
-            let subject_preset = presets.get(&index).expect("Missing preset");
+            let subject_preset = presets_map.get(&index).expect("Missing preset");
             app = subject_preset.enhance(app);
         }
 
