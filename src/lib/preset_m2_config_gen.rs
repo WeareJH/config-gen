@@ -90,19 +90,14 @@ pub struct ConfigItem {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct ConfigItems {
-    items: Vec<ConfigItem>,
+    pub items: Vec<ConfigItem>,
 }
 
 impl<'a> Into<ConfigItems> for &'a str {
     fn into(self) -> ConfigItems {
-        let items: Vec<ConfigItem> = serde_json::from_str(&self).unwrap_or(vec![]);
+        let items: Vec<ConfigItem> = serde_yaml::from_str(&self).unwrap_or(vec![]);
         ConfigItems { items }
     }
-}
-
-pub fn parse_config(s: &str) -> Result<ConfigItems, serde_json::Error> {
-    let items: Vec<ConfigItem> = serde_json::from_str(&s)?;
-    Ok(ConfigItems { items })
 }
 
 #[test]

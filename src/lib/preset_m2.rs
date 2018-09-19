@@ -181,25 +181,15 @@ fn serve_config_dump_json(req: &HttpRequest<AppState>) -> HttpResponse {
     let modules = &req.state().module_items;
     let mut modules = modules.lock().unwrap();
     let c: ConfigItems = r#"
-    [
-      {
-        "name": "requirejs/require",
-        "urls": [
-          "/",
-          "/shop-by-category/support-tights.html"
-        ],
-        "children": [
-          {
-            "name": "bundles/product",
-            "urls": [
-              "/activa-class-2-support-tights.html"
-            ],
-            "children": [
-            ]
-          }
-        ]
-      }
-    ]
+- name: requirejs/require
+  urls:
+    - /
+    - /shop-by-category/support-tights.html
+  children:
+    - name: bundles/product
+      urls:
+        - /activa-class-2-support-tights.html
+      children: []
     "#.into();
 
     let config_as_string = preset_m2_config_gen::run(modules.to_vec(), c);
@@ -252,3 +242,4 @@ mod tests {
         println!("-> {}", replaced);
     }
 }
+

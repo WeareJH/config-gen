@@ -68,6 +68,7 @@ fn run_with_opts(opts: ProxyOpts) -> Result<(), ProgramStartError> {
           - name: m2
             options:
               require_path: /js/require.js
+              bundle_config: file:test/fixtures/bundle-config.yaml
     "#;
 
     //

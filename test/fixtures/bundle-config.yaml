@@ -1,0 +1,9 @@
+- name: requirejs/require
+  urls:
+    - /
+    - /shop-by-category/support-tights.html
+  children:
+    - name: bundles/product
+      urls:
+        - /activa-class-2-support-tights.html
+      children: []
