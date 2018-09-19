@@ -55,7 +55,7 @@ impl M2Preset {
 ///
 impl Preset<AppState> for M2Preset {
     fn enhance(&self, app: App<AppState>) -> App<AppState> {
-        self.add_resources(app.middleware(ReqCatcher::new()))
+        self.add_resources(app)
     }
     fn rewrites(&self) -> RewriteFns {
         vec![replace_cookie_domain_on_page]
