@@ -125,7 +125,7 @@ mod tests {
 
         let mut proxy = test::TestServer::build_with_state(move || {
             let addr = srv_address.clone();
-            let opts = ProxyOpts::new(addr.clone());
+            let opts = ProxyOpts::new(addr.clone(), "http");
             AppState {
                 opts,
                 ..Default::default()
@@ -182,7 +182,7 @@ mod tests {
 
         let mut proxy = test::TestServer::build_with_state(move || {
             let addr = srv_address.clone();
-            let opts = ProxyOpts::new(addr.clone());
+            let opts = ProxyOpts::new(addr.clone(), "http");
             AppState {
                 opts,
                 ..Default::default()

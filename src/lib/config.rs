@@ -51,8 +51,8 @@ pub fn get_program_config_from_cli() -> Result<ProxyOpts, ProgramStartError> {
         ).get_matches();
 
     match get_host(matches.value_of("input").unwrap_or("")) {
-        Ok(host) => {
-            Ok(ProxyOpts::new(host)
+        Ok((host, scheme)) => {
+            Ok(ProxyOpts::new(host, scheme)
                 .with_port(
                     matches
                         .value_of("port")

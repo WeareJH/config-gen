@@ -28,6 +28,7 @@ use std::collections::HashMap;
 use openssl::ssl::SslAcceptorBuilder;
 use bs::config::get_program_config_from_cli;
 use bs::config::ProgramStartError;
+use bs::options::ProxyScheme;
 
 fn main() {
     match get_program_config_from_cli().and_then(run_with_opts) {
@@ -66,8 +67,7 @@ fn run_with_opts(opts: ProxyOpts) -> Result<(), ProgramStartError> {
         presets:
           - name: m2
             options:
-              url: https://example.com
-              require_path:
+              require_path: /js/require.js
     "#;
 
     //
@@ -77,10 +77,12 @@ fn run_with_opts(opts: ProxyOpts) -> Result<(), ProgramStartError> {
     let program_config = get_program_config_from_string(config_input)
         .map_err(ProgramStartError::ConfigParseError)?;
 
+    let server_opts = opts.clone();
+
     //
     // Now start the server
     //
-    server::new(move || {
+    let s = server::new(move || {
 
         //
         // Use a HashMap + index lookup for anything
@@ -137,12 +139,16 @@ fn run_with_opts(opts: ProxyOpts) -> Result<(), ProgramStartError> {
 
         // finally return the App
         app
-    }).workers(1)
-    .bind_ssl(&local_addr, ssl_builder)
-    .unwrap()
-    .start();
+    }).workers(1);
 
-    println!("Started https server: https://{}", local_addr);
+    let s = match server_opts.scheme {
+        ProxyScheme::Http => s.bind(&local_addr),
+        ProxyScheme::Https => s.bind_ssl(&local_addr, ssl_builder),
+    };
+
+    s.expect("Couldn't bind").start();
+
+    println!("Started https server: {}://{}", server_opts.scheme, local_addr);
 
     let _ = sys.run();
 
