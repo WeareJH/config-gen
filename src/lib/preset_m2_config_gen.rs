@@ -50,7 +50,6 @@ pub fn collect_items(
 pub fn run(items: Items, config: impl Into<ConfigItems>) -> String {
     let h: Vec<Module> = vec![];
     let conf = config.into();
-    println!("{:?}", &conf);
     let output = collect_items(h, &conf.items, &items, &mut vec![], &mut vec![]);
 
     match serde_json::to_string_pretty(&Outgoing { bundles: output }) {

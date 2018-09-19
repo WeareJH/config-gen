@@ -47,10 +47,6 @@ impl M2Preset {
             acc_app.resource(&path, move |r| r.method(Method::GET).f(cb))
         })
     }
-
-    pub fn add_before_middleware(&self, app: App<AppState>) -> App<AppState> {
-        app.middleware(ReqCatcher::new())
-    }
 }
 
 ///
@@ -59,10 +55,13 @@ impl M2Preset {
 ///
 impl Preset<AppState> for M2Preset {
     fn enhance(&self, app: App<AppState>) -> App<AppState> {
-        self.add_resources(app)
+        self.add_resources(app.middleware(ReqCatcher::new()))
     }
     fn rewrites(&self) -> RewriteFns {
         vec![replace_cookie_domain_on_page]
+    }
+    fn add_before_middleware(&self, app: App<AppState>) -> App<AppState> {
+        app.middleware(ReqCatcher::new())
     }
 }
 
@@ -187,16 +186,15 @@ fn serve_config_dump_json(req: &HttpRequest<AppState>) -> HttpResponse {
         "name": "requirejs/require",
         "urls": [
           "/",
-          "/nav/new-in.html"
+          "/shop-by-category/support-tights.html"
         ],
         "children": [
           {
             "name": "bundles/product",
             "urls": [
-              "/wellbeing-essential-oil-blends-collection.html"
+              "/activa-class-2-support-tights.html"
             ],
             "children": [
-
             ]
           }
         ]
