@@ -17,6 +17,7 @@ extern crate url;
 #[macro_use]
 extern crate serde_derive;
 
+pub mod config;
 pub mod fns;
 pub mod headers;
 pub mod options;
@@ -28,4 +29,3 @@ pub mod replacer;
 pub mod rewrites;
 pub mod with_body;
 pub mod without_body;
-pub mod config;

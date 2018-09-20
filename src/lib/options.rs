@@ -4,7 +4,7 @@ use url::Url;
 #[derive(Clone, Debug, Serialize)]
 pub enum ProxyScheme {
     Http,
-    Https
+    Https,
 }
 
 impl std::fmt::Display for ProxyScheme {
@@ -73,7 +73,9 @@ impl fmt::Display for ConfigError {
         match *self {
             ConfigError::UrlInvalid => write!(f, "Invalid URL"),
             ConfigError::UrlInvalidHost => write!(f, "Could not retrieve the host from the URL"),
-            ConfigError::UrlInvalidScheme => write!(f, "Could not retrieve the scheme from the URL"),
+            ConfigError::UrlInvalidScheme => {
+                write!(f, "Could not retrieve the scheme from the URL")
+            }
         }
     }
 }

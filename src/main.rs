@@ -10,30 +10,30 @@ extern crate http;
 extern crate mime;
 extern crate openssl;
 extern crate regex;
-extern crate url;
 extern crate serde_yaml;
+extern crate url;
 
 use actix_web::{server, App};
 use openssl::ssl::{SslAcceptor, SslFiletype, SslMethod};
 
+use bs::config::get_program_config_from_cli;
+use bs::config::get_program_config_from_string;
+use bs::config::ProgramStartError;
 use bs::fns::proxy_transform;
-use bs::options::{ProxyOpts};
+use bs::options::ProxyOpts;
+use bs::options::ProxyScheme;
 use bs::preset::AppState;
 use bs::preset::Preset;
 use bs::preset_m2::M2Preset;
-use bs::config::get_program_config_from_string;
-use std::sync::Mutex;
 use bs::preset_m2_opts::M2PresetOptions;
-use std::collections::HashMap;
 use openssl::ssl::SslAcceptorBuilder;
-use bs::config::get_program_config_from_cli;
-use bs::config::ProgramStartError;
-use bs::options::ProxyScheme;
+use std::collections::HashMap;
+use std::sync::Mutex;
 
 fn main() {
     match get_program_config_from_cli().and_then(run_with_opts) {
         Ok(opts) => println!("Runnin!"),
-        Err(e) => eprintln!("{}", e)
+        Err(e) => eprintln!("{}", e),
     }
 }
 
@@ -84,7 +84,6 @@ fn run_with_opts(opts: ProxyOpts) -> Result<(), ProgramStartError> {
     // Now start the server
     //
     let s = server::new(move || {
-
         //
         // Use a HashMap + index lookup for anything
         // that implements Preset
@@ -106,7 +105,7 @@ fn run_with_opts(opts: ProxyOpts) -> Result<(), ProgramStartError> {
                     let preset = M2Preset::new(preset_opts);
                     presets_map.insert(index, Box::new(preset));
                 }
-                _ => println!("unsupported")
+                _ => println!("unsupported"),
             }
         }
 
@@ -149,7 +148,10 @@ fn run_with_opts(opts: ProxyOpts) -> Result<(), ProgramStartError> {
 
     s.expect("Couldn't bind").start();
 
-    println!("Started https server: {}://{}", server_opts.scheme, local_addr);
+    println!(
+        "Started https server: {}://{}",
+        server_opts.scheme, local_addr
+    );
 
     let _ = sys.run();
 

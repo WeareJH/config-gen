@@ -90,34 +90,34 @@ fn response_from_rewrite(
         .limit(1_000_000)
         .from_err()
         .and_then(move |body| {
-        use std::str;
+            use std::str;
 
-        // In here, we now have a ful buffered response body
-        // so we can go ahead and apply URL replacements
-        let req_host = next_host.host().unwrap_or("");
-        let req_port = next_host.port().unwrap_or(80);
-        let req_target = format!("{}:{}", req_host, req_host);
-        let context = RewriteContext {
-            host_to_replace: target_domain.clone(),
-            target_host: String::from(req_host),
-            target_port: req_port,
-        };
+            // In here, we now have a ful buffered response body
+            // so we can go ahead and apply URL replacements
+            let req_host = next_host.host().unwrap_or("");
+            let req_port = next_host.port().unwrap_or(80);
+            let req_target = format!("{}:{}", req_host, req_host);
+            let context = RewriteContext {
+                host_to_replace: target_domain.clone(),
+                target_host: String::from(req_host),
+                target_port: req_port,
+            };
 
-        // Convert the response body to a str
-        let body_content = str::from_utf8(&body[..]).unwrap();
+            // Convert the response body to a str
+            let body_content = str::from_utf8(&body[..]).unwrap();
 
-        // Append any rewrites from presets
-        let mut fns: RewriteFns = vec![replace_host];
-        fns.extend(rewrites);
+            // Append any rewrites from presets
+            let mut fns: RewriteFns = vec![replace_host];
+            fns.extend(rewrites);
 
-        let subject = Subject::new(body_content).apply(&context, fns);
+            let subject = Subject::new(body_content).apply(&context, fns);
 
-        Ok(create_outgoing(
-            &proxy_response.headers(),
-            target_domain.to_string(),
-            req_target,
-        ).body(subject))
-    });
+            Ok(create_outgoing(
+                &proxy_response.headers(),
+                target_domain.to_string(),
+                req_target,
+            ).body(subject))
+        });
 
     Box::new(output)
 }

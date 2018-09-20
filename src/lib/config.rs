@@ -1,22 +1,22 @@
 extern crate serde_yaml;
 
-use std::fmt::Formatter;
-use serde_yaml::Value;
 use clap::App as ClapApp;
 use clap::Arg;
 use options::get_host;
-use options::ProxyOpts;
 use options::ConfigError;
+use options::ProxyOpts;
+use serde_yaml::Value;
+use std::fmt::Formatter;
 
 #[derive(Deserialize, Debug)]
 pub struct PresetConfig {
     pub name: String,
-    pub options: Value
+    pub options: Value,
 }
 
 #[derive(Deserialize, Debug)]
 pub struct ProgramConfig {
-    pub presets: Vec<PresetConfig>
+    pub presets: Vec<PresetConfig>,
 }
 
 pub fn get_program_config_from_string(input: &str) -> Result<ProgramConfig, serde_yaml::Error> {
@@ -25,14 +25,16 @@ pub fn get_program_config_from_string(input: &str) -> Result<ProgramConfig, serd
 
 pub enum ProgramStartError {
     ConfigParseError(serde_yaml::Error),
-    ConfigCliError(ConfigError)
+    ConfigCliError(ConfigError),
 }
 
 impl std::fmt::Display for ProgramStartError {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
             ProgramStartError::ConfigParseError(e) => write!(f, "could not parse config"),
-            ProgramStartError::ConfigCliError(e) => write!(f, "could not parse incoming options from CLI"),
+            ProgramStartError::ConfigCliError(e) => {
+                write!(f, "could not parse incoming options from CLI")
+            }
         }
     }
 }
@@ -51,16 +53,8 @@ pub fn get_program_config_from_cli() -> Result<ProxyOpts, ProgramStartError> {
         ).get_matches();
 
     match get_host(matches.value_of("input").unwrap_or("")) {
-        Ok((host, scheme)) => {
-            Ok(ProxyOpts::new(host, scheme)
-                .with_port(
-                    matches
-                        .value_of("port")
-                        .unwrap_or("8080")
-                        .parse()
-                        .unwrap()
-                ))
-        }
+        Ok((host, scheme)) => Ok(ProxyOpts::new(host, scheme)
+            .with_port(matches.value_of("port").unwrap_or("8080").parse().unwrap())),
         Err(err) => Err(ProgramStartError::ConfigCliError(err)),
     }
 }
