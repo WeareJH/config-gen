@@ -95,7 +95,13 @@ pub struct ConfigItems {
 
 impl<'a> Into<ConfigItems> for &'a str {
     fn into(self) -> ConfigItems {
-        let items: Vec<ConfigItem> = serde_yaml::from_str(&self).unwrap_or(vec![]);
+        let items: Vec<ConfigItem> = match serde_yaml::from_str(&self) {
+            Ok(i) => i,
+            Err(e) => {
+                eprintln!("{}", e);
+                vec![]
+            }
+        };
         ConfigItems { items }
     }
 }

@@ -58,11 +58,10 @@ pub fn proxy_transform(
         original_request.state().opts.target.clone(),
     );
 
-    // ensure the origin header is set
-    //    outgoing.set_header(
-    //        http::header::ORIGIN,
-    //        original_request.state().opts.target.clone(),
-    //    );
+    outgoing.set_header(
+        http::header::ORIGIN,
+        original_request.state().opts.target.clone(),
+    );
 
     // combine all cookie headers into a single one
     let joined_cookie = original_req_headers
@@ -73,10 +72,6 @@ pub fn proxy_transform(
             s.to_string()
         }).collect::<Vec<String>>()
         .join("; ");
-
-    //    outgoing.set_header(http::header::COOKIE, joined_cookie);
-
-    println!("{:?}", outgoing);
 
     match original_method {
         "POST" => forward_request_with_body(original_request, outgoing),
