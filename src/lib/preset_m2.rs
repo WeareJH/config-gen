@@ -177,7 +177,7 @@ fn serve_req_dump_json(req: &HttpRequest<AppState>) -> HttpResponse {
 /// serve a JSON dump of the current accumulated config
 fn serve_config_dump_json(req: &HttpRequest<AppState>) -> HttpResponse {
     let modules = &req.state().module_items;
-    let mut modules = modules.lock().unwrap();
+    let modules = modules.lock().unwrap();
     let c: ConfigItems = r#"
 - name: requirejs/require
   urls:

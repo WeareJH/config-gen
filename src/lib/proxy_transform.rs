@@ -1,5 +1,6 @@
 use actix_web::http::header;
 use actix_web::http::HeaderMap;
+use actix_web::http::Method;
 use actix_web::{client, dev, http, Error, HttpMessage, HttpRequest, HttpResponse};
 use futures::Future;
 use headers::clone_headers;
@@ -7,7 +8,6 @@ use preset::AppState;
 use std::str;
 use with_body::forward_request_with_body;
 use without_body::forward_request_without_body;
-use actix_web::http::Method;
 
 ///
 /// This function will clone incoming requests
@@ -110,7 +110,10 @@ mod tests {
             app.handler(|req: &HttpRequest| {
                 println!("headers received at proxy addr: {:#?}", req.headers());
                 assert_eq!(req.headers().get(header::ACCEPT).unwrap(), "text/html");
-                assert_eq!(req.headers().get(header::COOKIE).unwrap(), "hello there; hello there 2");
+                assert_eq!(
+                    req.headers().get(header::COOKIE).unwrap(),
+                    "hello there; hello there 2"
+                );
                 HttpResponse::Ok()
                     .header("shane", "kittens")
                     .header(header::CONTENT_TYPE, TEXT_HTML)

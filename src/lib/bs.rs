@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 #![feature(extern_prelude)]
 extern crate actix;
 extern crate actix_web;
@@ -18,13 +19,13 @@ extern crate url;
 extern crate serde_derive;
 
 pub mod config;
-pub mod fns;
 pub mod headers;
 pub mod options;
 pub mod preset;
 pub mod preset_m2;
 pub mod preset_m2_config_gen;
 pub mod preset_m2_opts;
+pub mod proxy_transform;
 pub mod replacer;
 pub mod rewrites;
 pub mod with_body;

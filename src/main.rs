@@ -19,20 +19,20 @@ use openssl::ssl::{SslAcceptor, SslFiletype, SslMethod};
 use bs::config::get_program_config_from_cli;
 use bs::config::get_program_config_from_string;
 use bs::config::ProgramStartError;
-use bs::fns::proxy_transform;
 use bs::options::ProxyOpts;
 use bs::options::ProxyScheme;
 use bs::preset::AppState;
 use bs::preset::Preset;
 use bs::preset_m2::M2Preset;
 use bs::preset_m2_opts::M2PresetOptions;
+use bs::proxy_transform::proxy_transform;
 use openssl::ssl::SslAcceptorBuilder;
 use std::collections::HashMap;
 use std::sync::Mutex;
 
 fn main() {
     match get_program_config_from_cli().and_then(run_with_opts) {
-        Ok(opts) => println!("Runnin!"),
+        Ok(opts) => println!("Running!"),
         Err(e) => eprintln!("{}", e),
     }
 }

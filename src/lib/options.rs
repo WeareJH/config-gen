@@ -53,7 +53,7 @@ impl Default for ProxyOpts {
 
 pub fn get_host(url: &str) -> Result<(String, String), ConfigError> {
     let parsed = Url::parse(url).map_err(|e| {
-        println!("{}", e);
+        eprintln!("{}", e);
         ConfigError::UrlInvalid
     })?;
     let host = parsed.host().ok_or(ConfigError::UrlInvalidHost)?;

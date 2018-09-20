@@ -6,7 +6,6 @@ use options::get_host;
 use options::ConfigError;
 use options::ProxyOpts;
 use serde_yaml::Value;
-use std::fmt::Formatter;
 
 #[derive(Deserialize, Debug)]
 pub struct PresetConfig {
@@ -31,8 +30,8 @@ pub enum ProgramStartError {
 impl std::fmt::Display for ProgramStartError {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
-            ProgramStartError::ConfigParseError(e) => write!(f, "could not parse config"),
-            ProgramStartError::ConfigCliError(e) => {
+            ProgramStartError::ConfigParseError(_e) => write!(f, "could not parse config"),
+            ProgramStartError::ConfigCliError(_e) => {
                 write!(f, "could not parse incoming options from CLI")
             }
         }

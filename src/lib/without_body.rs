@@ -7,9 +7,9 @@ use actix_web::{AsyncResponder, Body, Error, HttpMessage, HttpRequest, HttpRespo
 use futures::future::{ok, Either};
 use futures::{Future, Stream};
 
-use fns::create_outgoing;
 use preset::AppState;
 use preset::RewriteFns;
+use proxy_transform::create_outgoing;
 use replacer::{Replacer, Subject};
 use rewrites::{replace_host, RewriteContext};
 
