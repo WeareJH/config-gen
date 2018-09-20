@@ -7,6 +7,7 @@ use preset::AppState;
 use std::str;
 use with_body::forward_request_with_body;
 use without_body::forward_request_without_body;
+use actix_web::http::Method;
 
 ///
 /// This function will clone incoming requests
@@ -41,8 +42,6 @@ pub fn proxy_transform(
     // now choose how to handle it
     // if the client responds with a request we want to alter (such as HTML)
     // then we need to buffer the body into memory in order to apply regex's on the string
-    let original_method = original_request.method().as_str().clone();
-
     let mut outgoing = client::ClientRequest::build();
     outgoing
         .method(original_request.method().clone())
@@ -73,8 +72,10 @@ pub fn proxy_transform(
         }).collect::<Vec<String>>()
         .join("; ");
 
-    match original_method {
-        "POST" => forward_request_with_body(original_request, outgoing),
+    outgoing.set_header(http::header::COOKIE, joined_cookie);
+
+    match *original_request.method() {
+        Method::POST => forward_request_with_body(original_request, outgoing),
         _ => forward_request_without_body(original_request, outgoing),
     }
 }
@@ -109,6 +110,7 @@ mod tests {
             app.handler(|req: &HttpRequest| {
                 println!("headers received at proxy addr: {:#?}", req.headers());
                 assert_eq!(req.headers().get(header::ACCEPT).unwrap(), "text/html");
+                assert_eq!(req.headers().get(header::COOKIE).unwrap(), "hello there; hello there 2");
                 HttpResponse::Ok()
                     .header("shane", "kittens")
                     .header(header::CONTENT_TYPE, TEXT_HTML)
@@ -132,6 +134,8 @@ mod tests {
         let request = proxy
             .get()
             .header(header::ACCEPT, "text/html")
+            .header("cookie", "hello there")
+            .header("cookie", "hello there 2")
             .set_header(
                 header::ORIGIN,
                 format!("https://{}", proxy.addr().to_string()),
