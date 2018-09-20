@@ -85,7 +85,11 @@ fn response_from_rewrite(
 ) -> Box<Future<Item = HttpResponse, Error = Error>> {
     let next_host = req_uri.clone();
 
-    let output = proxy_response.body().from_err().and_then(move |body| {
+    let output = proxy_response
+        .body()
+        .limit(1_000_000)
+        .from_err()
+        .and_then(move |body| {
         use std::str;
 
         // In here, we now have a ful buffered response body

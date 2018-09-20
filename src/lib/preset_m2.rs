@@ -183,13 +183,23 @@ fn serve_config_dump_json(req: &HttpRequest<AppState>) -> HttpResponse {
     let c: ConfigItems = r#"
 - name: requirejs/require
   urls:
-    - /
-    - /shop-by-category/support-tights.html
+  - "/"
+  - "/furniture/tables/coffee-tables"
   children:
-    - name: bundles/product
+  - name: bundles/product
+    urls:
+    - "/test-product-1"
+    - "/mouse-lamps"
+    - "/velvet-and-linen-backed-floor-cushions-2"
+    - "/deep-dream-sofa-collection"
+  - name: bundles/basket
+    urls:
+    - "/checkout/cart"
+    children:
+    - name: bundles/checkout
       urls:
-        - /activa-class-2-support-tights.html
-      children: []
+      - "/checkout"
+
     "#.into();
 
     let config_as_string = preset_m2_config_gen::run(modules.to_vec(), c);
