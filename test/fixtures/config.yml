@@ -1,2 +1,8 @@
-url: https://www.acme.com
-
+presets:
+  - name: m2
+    options:
+      require_path: /js/require.js
+      bundle_config: file:test/fixtures/bundle-config.yaml
+      auth_basic:
+        username: acme
+        password: acmepw

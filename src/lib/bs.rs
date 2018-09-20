@@ -14,6 +14,7 @@ extern crate serde;
 extern crate serde_json;
 extern crate serde_yaml;
 extern crate url;
+extern crate base64;
 
 #[macro_use]
 extern crate serde_derive;

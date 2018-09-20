@@ -29,6 +29,7 @@ use bs::proxy_transform::proxy_transform;
 use openssl::ssl::SslAcceptorBuilder;
 use std::collections::HashMap;
 use std::sync::Mutex;
+use bs::config::get_config_contents_from_file;
 
 fn main() {
     match get_program_config_from_cli().and_then(run_with_opts) {
@@ -60,24 +61,14 @@ fn run_with_opts(opts: ProxyOpts) -> Result<(), ProgramStartError> {
     let local_addr = format!("127.0.0.1:{}", opts.port);
 
     //
-    // Just some fake yaml configuration
-    // for now until config can be read from disk
-    //
-    let config_input = r#"
-        presets:
-          - name: m2
-            options:
-              require_path: /js/require.js
-              bundle_config: file:test/fixtures/bundle-config.yaml
-    "#;
-
-    //
     // Get program configuration, from the input above, and
     // then eventuall from a file
     //
-    let program_config = get_program_config_from_string(config_input)
-        .map_err(ProgramStartError::ConfigParseError)?;
+    let program_config = get_config_contents_from_file("test/fixtures/config.yml")?;
 
+    ///
+    ///
+    ///
     let server_opts = opts.clone();
 
     //
