@@ -26,6 +26,7 @@ pub mod preset;
 pub mod preset_m2;
 pub mod preset_m2_config_gen;
 pub mod preset_m2_opts;
+pub mod preset_m2_bundle_config;
 pub mod proxy_transform;
 pub mod replacer;
 pub mod rewrites;

@@ -17,7 +17,6 @@ use actix_web::{server, App};
 use openssl::ssl::{SslAcceptor, SslFiletype, SslMethod};
 
 use bs::config::get_program_config_from_cli;
-use bs::config::get_program_config_from_string;
 use bs::config::ProgramStartError;
 use bs::options::ProxyOpts;
 use bs::options::ProxyScheme;
@@ -64,11 +63,11 @@ fn run_with_opts(opts: ProxyOpts) -> Result<(), ProgramStartError> {
     // Get program configuration, from the input above, and
     // then eventuall from a file
     //
-    let program_config = get_config_contents_from_file("test/fixtures/config.yml")?;
+    let program_config = get_config_contents_from_file(opts.config_file.clone().unwrap())?;
 
-    ///
-    ///
-    ///
+    //
+    // Clone server opts to be used in multi threads
+    //
     let server_opts = opts.clone();
 
     //
@@ -81,6 +80,14 @@ fn run_with_opts(opts: ProxyOpts) -> Result<(), ProgramStartError> {
         //
         let mut presets_map: HashMap<usize, Box<Preset<AppState>>> = HashMap::new();
 
+
+        let mut app_state = AppState {
+            program_config: program_config.clone(),
+            opts: opts.clone(),
+            rewrites: vec![],
+            module_items: Mutex::new(vec![]),
+        };
+
         //
         // Loop through any presets and create an instance
         // that's stored in the hashmap based on it's index
@@ -91,20 +98,13 @@ fn run_with_opts(opts: ProxyOpts) -> Result<(), ProgramStartError> {
         for (index, p) in program_config.presets.iter().enumerate() {
             match p.name.as_str() {
                 "m2" => {
-                    let cloned_opts = p.options.clone();
-                    let preset_opts: M2PresetOptions = cloned_opts.into();
+                    let preset_opts: M2PresetOptions = serde_yaml::from_value(p.options.clone()).unwrap();
                     let preset = M2Preset::new(preset_opts);
                     presets_map.insert(index, Box::new(preset));
                 }
                 _ => println!("unsupported"),
             }
         }
-
-        let mut app_state = AppState {
-            opts: opts.clone(),
-            rewrites: vec![],
-            module_items: Mutex::new(vec![]),
-        };
 
         // Add rewrites phase
         for (index, _) in program_config.presets.iter().enumerate() {

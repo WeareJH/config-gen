@@ -5,6 +5,7 @@ use options::ProxyOpts;
 use preset_m2::ModuleData;
 use rewrites::RewriteContext;
 use std::sync::Mutex;
+use config::ProgramConfig;
 
 pub trait Preset<T> {
     fn enhance(&self, app: App<T>) -> App<T>;
@@ -25,8 +26,8 @@ pub trait Preset<T> {
 pub type RewriteFns = Vec<fn(&str, &RewriteContext) -> String>;
 pub type ResourceDef<'a> = (&'a str, fn(&HttpRequest<AppState>) -> HttpResponse);
 
-#[derive(Default)]
 pub struct AppState {
+    pub program_config: ProgramConfig,
     pub opts: ProxyOpts,
     pub rewrites: RewriteFns,
     pub module_items: Mutex<Vec<ModuleData>>,

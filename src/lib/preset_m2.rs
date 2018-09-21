@@ -12,11 +12,11 @@ use preset::Preset;
 use preset::ResourceDef;
 use preset::RewriteFns;
 use preset_m2_config_gen;
-use preset_m2_config_gen::ConfigItems;
 use preset_m2_opts::M2PresetOptions;
 use regex::Regex;
 use rewrites::RewriteContext;
 use url::Url;
+use preset_m2_bundle_config::resolve_from_string;
 
 ///
 /// The Magento 2 Preset
@@ -178,34 +178,22 @@ fn serve_req_dump_json(req: &HttpRequest<AppState>) -> HttpResponse {
 fn serve_config_dump_json(req: &HttpRequest<AppState>) -> HttpResponse {
     let modules = &req.state().module_items;
     let modules = modules.lock().unwrap();
-    let c: ConfigItems = r#"
-- name: requirejs/require
-  urls:
-    - /
-    - /furniture/tables/coffee-tables
-  children:
-    - name: bundles/product
-      urls:
-        - /test-product-1
-        - /mouse-lamps
-        - /velvet-and-linen-backed-floor-cushions-2
-        - /deep-dream-sofa-collection
-      children: []
-    - name: bundles/basket
-      urls:
-        - /checkout/cart
-      children:
-        - name: bundles/checkout
-          urls:
-            - /checkout
-          children: []
-    "#.into();
 
-    let config_as_string = preset_m2_config_gen::run(modules.to_vec(), c);
+    let maybe_string = M2PresetOptions::get_opts(req.state().program_config.clone())
+            .and_then(|opts| opts.bundle_config)
+            .and_then(|bc| resolve_from_string(bc).ok() )
+            .map(|conf| preset_m2_config_gen::run(modules.to_vec(), conf));
 
-    HttpResponse::Ok()
-        .content_type("application/json")
-        .body(config_as_string)
+    match maybe_string {
+        Some(c) => HttpResponse::Ok()
+            .content_type("application/json")
+            .body(c),
+        None => {
+            HttpResponse::Ok()
+                .content_type("text/plain")
+                .body("Could not create config")
+        }
+    }
 }
 
 ///

@@ -1,26 +1,21 @@
-use serde_yaml::Value;
+use config::ProgramConfig;
 
 #[derive(Deserialize, Debug, Eq, PartialEq)]
 pub struct M2PresetOptions {
-    pub require_path: String,
+    #[serde(default = "default_require_path")]
+    pub require_path: Option<String>,
     pub bundle_config: Option<String>,
     pub auth_basic: Option<AuthBasic>,
 }
 
-impl From<Value> for M2PresetOptions {
-    fn from(v: Value) -> Self {
-        let out = M2PresetOptions {
-            ..Default::default()
-        };
-        out.parse_preset_options(v)
-    }
+fn default_require_path() -> Option<String> {
+    Some("/static/{version}/frontend/{vendor}/{theme}/{locale}/requirejs/require.js".into())
 }
 
 impl Default for M2PresetOptions {
     fn default() -> Self {
         M2PresetOptions {
-            require_path:
-                "/static/{version}/frontend/{vendor}/{theme}/{locale}/requirejs/require.js".into(),
+            require_path: None,
             bundle_config: None,
             auth_basic: None,
         }
@@ -29,8 +24,8 @@ impl Default for M2PresetOptions {
 
 #[derive(Deserialize, Debug, Eq, PartialEq)]
 pub struct AuthBasic {
-    username: String,
-    password: String,
+    pub username: String,
+    pub password: String,
 }
 
 impl Default for AuthBasic {
@@ -43,26 +38,13 @@ impl Default for AuthBasic {
 }
 
 impl M2PresetOptions {
-    pub fn parse_preset_options(mut self, value: Value) -> M2PresetOptions {
-        if let Value::Mapping(m) = value {
-            for (key, value) in m {
-                if let (Value::String(ref key), Value::String(ref value)) = (key, value) {
-                    match key.as_str() {
-                        "require_path" => self.require_path = value.clone(),
-                        "bundle_config" => {
-                            self.bundle_config = Some(value.clone());
-                        }
-                        _ => { /* not supported */ }
-                    }
-                }
-            }
-        }
-        self
+    pub fn get_opts(prog_config: ProgramConfig) -> Option<M2PresetOptions> {
+        serde_yaml::from_value(prog_config.get_opts("m2")?).ok()?
     }
 }
 
 #[test]
-fn test_parse_preset_options() {
+fn test_parse_preset_options_all_given() {
     let i = r#"
 require_path: /js/require.js
 bundle_config: file:test/fixtures/bundle-config.yaml
@@ -70,8 +52,15 @@ auth_basic:
     username: shane
     password: other
     "#;
-    let m = M2PresetOptions::default();
-    let y = serde_yaml::from_str(&i).unwrap();
-    let out = m.parse_preset_options(y);
-    println!("{:#?}", out);
+    let y: M2PresetOptions = serde_yaml::from_str(&i).unwrap();
+    assert_eq!(y.require_path, Some("/js/require.js".to_string()));
+}
+
+#[test]
+fn test_defaults() {
+    let i = r#"
+    bundle_config: "here"
+    "#;
+    let y: M2PresetOptions = serde_yaml::from_str(&i).unwrap();
+    assert_eq!(y.bundle_config, Some("here".to_string()));
 }

@@ -1,9 +1,18 @@
 - name: requirejs/require
   urls:
     - /
-    - /shop-by-category/support-tights.html
+    - /furniture/tables/coffee-tables
   children:
     - name: bundles/product
       urls:
-        - /activa-class-2-support-tights.html
+        - /magpie-coffee-table
       children: []
+    - name: bundles/basket
+      urls:
+        - /checkout/cart/
+      children:
+        - name: bundles/checkout
+          urls:
+            - /checkout/
+          children: []
+

@@ -21,6 +21,7 @@ pub struct ProxyOpts {
     pub target: String,
     pub scheme: ProxyScheme,
     pub port: u16,
+    pub config_file: Option<String>,
 }
 
 impl ProxyOpts {
@@ -39,6 +40,10 @@ impl ProxyOpts {
         self.port = port;
         self
     }
+    pub fn with_config_file(mut self, path: &str) -> ProxyOpts {
+        self.config_file = Some(path.into());
+        self
+    }
 }
 
 impl Default for ProxyOpts {
@@ -47,6 +52,7 @@ impl Default for ProxyOpts {
             target: String::new(),
             scheme: ProxyScheme::Http,
             port: 8080,
+            config_file: None,
         }
     }
 }
