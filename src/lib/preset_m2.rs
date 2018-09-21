@@ -4,7 +4,7 @@ extern crate serde_json;
 use actix_web::http::Method;
 use actix_web::middleware::Finished;
 use actix_web::middleware::Middleware;
-use actix_web::App;
+use actix_web::{App, Error, HttpMessage, AsyncResponder};
 use actix_web::HttpRequest;
 use actix_web::HttpResponse;
 use preset::AppState;
@@ -16,6 +16,7 @@ use preset_m2_opts::M2PresetOptions;
 use regex::Regex;
 use rewrites::RewriteContext;
 use preset_m2_bundle_config::resolve_from_string;
+use futures::{Future, Stream};
 
 ///
 /// The Magento 2 Preset
@@ -35,15 +36,48 @@ impl M2Preset {
         let resources: Vec<ResourceDef> = vec![
             (
                 "/static/{version}/frontend/{vendor}/{theme}/{locale}/requirejs/require.js",
+                Method::GET,
                 serve_instrumented_require_js,
             ),
-            ("/__bs/reqs.json", serve_req_dump_json),
-            ("/__bs/config.json", serve_config_dump_json),
+            ("/__bs/reqs.json", Method::GET, serve_req_dump_json),
+            ("/__bs/config.json", Method::GET, serve_config_dump_json),
         ];
-        resources.into_iter().fold(app, |acc_app, (path, cb)| {
-            acc_app.resource(&path, move |r| r.method(Method::GET).f(cb))
-        })
+
+        let app = resources.into_iter().fold(app, |acc_app, (path, method, cb)| {
+            acc_app.resource(&path, move |r| r.method(method).f(cb))
+        });
+
+        app.resource("/__bs/post", move |r| r.method(Method::POST).f(handle_post_data))
     }
+}
+
+///
+/// Handle the requirejs post
+///
+fn handle_post_data(
+    req: &HttpRequest<AppState>,
+) -> Box<Future<Item = HttpResponse, Error = Error>> {
+    req.payload()
+        .concat2()
+        .from_err()
+        .and_then(|body| {
+
+            let result: Result<serde_json::Value, serde_json::Error>
+                = serde_json::from_str(std::str::from_utf8(&body).unwrap());
+
+            let output = match result {
+                Ok(r) => {
+                    println!("{:?}", r);
+                    "Was Good!"
+                },
+                Err(e) => "Was Bad!"
+            };
+
+            Ok(HttpResponse::Ok()
+                .content_type("application/json")
+                .body(output))
+        })
+        .responder()
 }
 
 ///
@@ -87,7 +121,7 @@ pub struct ModuleData {
 ///   "id": "Magento_Ui/js/form/form",
 ///   "referrer": "/"
 /// }"#;
-/// let d = extract_data(Some(data)).unwrap();
+/// let d = extract_data(Some(&data.to_string())).unwrap();
 ///
 /// assert_eq!(d, ModuleData {
 ///     url: String::from("https://127.0.0.1:8080/static/version1536567404/frontend/Acme/default/en_GB/Magento_Ui/js/form/form.js"),

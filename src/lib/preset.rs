@@ -6,6 +6,7 @@ use preset_m2::ModuleData;
 use rewrites::RewriteContext;
 use std::sync::Mutex;
 use config::ProgramConfig;
+use actix_web::http::Method;
 
 pub trait Preset<T> {
     fn enhance(&self, app: App<T>) -> App<T>;
@@ -24,7 +25,7 @@ pub trait Preset<T> {
 /// The following are just aliases
 ///
 pub type RewriteFns = Vec<fn(&str, &RewriteContext) -> String>;
-pub type ResourceDef<'a> = (&'a str, fn(&HttpRequest<AppState>) -> HttpResponse);
+pub type ResourceDef<'a> = (&'a str, Method, fn(&HttpRequest<AppState>) -> HttpResponse);
 
 pub struct AppState {
     pub program_config: ProgramConfig,

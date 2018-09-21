@@ -30,10 +30,10 @@ pub fn forward_request_without_body(
         .unwrap()
         .send()
         .map_err(Error::from)
-        .and_then(move |proxy_response| {
+        .and_then(move |proxy_response: ClientResponse| {
             // If we decide to modify the response, we need to buffer the entire
             // response into memory (text content only)
-            if should_rewrite_body(proxy_response.headers()) {
+            if should_rewrite_body(&req_uri, &proxy_response) {
                 Either::A(response_from_rewrite(
                     proxy_response,
                     req_uri,
@@ -96,6 +96,7 @@ fn response_from_rewrite(
             // so we can go ahead and apply URL replacements
             let req_host = next_host.host().unwrap_or("");
             let req_port = next_host.port().unwrap_or(80);
+            let is_require_config = next_host.path().contains("requirejs-config.js");
             let req_target = format!("{}:{}", req_host, req_host);
             let context = RewriteContext {
                 host_to_replace: target_domain.clone(),
@@ -103,20 +104,48 @@ fn response_from_rewrite(
                 target_port: req_port,
             };
 
-            // Convert the response body to a str
+
+//            let next_body = {
+//
+//                if is_require_config {
+//                    return String::from("console.log('kittens!')");
+//                }
+//
+//                // Convert the response body to a str
+//            };
             let body_content = str::from_utf8(&body[..]).unwrap();
 
-            // Append any rewrites from presets
-            let mut fns: RewriteFns = vec![replace_host];
-            fns.extend(rewrites);
+            let next_body: String = if is_require_config {
+                let mut b = String::from(body_content);
+                b.push_str(r#"
+var xhr = new XMLHttpRequest();
 
-            let subject = Subject::new(body_content).apply(&context, fns);
+xhr.open('POST', '/__bs/post');
+xhr.setRequestHeader('Content-Type', 'application/json');
+xhr.onload = function() {
+    if (xhr.status === 200) {
+        console.log('sent');
+    }
+    else if (xhr.status !== 200) {
+        alert('Request failed.  Returned status of ' + xhr.status);
+    }
+};
+xhr.send(JSON.stringify(requirejs.s.contexts._.config));
+                "#);
+                b
+            } else {
+                // Append any rewrites from presets
+                let mut fns: RewriteFns = vec![replace_host];
+                fns.extend(rewrites);
+                Subject::new(body_content).apply(&context, fns)
+            };
+
 
             Ok(create_outgoing(
                 &proxy_response.headers(),
                 target_domain.to_string(),
                 req_target,
-            ).body(subject))
+            ).body(next_body))
         });
 
     Box::new(output)
@@ -126,8 +155,13 @@ fn response_from_rewrite(
 /// Determine if the current request should be rewritten
 /// Currently this just checks for a header of type text/html
 ///
-fn should_rewrite_body(headers: &HeaderMap) -> bool {
-    headers
+fn should_rewrite_body(uri: &Uri, resp: &ClientResponse) -> bool {
+
+    if uri.path().contains("requirejs-config.js") {
+        return true;
+    }
+
+    resp.headers()
         .get(header::CONTENT_TYPE)
         .map_or(false, |header_value| {
             match header_value.to_str().unwrap_or("") {
