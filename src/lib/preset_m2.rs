@@ -15,7 +15,6 @@ use preset_m2_config_gen;
 use preset_m2_opts::M2PresetOptions;
 use regex::Regex;
 use rewrites::RewriteContext;
-use url::Url;
 use preset_m2_bundle_config::resolve_from_string;
 
 ///
@@ -83,8 +82,12 @@ pub struct ModuleData {
 /// ```
 /// # use bs::preset_m2::*;
 ///
-/// let url = "https://127.0.0.1:8080/static/version1536567404/frontend/Acme/default/en_GB/Magento_Ui/js/form/form.js?bs_track=%7B%22url%22%3A%22https%3A%2F%2F127.0.0.1%3A8080%2Fstatic%2Fversion1536567404%2Ffrontend%2FAcme%2Fdefault%2Fen_GB%2FMagento_Ui%2Fjs%2Fform%2Fform.js%22%2C%22id%22%3A%22Magento_Ui%2Fjs%2Fform%2Fform%22%2C%22referrer%22%3A%22%2F%22%7D";
-/// let d = extract_data(url).unwrap();
+/// let data = r#"{
+///   "url": "https://127.0.0.1:8080/static/version1536567404/frontend/Acme/default/en_GB/Magento_Ui/js/form/form.js",
+///   "id": "Magento_Ui/js/form/form",
+///   "referrer": "/"
+/// }"#;
+/// let d = extract_data(Some(data)).unwrap();
 ///
 /// assert_eq!(d, ModuleData {
 ///     url: String::from("https://127.0.0.1:8080/static/version1536567404/frontend/Acme/default/en_GB/Magento_Ui/js/form/form.js"),
@@ -93,23 +96,17 @@ pub struct ModuleData {
 /// });
 /// ```
 ///
-pub fn extract_data(url: &str) -> Option<ModuleData> {
-    let url = Url::parse(url).ok()?;
-
-    let matched = url
-        .query_pairs()
-        .find(|(key, _)| key == "bs_track")
-        .map(|(_, value)| value)?;
-
-    let d: Result<ModuleData, _> = serde_json::from_str(&matched);
-
-    match d {
-        Ok(data) => Some(data),
-        Err(e) => {
-            println!("{:?}", e);
-            None
+pub fn extract_data(maybe_data: Option<&String>) -> Option<ModuleData> {
+    maybe_data.and_then(|d| {
+        let output = serde_json::from_str::<ModuleData>(&d);
+        match output {
+            Ok(t) => Some(t),
+            Err(e) => {
+                eprintln!("oopS = {}", e);
+                None
+            }
         }
-    }
+    })
 }
 
 pub struct ReqCatcher {}
@@ -129,7 +126,7 @@ impl Middleware<AppState> for ReqCatcher {
     /// This middleware handler will extract JSON blobs from URLS
     fn finish(&self, req: &HttpRequest<AppState>, _resp: &HttpResponse) -> Finished {
         // try to convert some JSON into a valid ModuleData
-        let module_data: Option<ModuleData> = extract_data(&req.uri().to_string());
+        let module_data: Option<ModuleData> = extract_data(req.query().get("bs_track"));
 
         // We only care if we got a Some(ModuleData)
         // so we can use .map to unwrap & ignore the none;
