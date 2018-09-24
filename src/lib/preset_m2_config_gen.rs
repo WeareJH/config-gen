@@ -47,12 +47,14 @@ pub fn collect_items(
     target
 }
 
-pub fn run(items: Items, config: impl Into<ConfigItems>) -> String {
+pub fn run(items: Items, config: impl Into<ConfigItems>) -> Vec<Module> {
     let h: Vec<Module> = vec![];
     let conf = config.into();
-    let output = collect_items(h, &conf.items, &items, &mut vec![], &mut vec![]);
+    collect_items(h, &conf.items, &items, &mut vec![], &mut vec![])
+}
 
-    match serde_json::to_string_pretty(&Outgoing { bundles: output }) {
+pub fn to_string(bundles: Vec<Module>) -> String {
+    match serde_json::to_string_pretty(&Outgoing { bundles }) {
         Ok(output) => output,
         Err(err) => {
             println!("Could not create bundles, {:?}", err);

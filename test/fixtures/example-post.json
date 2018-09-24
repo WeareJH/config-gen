@@ -1,0 +1,49 @@
+{
+  "waitSeconds": 0,
+  "baseUrl": "/static/version1517228438/frontend/Magento/luma/en_US/",
+  "paths": {
+    "jquery/ui": "jquery/jquery-ui",
+    "paypalInContextExpressCheckout": "https://www.paypalobjects.com/api/checkout"
+  },
+  "bundles": {},
+  "pkgs": {},
+  "shim": {
+    "jquery/jquery-migrate": {
+      "deps": [
+        "jquery"
+      ]
+    },
+    "tinymce": {
+      "exports": "tinymce"
+    },
+    "moment": {
+      "exports": "moment"
+    },
+    "vimeoAPI": {}
+  },
+  "config": {
+    "mixins": {
+      "jquery/jstree/jquery.jstree": {
+        "mage/backend/jstree-mixin": true
+      }
+    },
+    "text": {
+      "headers": {
+        "X-Requested-With": "XMLHttpRequest"
+      }
+    }
+  },
+  "map": {
+    "*": {
+      "rowBuilder": "Magento_Theme/js/row-builder",
+      "braintree": "https://js.braintreegateway.com/js/braintree-2.32.0.min.js"
+    },
+    "Magento_Checkout/js/model/shipping-rate-service": {
+      "Magento_Checkout/js/model/shipping-rate-processor/customer-address": "temandoCustomerAddressRateProcessor"
+    }
+  },
+  "deps": [
+    "Magento_Theme/js/responsive",
+    "Magento_Theme/js/theme"
+  ]
+}

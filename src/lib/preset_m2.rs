@@ -17,6 +17,9 @@ use regex::Regex;
 use rewrites::RewriteContext;
 use preset_m2_bundle_config::resolve_from_string;
 use futures::{Future, Stream};
+use preset_m2_requirejs_config::RequireJsMergedConfig;
+use preset_m2_config_gen::Module;
+use std::sync::Mutex;
 
 ///
 /// The Magento 2 Preset
@@ -57,17 +60,23 @@ impl M2Preset {
 fn handle_post_data(
     req: &HttpRequest<AppState>,
 ) -> Box<Future<Item = HttpResponse, Error = Error>> {
+    let cloned = req.clone();
     req.payload()
         .concat2()
         .from_err()
-        .and_then(|body| {
+        .and_then(move |body| {
 
-            let result: Result<serde_json::Value, serde_json::Error>
+            let result: Result<RequireJsMergedConfig, serde_json::Error>
                 = serde_json::from_str(std::str::from_utf8(&body).unwrap());
 
             let output = match result {
                 Ok(r) => {
-                    println!("{:?}", r);
+                    M2PresetOptions::get_opts(cloned.state().program_config.clone()).map(|opts: M2PresetOptions| {
+                        opts.require_merged_config.map(|config| {
+                            let mut d = config.lock().unwrap();
+                            d.deps = r.deps;
+                        })
+                    });
                     "Was Good!"
                 },
                 Err(e) => "Was Bad!"
@@ -209,20 +218,42 @@ fn serve_req_dump_json(req: &HttpRequest<AppState>) -> HttpResponse {
 fn serve_config_dump_json(req: &HttpRequest<AppState>) -> HttpResponse {
     let modules = &req.state().module_items;
     let modules = modules.lock().unwrap();
+    let maybe_opts = M2PresetOptions::get_opts(req.state().program_config.clone()).unwrap();
+    let bundle_path = maybe_opts.bundle_config;
+    let req_merged = maybe_opts.require_merged_config.unwrap();
+    let d = req_merged.lock();
 
-    let maybe_string = M2PresetOptions::get_opts(req.state().program_config.clone())
-            .and_then(|opts| opts.bundle_config)
-            .and_then(|bc| resolve_from_string(bc).ok() )
-            .map(|conf| preset_m2_config_gen::run(modules.to_vec(), conf));
+    let res = match (bundle_path, d) {
+        (Some(bun_config), Ok(mut merged_config)) => {
+            match resolve_from_string(bun_config) {
+                Ok(conf) => {
+                    let modules = preset_m2_config_gen::run(modules.to_vec(), conf);
+                    merged_config.modules = Some(modules);
+                    match serde_json::to_string(&*merged_config) {
+                        Ok(t) => Ok(t),
+                        Err(e) => {
+                            Err("nah".to_string())
+                        }
+                    }
+                },
+                Err(e) => {
+                    Err("Couldn't convert to string".to_string())
+                }
+            }
+        },
+        _ => Err("didnt match both".to_string())
+    };
 
-    match maybe_string {
-        Some(c) => HttpResponse::Ok()
-            .content_type("application/json")
-            .body(c),
-        None => {
+    match res {
+        Ok(output) => {
+            HttpResponse::Ok()
+                .content_type("application/json")
+                .body(output)
+        },
+        Err(why) => {
             HttpResponse::Ok()
                 .content_type("text/plain")
-                .body("Could not create config")
+                .body(why)
         }
     }
 }

@@ -1,11 +1,14 @@
 use config::ProgramConfig;
+use preset_m2_requirejs_config::RequireJsMergedConfig;
+use std::sync::Mutex;
 
-#[derive(Deserialize, Debug, Eq, PartialEq)]
+#[derive(Deserialize, Debug)]
 pub struct M2PresetOptions {
     #[serde(default = "default_require_path")]
     pub require_path: Option<String>,
     pub bundle_config: Option<String>,
     pub auth_basic: Option<AuthBasic>,
+    pub require_merged_config: Option<Mutex<RequireJsMergedConfig>>
 }
 
 fn default_require_path() -> Option<String> {
@@ -18,6 +21,7 @@ impl Default for M2PresetOptions {
             require_path: None,
             bundle_config: None,
             auth_basic: None,
+            require_merged_config: Some(Mutex::new(RequireJsMergedConfig{..Default::default()}))
         }
     }
 }
