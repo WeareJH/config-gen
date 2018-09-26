@@ -80,7 +80,7 @@ pub fn proxy_transform(
     //
     // Add basic auth header if auth_basic is present in the options
     //
-    M2PresetOptions::get_opts(original_request.state().program_config.clone()).map(|opts| {
+    M2PresetOptions::get_opts(&original_request.state().program_config).map(|opts| {
         opts.auth_basic.map(|auth: AuthBasic| {
             let combined = format!("{}:{}", auth.username, auth.password);
             outgoing.set_header(http::header::AUTHORIZATION, format!("Basic {}", encode(&combined)));

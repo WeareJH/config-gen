@@ -20,6 +20,7 @@ use futures::{Future, Stream};
 use preset_m2_requirejs_config::RequireJsMergedConfig;
 use preset_m2_config_gen::Module;
 use std::sync::Mutex;
+use std::sync::Arc;
 
 ///
 /// The Magento 2 Preset
@@ -60,7 +61,9 @@ impl M2Preset {
 fn handle_post_data(
     req: &HttpRequest<AppState>,
 ) -> Box<Future<Item = HttpResponse, Error = Error>> {
-    let cloned = req.clone();
+
+    let a = req.state().require_merged_config.clone();
+
     req.payload()
         .concat2()
         .from_err()
@@ -68,15 +71,16 @@ fn handle_post_data(
 
             let result: Result<RequireJsMergedConfig, serde_json::Error>
                 = serde_json::from_str(std::str::from_utf8(&body).unwrap());
-
+//
             let output = match result {
-                Ok(r) => {
-                    M2PresetOptions::get_opts(cloned.state().program_config.clone()).map(|opts: M2PresetOptions| {
-                        opts.require_merged_config.map(|config| {
-                            let mut d = config.lock().unwrap();
-                            d.deps = r.deps;
-                        })
-                    });
+                Ok(next_config) => {
+                    let mut mutex = a.lock().unwrap();
+                    mutex.base_url = next_config.base_url;
+                    mutex.deps     = next_config.deps;
+                    mutex.map      = next_config.map;
+                    mutex.config   = next_config.config;
+                    mutex.paths    = next_config.paths;
+                    mutex.shim     = next_config.shim;
                     "Was Good!"
                 },
                 Err(e) => "Was Bad!"
@@ -84,7 +88,7 @@ fn handle_post_data(
 
             Ok(HttpResponse::Ok()
                 .content_type("application/json")
-                .body(output))
+                .body("yo!"))
         })
         .responder()
 }
@@ -216,20 +220,27 @@ fn serve_req_dump_json(req: &HttpRequest<AppState>) -> HttpResponse {
 
 /// serve a JSON dump of the current accumulated config
 fn serve_config_dump_json(req: &HttpRequest<AppState>) -> HttpResponse {
-    let modules = &req.state().module_items;
-    let modules = modules.lock().expect("should lock & unwrap module_items");
-    let maybe_opts = M2PresetOptions::get_opts(req.state().program_config.clone()).expect("should clone program config");
-    let bundle_path = maybe_opts.bundle_config;
-    let req_merged = maybe_opts.require_merged_config.expect("should unwrap require_merged_config");
-    let d = req_merged.lock();
+    let modules = &req.state()
+        .module_items
+        .lock()
+        .expect("should lock & unwrap module_items");
 
-    let res = match (bundle_path, d) {
-        (Some(bun_config), Ok(mut merged_config)) => {
+    let merged_config = req.state()
+        .require_merged_config
+        .lock()
+        .expect("should lock & unwrap require_merged_config");
+
+    let maybe_opts = M2PresetOptions::get_opts(&req.state().program_config).expect("should clone program config");
+    let bundle_path = maybe_opts.bundle_config;
+
+    let res = match bundle_path {
+        Some(bun_config) => {
             match resolve_from_string(bun_config) {
                 Ok(conf) => {
                     let modules = preset_m2_config_gen::run(modules.to_vec(), conf);
-                    merged_config.modules = Some(modules);
-                    match serde_json::to_string_pretty(&*merged_config) {
+                    let mut next_config = (*merged_config).clone();
+                    next_config.modules = Some(modules);
+                    match serde_json::to_string_pretty(&next_config) {
                         Ok(t) => Ok(t),
                         Err(e) => {
                             Err("nah".to_string())
@@ -243,6 +254,7 @@ fn serve_config_dump_json(req: &HttpRequest<AppState>) -> HttpResponse {
         },
         _ => Err("didnt match both".to_string())
     };
+
 
     match res {
         Ok(output) => {

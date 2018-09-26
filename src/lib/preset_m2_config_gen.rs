@@ -126,14 +126,14 @@ fn test_parse_config() {
     assert_eq!("requirejs/require", c.items[0].name);
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Module {
     name: String,
     include: Vec<String>,
     exclude: Vec<String>,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Outgoing {
     bundles: Vec<Module>,
 }

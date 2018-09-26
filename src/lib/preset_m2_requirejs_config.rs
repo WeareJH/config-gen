@@ -6,7 +6,7 @@ use preset_m2_config_gen::Module;
 
 type ModuleId = String;
 
-#[derive(Serialize, Deserialize, Debug, Default)]
+#[derive(Serialize, Deserialize, Debug, Default, Clone)]
 pub struct RequireJsMergedConfig {
     #[serde(rename = "baseUrl")]
     pub base_url: String,

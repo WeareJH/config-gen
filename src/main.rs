@@ -28,7 +28,9 @@ use bs::proxy_transform::proxy_transform;
 use openssl::ssl::SslAcceptorBuilder;
 use std::collections::HashMap;
 use std::sync::Mutex;
+use std::sync::Arc;
 use bs::config::get_config_contents_from_file;
+use bs::preset_m2_requirejs_config::RequireJsMergedConfig;
 
 fn main() {
     match get_program_config_from_cli().and_then(run_with_opts) {
@@ -86,6 +88,7 @@ fn run_with_opts(opts: ProxyOpts) -> Result<(), ProgramStartError> {
             opts: opts.clone(),
             rewrites: vec![],
             module_items: Mutex::new(vec![]),
+            require_merged_config: Arc::new(Mutex::new(RequireJsMergedConfig{..Default::default()})),
         };
 
         //

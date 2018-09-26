@@ -7,6 +7,8 @@ use rewrites::RewriteContext;
 use std::sync::Mutex;
 use config::ProgramConfig;
 use actix_web::http::Method;
+use preset_m2_requirejs_config::RequireJsMergedConfig;
+use std::sync::Arc;
 
 pub trait Preset<T> {
     fn enhance(&self, app: App<T>) -> App<T>;
@@ -32,4 +34,5 @@ pub struct AppState {
     pub opts: ProxyOpts,
     pub rewrites: RewriteFns,
     pub module_items: Mutex<Vec<ModuleData>>,
+    pub require_merged_config: Arc<Mutex<RequireJsMergedConfig>>
 }
