@@ -8,11 +8,16 @@ pub struct M2PresetOptions {
     pub require_path: Option<String>,
     pub bundle_config: Option<String>,
     pub auth_basic: Option<AuthBasic>,
+    #[serde(default = "default_require_merged_config")]
     pub require_merged_config: Option<Mutex<RequireJsMergedConfig>>
 }
 
 fn default_require_path() -> Option<String> {
     Some("/static/{version}/frontend/{vendor}/{theme}/{locale}/requirejs/require.js".into())
+}
+
+fn default_require_merged_config() -> Option<Mutex<RequireJsMergedConfig>> {
+    Some(Mutex::new(RequireJsMergedConfig{..Default::default()}))
 }
 
 impl Default for M2PresetOptions {
@@ -21,7 +26,7 @@ impl Default for M2PresetOptions {
             require_path: None,
             bundle_config: None,
             auth_basic: None,
-            require_merged_config: Some(Mutex::new(RequireJsMergedConfig{..Default::default()}))
+            require_merged_config: None,
         }
     }
 }

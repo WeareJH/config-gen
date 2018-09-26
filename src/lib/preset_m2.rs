@@ -217,10 +217,10 @@ fn serve_req_dump_json(req: &HttpRequest<AppState>) -> HttpResponse {
 /// serve a JSON dump of the current accumulated config
 fn serve_config_dump_json(req: &HttpRequest<AppState>) -> HttpResponse {
     let modules = &req.state().module_items;
-    let modules = modules.lock().unwrap();
-    let maybe_opts = M2PresetOptions::get_opts(req.state().program_config.clone()).unwrap();
+    let modules = modules.lock().expect("should lock & unwrap module_items");
+    let maybe_opts = M2PresetOptions::get_opts(req.state().program_config.clone()).expect("should clone program config");
     let bundle_path = maybe_opts.bundle_config;
-    let req_merged = maybe_opts.require_merged_config.unwrap();
+    let req_merged = maybe_opts.require_merged_config.expect("should unwrap require_merged_config");
     let d = req_merged.lock();
 
     let res = match (bundle_path, d) {
@@ -229,7 +229,7 @@ fn serve_config_dump_json(req: &HttpRequest<AppState>) -> HttpResponse {
                 Ok(conf) => {
                     let modules = preset_m2_config_gen::run(modules.to_vec(), conf);
                     merged_config.modules = Some(modules);
-                    match serde_json::to_string(&*merged_config) {
+                    match serde_json::to_string_pretty(&*merged_config) {
                         Ok(t) => Ok(t),
                         Err(e) => {
                             Err("nah".to_string())
