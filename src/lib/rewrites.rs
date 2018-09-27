@@ -17,7 +17,7 @@ use url::Url;
 /// assert_eq!(opts.host_to_replace, String::from("www.acme.com"))
 /// ```
 ///
-#[derive(Default, Serialize)]
+#[derive(Default, Serialize, Debug)]
 pub struct RewriteContext {
     pub host_to_replace: String,
     pub target_host: String,
@@ -113,6 +113,32 @@ mod tests {
     "#;
         let expected = r#"
     {"url": "https://127.0.0.1:8080\/checkout\/cart\/\"}
+    "#;
+        let context = RewriteContext {
+            host_to_replace: String::from("www.acme.com"),
+            target_host: String::from("127.0.0.1"),
+            target_port: 8080,
+        };
+        let actual = replace_host(bytes, &context);
+        println!("actual={}", actual);
+        assert_eq!(actual, expected);
+    }
+
+    #[test]
+    fn test_rewrites_within_script() {
+        let bytes = r#"
+<script>
+    var require = {
+        "baseUrl": "http://www.acme.com/static/version1517228438/frontend/Magento/luma/en_US"
+    };
+</script>
+    "#;
+        let expected = r#"
+<script>
+    var require = {
+        "baseUrl": "http://127.0.0.1:8080/static/version1517228438/frontend/Magento/luma/en_US"
+    };
+</script>
     "#;
         let context = RewriteContext {
             host_to_replace: String::from("www.acme.com"),

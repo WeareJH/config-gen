@@ -25,6 +25,19 @@ pub fn forward_request_without_body(
     let req_uri = incoming_request.uri().clone();
     let rewrites = incoming_request.state().rewrites.clone();
 
+    let req_host = incoming_request.headers().get(header::HOST).expect("expected host header");
+    let split: Vec<&str> = req_host
+        .to_str()
+        .expect("was not able to split string")
+        .split(":")
+        .collect();
+
+    let (host, port) = match (split.get(0), split.get(1)) {
+        (Some(h), Some(p)) => (h.to_string(), p.parse().expect("parsed port")),
+        (Some(h), None) => (h.to_string(), 80 as u16),
+        _ => ("localhost".to_string(), 80 as u16)
+    };
+
     outgoing
         .finish()
         .unwrap()
@@ -37,6 +50,8 @@ pub fn forward_request_without_body(
                 Either::A(response_from_rewrite(
                     proxy_response,
                     req_uri,
+                    host,
+                    port,
                     target_domain,
                     rewrites,
                 ))
@@ -80,10 +95,13 @@ fn pass_through_response(
 fn response_from_rewrite(
     proxy_response: ClientResponse,
     req_uri: Uri,
+    req_host: String,
+    req_port: u16,
     target_domain: String,
     rewrites: RewriteFns,
 ) -> Box<Future<Item = HttpResponse, Error = Error>> {
     let next_host = req_uri.clone();
+    println!("{:?}", next_host);
 
     let output = proxy_response
         .body()
@@ -92,27 +110,14 @@ fn response_from_rewrite(
         .and_then(move |body| {
             use std::str;
 
-            // In here, we now have a ful buffered response body
-            // so we can go ahead and apply URL replacements
-            let req_host = next_host.host().unwrap_or("");
-            let req_port = next_host.port().unwrap_or(80);
             let is_require_config = next_host.path().contains("requirejs-config.js");
-            let req_target = format!("{}:{}", req_host, req_host);
+            let req_target = format!("{}:{}", req_host, req_port);
             let context = RewriteContext {
                 host_to_replace: target_domain.clone(),
-                target_host: String::from(req_host),
+                target_host: req_host,
                 target_port: req_port,
             };
 
-
-//            let next_body = {
-//
-//                if is_require_config {
-//                    return String::from("console.log('kittens!')");
-//                }
-//
-//                // Convert the response body to a str
-//            };
             let body_content = str::from_utf8(&body[..]).unwrap();
 
             let next_body: String = if is_require_config {
