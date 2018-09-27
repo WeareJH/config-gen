@@ -3,6 +3,7 @@ extern crate serde_json;
 use serde_json::{Value, Error};
 use std::collections::HashMap;
 use preset_m2_config_gen::Module;
+use url::Url;
 
 type ModuleId = String;
 
@@ -42,6 +43,48 @@ fn test_parse_incoming_from_browser() {
         "Magento_Theme/js/responsive",
         "Magento_Theme/js/theme"
     ]);
-    assert_eq!(s.base_url, "/static/version1517228438/frontend/Magento/luma/en_US/");
+    assert_eq!(s.base_url, Some("/static/version1517228438/frontend/Magento/luma/en_US/".to_string()));
     assert_eq!(s.paths.get("jquery/ui"), Some(&"jquery/jquery-ui".to_string()));
+}
+
+#[derive(Debug)]
+pub struct BaseDirs {
+    pub dir: String,
+    pub base_url: String
+}
+
+pub fn base_to_dirs(input: &str) -> Result<BaseDirs, String> {
+    match Url::parse(input) {
+        Ok(mut url) => {
+            url.path_segments_mut().map_err(|_| "cannot be base").expect("url").pop_if_empty();
+            let mut segs = url.path_segments().map(|c| c.collect::<Vec<_>>());
+            let mut last = segs.clone().unwrap().pop().expect("can take last").to_string();
+            let last_for_dir = last.clone();
+
+            let mut base_output = vec!["static"];
+            let mut dir_output = vec!["static"];
+
+            for (i, item) in segs.expect("can iter over segs").iter().enumerate().skip(2) {
+                if *item != last.as_str() {
+                    base_output.push(item);
+                    dir_output.push(item);
+                }
+            }
+
+            dir_output.push(&last_for_dir);
+            last.push_str("_src");
+            base_output.push(&last);
+
+            Ok(BaseDirs{ dir: dir_output.join("/"), base_url: base_output.join("/") })
+        },
+        Err(err) => {
+            Err(err.to_string())
+        }
+    }
+}
+
+#[test]
+fn test_base_to_dirs() {
+    let bd = base_to_dirs("https://127.0.0.1:8080/static/version1538053013/frontend/Graham/default/en_GB/");
+    println!("{:?}", bd)
 }

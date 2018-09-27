@@ -21,6 +21,7 @@ use preset_m2_requirejs_config::RequireJsMergedConfig;
 use preset_m2_config_gen::Module;
 use std::sync::Mutex;
 use std::sync::Arc;
+use preset_m2_requirejs_config::base_to_dirs;
 
 ///
 /// The Magento 2 Preset
@@ -245,6 +246,10 @@ fn serve_config_dump_json(req: &HttpRequest<AppState>) -> HttpResponse {
                     next_config.inline_text = next_config.inline_text.or(Some(true));
                     next_config.generate_source_maps = next_config.generate_source_maps.or(Some(true));
 
+                    let dir = base_to_dirs(&next_config.base_url.expect("should access base_url")).expect("can create dirs");
+
+                    next_config.base_url = Some(dir.base_url);
+                    next_config.dir      = Some(dir.dir);
 
                     match serde_json::to_string_pretty(&next_config) {
                         Ok(t) => Ok(t),
