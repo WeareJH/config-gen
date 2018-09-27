@@ -128,12 +128,12 @@ fn test_parse_config() {
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Module {
-    name: String,
-    include: Vec<String>,
-    exclude: Vec<String>,
+    pub name: String,
+    pub include: Vec<String>,
+    pub exclude: Vec<String>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Outgoing {
-    bundles: Vec<Module>,
+    pub bundles: Vec<Module>,
 }
