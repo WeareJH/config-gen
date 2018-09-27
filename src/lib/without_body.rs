@@ -25,10 +25,8 @@ pub fn forward_request_without_body(
     let req_uri = incoming_request.uri().clone();
     let rewrites = incoming_request.state().rewrites.clone();
 
-    let req_host = incoming_request.headers().get(header::HOST).expect("expected host header");
-    let split: Vec<&str> = req_host
-        .to_str()
-        .expect("was not able to split string")
+//    let req_host = incoming_request.headers().get(header::HOST).expect("expected host header");
+    let split: Vec<&str> = "127.0.0.1:8080"
         .split(":")
         .collect();
 

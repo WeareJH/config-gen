@@ -8,15 +8,31 @@ type ModuleId = String;
 
 #[derive(Serialize, Deserialize, Debug, Default, Clone)]
 pub struct RequireJsMergedConfig {
+
+    pub dir: Option<String>,
+
     #[serde(rename = "baseUrl")]
-    pub base_url: String,
+    pub base_url: Option<String>,
+
+    #[serde(rename = "generateSourceMaps")]
+    pub generate_source_maps: Option<bool>,
+
+    #[serde(default = "default_inline_text")]
+    pub inline_text: Option<bool>,
+
+    #[serde(default = "default_optimize")]
+    pub optimize: Option<String>,
+
     pub deps: Vec<ModuleId>,
     pub map: serde_json::Value,
     pub config: serde_json::Value,
     pub shim: serde_json::Value,
     pub paths: HashMap<String, String>,
-    pub modules: Option<Vec<Module>>
+    pub modules: Option<Vec<Module>>,
 }
+
+fn default_optimize() -> Option<String> { Some("none".to_string()) }
+fn default_inline_text() -> Option<bool> { Some(true) }
 
 #[test]
 fn test_parse_incoming_from_browser() {

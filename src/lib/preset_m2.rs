@@ -239,7 +239,13 @@ fn serve_config_dump_json(req: &HttpRequest<AppState>) -> HttpResponse {
                 Ok(conf) => {
                     let modules = preset_m2_config_gen::run(modules.to_vec(), conf);
                     let mut next_config = (*merged_config).clone();
+
                     next_config.modules = Some(modules);
+                    next_config.optimize = next_config.optimize.or(Some("none".to_string()));
+                    next_config.inline_text = next_config.inline_text.or(Some(true));
+                    next_config.generate_source_maps = next_config.generate_source_maps.or(Some(true));
+
+
                     match serde_json::to_string_pretty(&next_config) {
                         Ok(t) => Ok(t),
                         Err(e) => {
