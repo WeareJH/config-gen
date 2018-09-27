@@ -32,6 +32,30 @@ pub struct RequireJsMergedConfig {
     pub modules: Option<Vec<Module>>,
 }
 
+impl RequireJsMergedConfig {
+    pub fn mixins(&self) -> Vec<String> {
+        match self.config {
+            serde_json::Value::Object(ref v) => {
+                match v.get("mixins") {
+                    Some(f) => {
+                        match f {
+                            serde_json::Value::Object(ref v) => {
+                                let names: Vec<String> = v.iter().map(|(key, value)| {
+                                    key.to_string()
+                                }).collect();
+                                names
+                            }
+                            _ => vec![]
+                        }
+                    }
+                    None => vec![]
+                }
+            }
+            _ => vec![]
+        }
+    }
+}
+
 fn default_optimize() -> Option<String> { Some("none".to_string()) }
 fn default_inline_text() -> Option<bool> { Some(true) }
 
@@ -45,6 +69,18 @@ fn test_parse_incoming_from_browser() {
     ]);
     assert_eq!(s.base_url, Some("/static/version1517228438/frontend/Magento/luma/en_US/".to_string()));
     assert_eq!(s.paths.get("jquery/ui"), Some(&"jquery/jquery-ui".to_string()));
+}
+
+#[test]
+fn test_filter_mixins() {
+    let input = include_bytes!("../../test/fixtures/example-post.json");
+    let s: RequireJsMergedConfig = serde_json::from_slice(input).unwrap();
+    assert_eq!(s.mixins(), vec!["jquery/jstree/jquery.jstree"]);
+
+    let s2 = RequireJsMergedConfig::default();
+    let expected: Vec<String> = vec![];
+
+    assert_eq!(s2.mixins(), expected);
 }
 
 #[derive(Debug)]
