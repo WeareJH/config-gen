@@ -22,18 +22,26 @@ pub fn forward_request_without_body(
     mut outgoing: ClientRequestBuilder,
 ) -> Box<Future<Item = HttpResponse, Error = Error>> {
     let target_domain = incoming_request.state().opts.target.clone();
+    let bind_port = incoming_request.state().opts.port;
     let req_uri = incoming_request.uri().clone();
     let rewrites = incoming_request.state().rewrites.clone();
 
-//    let req_host = incoming_request.headers().get(header::HOST).expect("expected host header");
-    let split: Vec<&str> = "127.0.0.1:8080"
-        .split(":")
-        .collect();
+    let split = match incoming_request.headers().get(header::HOST) {
+        Some(h) => {
+            let output: Vec<&str> = h
+                .to_str()
+                .expect("host to str")
+                .split(":")
+                .collect();
+            output
+        }
+        None => vec![]
+    };
 
     let (host, port) = match (split.get(0), split.get(1)) {
         (Some(h), Some(p)) => (h.to_string(), p.parse().expect("parsed port")),
         (Some(h), None) => (h.to_string(), 80 as u16),
-        _ => ("localhost".to_string(), 80 as u16)
+        _ => ("127.0.0.1".to_string(), bind_port)
     };
 
     outgoing

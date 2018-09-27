@@ -54,6 +54,27 @@ impl RequireJsMergedConfig {
             _ => vec![]
         }
     }
+    pub fn module_list(mixins: Vec<String>, modules: Vec<Module>) -> String {
+        let items: Vec<String> = modules
+            .iter()
+            .filter(|module| module.name != "requirejs/require")
+            .map(|module| {
+                let module_list: Vec<String> = module.include.iter().map(|name| {
+                    let is_mixin_trigger = mixins.contains(&name);
+                    match is_mixin_trigger {
+                        true => format!("         // mixin trigger: \"{}\",", name),
+                        false => format!("        \"{}\",", name)
+                    }
+                }).collect();
+
+                format!("require.config({{\n  bundles: {{\n    \"{}\": [\n{}\n    ]\n  }}\n}});",
+                        module.name,
+                        module_list.join("\n")
+                )
+            })
+            .collect();
+        items.join("\n")
+    }
 }
 
 fn default_optimize() -> Option<String> { Some("none".to_string()) }
@@ -75,12 +96,54 @@ fn test_parse_incoming_from_browser() {
 fn test_filter_mixins() {
     let input = include_bytes!("../../test/fixtures/example-post.json");
     let s: RequireJsMergedConfig = serde_json::from_slice(input).unwrap();
-    assert_eq!(s.mixins(), vec!["jquery/jstree/jquery.jstree"]);
+    assert_eq!(s.mixins(), vec!["Magento_Checkout/js/action/place-order", "Magento_Checkout/js/action/set-payment-information", "jquery/jstree/jquery.jstree"]);
 
     let s2 = RequireJsMergedConfig::default();
     let expected: Vec<String> = vec![];
 
     assert_eq!(s2.mixins(), expected);
+}
+
+#[test]
+fn test_module_list() {
+    let list = RequireJsMergedConfig::module_list(
+        vec!["js/shane".to_string()],
+        vec![
+            Module{
+                name: String::from("requirejs/require"),
+                include: vec![],
+                exclude: vec![],
+            },
+            Module{
+                name: String::from("bundle/base"),
+                include: vec!["js/shane".to_string(), "js/kittie".to_string()],
+                exclude: vec![],
+            },
+            Module{
+                name: String::from("bundle/product"),
+                include: vec!["js/gallery".to_string(), "js/zoomer".to_string()],
+                exclude: vec![],
+            }
+        ]
+    );
+    let expected = r#"require.config({
+  bundles: {
+    "bundle/base": [
+         // mixin trigger: "js/shane",
+        "js/kittie",
+    ]
+  }
+});
+require.config({
+  bundles: {
+    "bundle/product": [
+        "js/gallery",
+        "js/zoomer",
+    ]
+  }
+});"#;
+//    println!("{}", list);
+    assert_eq!(list, expected);
 }
 
 #[derive(Debug)]

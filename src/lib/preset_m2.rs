@@ -224,22 +224,8 @@ fn serve_req_dump_json(req: &HttpRequest<AppState>) -> HttpResponse {
 fn serve_loaders_dump_json(req: &HttpRequest<AppState>) -> HttpResponse {
     let output = match gather_state(req) {
         Ok((merged_config, modules)) => {
-
-            let mixin_names = merged_config.mixins();
-            let next_output: Vec<String> = modules
-                .iter()
-                .filter(|module| module.name != "requirejs/require")
-                .map(|module| {
-                    let is_mixin_trigger = mixin_names.contains(&module.name);
-                    let prefix = match is_mixin_trigger {
-                        true => "// mixin trigger: ",
-                        false => ""
-                    };
-                    format!(r#"{}require.config({{ bundles: {{ "{}": {} }}}});"#, prefix, module.name, "[]")
-                })
-                .collect();
-
-            Ok(next_output.join("\n"))
+            let module_list = RequireJsMergedConfig::module_list(merged_config.mixins(), modules);
+            Ok(module_list)
         },
         Err(e) => {
             Err("nah".to_string())
