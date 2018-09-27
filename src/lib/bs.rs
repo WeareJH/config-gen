@@ -2,6 +2,7 @@
 #![feature(extern_prelude)]
 extern crate actix;
 extern crate actix_web;
+extern crate base64;
 extern crate bytes;
 extern crate clap;
 extern crate env_logger;
@@ -14,7 +15,6 @@ extern crate serde;
 extern crate serde_json;
 extern crate serde_yaml;
 extern crate url;
-extern crate base64;
 
 #[macro_use]
 extern crate serde_derive;
@@ -24,9 +24,9 @@ pub mod headers;
 pub mod options;
 pub mod preset;
 pub mod preset_m2;
+pub mod preset_m2_bundle_config;
 pub mod preset_m2_config_gen;
 pub mod preset_m2_opts;
-pub mod preset_m2_bundle_config;
 pub mod preset_m2_requirejs_config;
 pub mod proxy_transform;
 pub mod replacer;

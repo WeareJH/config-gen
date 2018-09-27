@@ -28,20 +28,16 @@ pub fn forward_request_without_body(
 
     let split = match incoming_request.headers().get(header::HOST) {
         Some(h) => {
-            let output: Vec<&str> = h
-                .to_str()
-                .expect("host to str")
-                .split(":")
-                .collect();
+            let output: Vec<&str> = h.to_str().expect("host to str").split(":").collect();
             output
         }
-        None => vec![]
+        None => vec![],
     };
 
     let (host, port) = match (split.get(0), split.get(1)) {
         (Some(h), Some(p)) => (h.to_string(), p.parse().expect("parsed port")),
         (Some(h), None) => (h.to_string(), 80 as u16),
-        _ => ("127.0.0.1".to_string(), bind_port)
+        _ => ("127.0.0.1".to_string(), bind_port),
     };
 
     outgoing
@@ -70,7 +66,8 @@ pub fn forward_request_without_body(
                     target_domain,
                 ))
             }
-        }).responder()
+        })
+        .responder()
 }
 
 /// Pass-through response
@@ -128,7 +125,8 @@ fn response_from_rewrite(
 
             let next_body: String = if is_require_config {
                 let mut b = String::from(body_content);
-                b.push_str(r#"
+                b.push_str(
+                    r#"
 var xhr = new XMLHttpRequest();
 
 xhr.open('POST', '/__bs/post');
@@ -142,7 +140,8 @@ xhr.onload = function() {
     }
 };
 xhr.send(JSON.stringify(requirejs.s.contexts._.config));
-                "#);
+                "#,
+                );
                 b
             } else {
                 // Append any rewrites from presets
@@ -150,7 +149,6 @@ xhr.send(JSON.stringify(requirejs.s.contexts._.config));
                 fns.extend(rewrites);
                 Subject::new(body_content).apply(&context, fns)
             };
-
 
             Ok(create_outgoing(
                 &proxy_response.headers(),
@@ -167,7 +165,6 @@ xhr.send(JSON.stringify(requirejs.s.contexts._.config));
 /// Currently this just checks for a header of type text/html
 ///
 fn should_rewrite_body(uri: &Uri, resp: &ClientResponse) -> bool {
-
     if uri.path().contains("requirejs-config.js") {
         return true;
     }

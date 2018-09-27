@@ -221,5 +221,8 @@
       "Magento_Checkout/js/model/shipping-rate-processor/new-address": "temandoNewAddressRateProcessor"
     }
   },
-  "deps": []
+  "deps": [
+    "Magento_Theme/js/responsive",
+    "Magento_Theme/js/theme"
+  ]
 }

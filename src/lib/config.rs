@@ -22,25 +22,30 @@ pub struct ProgramConfig {
 
 impl ProgramConfig {
     pub fn get_opts(&self, name: &str) -> Option<serde_yaml::Value> {
-        self.presets.iter()
+        self.presets
+            .iter()
             .find(|p| p.name == name)
             .map(|p| p.options.clone())
     }
 }
 
-pub fn get_config_contents_from_file(maybe_path: impl Into<String>) -> Result<ProgramConfig, ProgramStartError> {
-    read_from_path(maybe_path.into())
-        .and_then(get_program_config_from_string)
+pub fn get_config_contents_from_file(
+    maybe_path: impl Into<String>,
+) -> Result<ProgramConfig, ProgramStartError> {
+    read_from_path(maybe_path.into()).and_then(get_program_config_from_string)
 }
 
 pub fn read_from_path(maybe_path: String) -> Result<String, ProgramStartError> {
     let mut file = File::open(maybe_path).map_err(|_| ProgramStartError::ConfigFileOpen)?;
     let mut contents = String::new();
-    file.read_to_string(&mut contents).map_err(|_| ProgramStartError::ConfigFileRead)?;
+    file.read_to_string(&mut contents)
+        .map_err(|_| ProgramStartError::ConfigFileRead)?;
     Ok(contents)
 }
 
-pub fn get_program_config_from_string(input: impl Into<String>) -> Result<ProgramConfig, ProgramStartError> {
+pub fn get_program_config_from_string(
+    input: impl Into<String>,
+) -> Result<ProgramConfig, ProgramStartError> {
     serde_yaml::from_str(&input.into()).map_err(|e| ProgramStartError::ConfigParseError(e))
 }
 
@@ -74,12 +79,8 @@ impl std::fmt::Display for ProgramStartError {
             ProgramStartError::ConfigCliError(_e) => {
                 write!(f, "could not parse incoming options from CLI")
             }
-            ProgramStartError::ConfigFileOpen => {
-                write!(f, "config file not found")
-            }
-            ProgramStartError::ConfigFileRead => {
-                write!(f, "config file content could not be read")
-            }
+            ProgramStartError::ConfigFileOpen => write!(f, "config file not found"),
+            ProgramStartError::ConfigFileRead => write!(f, "config file content could not be read"),
         }
     }
 }
@@ -107,13 +108,12 @@ pub fn get_program_config_from_cli() -> Result<ProxyOpts, ProgramStartError> {
 
     match get_host(matches.value_of("input").unwrap_or("")) {
         Ok((host, scheme)) => {
-
             let opts = ProxyOpts::new(host, scheme)
                 .with_port(matches.value_of("port").unwrap_or("8080").parse().unwrap())
                 .with_config_file(matches.value_of("config").unwrap());
 
             Ok(opts)
-        },
+        }
         Err(err) => Err(ProgramStartError::ConfigCliError(err)),
     }
 }

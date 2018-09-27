@@ -1,9 +1,9 @@
 extern crate serde_yaml;
 
-use std::io::prelude::*;
+use preset_m2_config_gen::ConfigItem;
 use preset_m2_config_gen::ConfigItems;
 use std::fs::File;
-use preset_m2_config_gen::ConfigItem;
+use std::io::prelude::*;
 
 #[derive(Eq, PartialEq, Debug, Deserialize)]
 pub struct Person {
@@ -22,11 +22,10 @@ pub enum ConfigError {
     InvalidInput(String),
     FileOpen,
     FileRead,
-    SerdeError(serde_yaml::Error)
+    SerdeError(serde_yaml::Error),
 }
 
 pub fn resolve_from_string(input: String) -> Result<ConfigItems, ConfigError> {
-
     let conf = get_config(&input);
 
     match conf {
@@ -56,7 +55,7 @@ fn get_config(input: &str) -> Result<ConfigItems, ConfigError> {
     get_file_path(&input)
         .and_then(read_from_path)
         .and_then(parse_from_string)
-        .map(|items: Vec<ConfigItem>| ConfigItems{ items })
+        .map(|items: Vec<ConfigItem>| ConfigItems { items })
 }
 
 ///
@@ -67,7 +66,7 @@ fn get_file_path(input: &str) -> Result<String, ConfigError> {
     match split.len() {
         1 => Ok(split[0].into()),
         2 => Ok(split[1].into()),
-        _ => Err(ConfigError::InvalidInput(input.to_string()))
+        _ => Err(ConfigError::InvalidInput(input.to_string())),
     }
 }
 
@@ -77,7 +76,8 @@ fn get_file_path(input: &str) -> Result<String, ConfigError> {
 fn read_from_path(maybe_path: String) -> Result<String, ConfigError> {
     let mut file = File::open(maybe_path).map_err(|_| ConfigError::FileOpen)?;
     let mut contents = String::new();
-    file.read_to_string(&mut contents).map_err(|_| ConfigError::FileRead)?;
+    file.read_to_string(&mut contents)
+        .map_err(|_| ConfigError::FileRead)?;
     Ok(contents)
 }
 

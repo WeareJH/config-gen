@@ -4,24 +4,24 @@ extern crate serde_json;
 use actix_web::http::Method;
 use actix_web::middleware::Finished;
 use actix_web::middleware::Middleware;
-use actix_web::{App, Error, HttpMessage, AsyncResponder};
 use actix_web::HttpRequest;
 use actix_web::HttpResponse;
+use actix_web::{App, AsyncResponder, Error, HttpMessage};
+use futures::{Future, Stream};
 use preset::AppState;
 use preset::Preset;
 use preset::ResourceDef;
 use preset::RewriteFns;
+use preset_m2_bundle_config::resolve_from_string;
 use preset_m2_config_gen;
+use preset_m2_config_gen::Module;
 use preset_m2_opts::M2PresetOptions;
+use preset_m2_requirejs_config::base_to_dirs;
+use preset_m2_requirejs_config::RequireJsMergedConfig;
 use regex::Regex;
 use rewrites::RewriteContext;
-use preset_m2_bundle_config::resolve_from_string;
-use futures::{Future, Stream};
-use preset_m2_requirejs_config::RequireJsMergedConfig;
-use preset_m2_config_gen::Module;
-use std::sync::Mutex;
 use std::sync::Arc;
-use preset_m2_requirejs_config::base_to_dirs;
+use std::sync::Mutex;
 
 ///
 /// The Magento 2 Preset
@@ -49,11 +49,15 @@ impl M2Preset {
             ("/__bs/loaders.json", Method::GET, serve_loaders_dump_json),
         ];
 
-        let app = resources.into_iter().fold(app, |acc_app, (path, method, cb)| {
-            acc_app.resource(&path, move |r| r.method(method).f(cb))
-        });
+        let app = resources
+            .into_iter()
+            .fold(app, |acc_app, (path, method, cb)| {
+                acc_app.resource(&path, move |r| r.method(method).f(cb))
+            });
 
-        app.resource("/__bs/post", move |r| r.method(Method::POST).f(handle_post_data))
+        app.resource("/__bs/post", move |r| {
+            r.method(Method::POST).f(handle_post_data)
+        })
     }
 }
 
@@ -63,29 +67,27 @@ impl M2Preset {
 fn handle_post_data(
     req: &HttpRequest<AppState>,
 ) -> Box<Future<Item = HttpResponse, Error = Error>> {
-
     let a = req.state().require_merged_config.clone();
 
     req.payload()
         .concat2()
         .from_err()
         .and_then(move |body| {
-
-            let result: Result<RequireJsMergedConfig, serde_json::Error>
-                = serde_json::from_str(std::str::from_utf8(&body).unwrap());
-//
+            let result: Result<RequireJsMergedConfig, serde_json::Error> =
+                serde_json::from_str(std::str::from_utf8(&body).unwrap());
+            //
             let output = match result {
                 Ok(next_config) => {
                     let mut mutex = a.lock().unwrap();
                     mutex.base_url = next_config.base_url;
-                    mutex.deps     = next_config.deps;
-                    mutex.map      = next_config.map;
-                    mutex.config   = next_config.config;
-                    mutex.paths    = next_config.paths;
-                    mutex.shim     = next_config.shim;
+                    mutex.deps = next_config.deps;
+                    mutex.map = next_config.map;
+                    mutex.config = next_config.config;
+                    mutex.paths = next_config.paths;
+                    mutex.shim = next_config.shim;
                     "Was Good!"
-                },
-                Err(e) => "Was Bad!"
+                }
+                Err(e) => "Was Bad!",
             };
 
             Ok(HttpResponse::Ok()
@@ -226,94 +228,72 @@ fn serve_loaders_dump_json(req: &HttpRequest<AppState>) -> HttpResponse {
         Ok((merged_config, modules)) => {
             let module_list = RequireJsMergedConfig::module_list(merged_config.mixins(), modules);
             Ok(module_list)
-        },
-        Err(e) => {
-            Err("nah".to_string())
         }
+        Err(e) => Err("nah".to_string()),
     };
 
     match output {
-        Ok(t) => {
-            HttpResponse::Ok()
-                .content_type("text/plain")
-                .body(t)
-        }
-        Err(e) => {
-            HttpResponse::Ok()
-                .content_type("text/plain")
-                .body("NAH")
-        }
+        Ok(t) => HttpResponse::Ok().content_type("text/plain").body(t),
+        Err(e) => HttpResponse::Ok().content_type("text/plain").body("NAH"),
     }
 }
 
-fn gather_state(req: &HttpRequest<AppState>) -> Result<(RequireJsMergedConfig, Vec<Module>), String> {
-    let modules = &req.state()
+fn gather_state(
+    req: &HttpRequest<AppState>,
+) -> Result<(RequireJsMergedConfig, Vec<Module>), String> {
+    let modules = &req
+        .state()
         .module_items
         .lock()
         .expect("should lock & unwrap module_items");
 
-    let merged_config = req.state()
+    let merged_config = req
+        .state()
         .require_merged_config
         .lock()
         .expect("should lock & unwrap require_merged_config");
 
-    let maybe_opts = M2PresetOptions::get_opts(&req.state().program_config).expect("should clone program config");
+    let maybe_opts = M2PresetOptions::get_opts(&req.state().program_config)
+        .expect("should clone program config");
     let bundle_path = maybe_opts.bundle_config;
 
     match bundle_path {
-        Some(bun_config) => {
-            match resolve_from_string(bun_config) {
-                Ok(conf) => {
-                    let modules = preset_m2_config_gen::run(modules.to_vec(), conf);
-                    let mut next_config = (*merged_config).clone();
+        Some(bun_config) => match resolve_from_string(bun_config) {
+            Ok(conf) => {
+                let modules = preset_m2_config_gen::run(modules.to_vec(), conf);
+                let mut next_config = (*merged_config).clone();
 
-                    next_config.modules = Some(modules.clone());
-                    next_config.optimize = next_config.optimize.or(Some("none".to_string()));
-                    next_config.inline_text = next_config.inline_text.or(Some(true));
-                    next_config.generate_source_maps = next_config.generate_source_maps.or(Some(true));
+                next_config.modules = Some(modules.clone());
+                next_config.optimize = next_config.optimize.or(Some("none".to_string()));
+                next_config.inline_text = next_config.inline_text.or(Some(true));
+                next_config.generate_source_maps = next_config.generate_source_maps.or(Some(true));
 
-                    let dir = base_to_dirs(&next_config.base_url.expect("should access base_url")).expect("can create dirs");
+                let dir = base_to_dirs(&next_config.base_url.expect("should access base_url"))
+                    .expect("can create dirs");
 
-                    next_config.base_url = Some(dir.base_url);
-                    next_config.dir      = Some(dir.dir);
+                next_config.base_url = Some(dir.base_url);
+                next_config.dir = Some(dir.dir);
 
-                    Ok((next_config, modules))
-                },
-                Err(e) => {
-                    Err("Couldn't convert to string".to_string())
-                }
+                Ok((next_config, modules))
             }
+            Err(e) => Err("Couldn't convert to string".to_string()),
         },
-        _ => Err("didnt match both".to_string())
+        _ => Err("didnt match both".to_string()),
     }
 }
 
 fn serve_config_dump_json(req: &HttpRequest<AppState>) -> HttpResponse {
     let output = match gather_state(req) {
-        Ok((merged_config, modules)) => {
-            match serde_json::to_string_pretty(&merged_config) {
-                Ok(t) => Ok(t),
-                Err(e) => {
-                    Err("nah".to_string())
-                }
-            }
+        Ok((merged_config, modules)) => match serde_json::to_string_pretty(&merged_config) {
+            Ok(t) => Ok(t),
+            Err(e) => Err("nah".to_string()),
         },
-        Err(e) => {
-            Err("nah".to_string())
-        }
+        Err(e) => Err("nah".to_string()),
     };
 
     match output {
-        Ok(t) => {
-            HttpResponse::Ok()
-                .content_type("text/plain")
-                .body(t)
-        }
-        Err(e) => {
-            HttpResponse::Ok()
-                .content_type("text/plain")
-                .body("NAH")
-        }
+        Ok(t) => HttpResponse::Ok().content_type("text/plain").body(t),
+        Err(e) => HttpResponse::Ok().content_type("text/plain").body("NAH"),
     }
 }
 

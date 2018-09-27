@@ -16,6 +16,7 @@ extern crate url;
 use actix_web::{server, App};
 use openssl::ssl::{SslAcceptor, SslFiletype, SslMethod};
 
+use bs::config::get_config_contents_from_file;
 use bs::config::get_program_config_from_cli;
 use bs::config::ProgramStartError;
 use bs::options::ProxyOpts;
@@ -24,13 +25,12 @@ use bs::preset::AppState;
 use bs::preset::Preset;
 use bs::preset_m2::M2Preset;
 use bs::preset_m2_opts::M2PresetOptions;
+use bs::preset_m2_requirejs_config::RequireJsMergedConfig;
 use bs::proxy_transform::proxy_transform;
 use openssl::ssl::SslAcceptorBuilder;
 use std::collections::HashMap;
-use std::sync::Mutex;
 use std::sync::Arc;
-use bs::config::get_config_contents_from_file;
-use bs::preset_m2_requirejs_config::RequireJsMergedConfig;
+use std::sync::Mutex;
 
 fn main() {
     match get_program_config_from_cli().and_then(run_with_opts) {
@@ -82,13 +82,14 @@ fn run_with_opts(opts: ProxyOpts) -> Result<(), ProgramStartError> {
         //
         let mut presets_map: HashMap<usize, Box<Preset<AppState>>> = HashMap::new();
 
-
         let mut app_state = AppState {
             program_config: program_config.clone(),
             opts: opts.clone(),
             rewrites: vec![],
             module_items: Mutex::new(vec![]),
-            require_merged_config: Arc::new(Mutex::new(RequireJsMergedConfig{..Default::default()})),
+            require_merged_config: Arc::new(Mutex::new(RequireJsMergedConfig {
+                ..Default::default()
+            })),
         };
 
         //
@@ -101,7 +102,8 @@ fn run_with_opts(opts: ProxyOpts) -> Result<(), ProgramStartError> {
         for (index, p) in program_config.presets.iter().enumerate() {
             match p.name.as_str() {
                 "m2" => {
-                    let preset_opts: M2PresetOptions = serde_yaml::from_value(p.options.clone()).unwrap();
+                    let preset_opts: M2PresetOptions =
+                        serde_yaml::from_value(p.options.clone()).unwrap();
                     let preset = M2Preset::new(preset_opts);
                     presets_map.insert(index, Box::new(preset));
                 }

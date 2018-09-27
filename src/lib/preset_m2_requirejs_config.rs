@@ -1,15 +1,14 @@
 extern crate serde_json;
 
-use serde_json::{Value, Error};
-use std::collections::HashMap;
 use preset_m2_config_gen::Module;
+use serde_json::{Error, Value};
+use std::collections::HashMap;
 use url::Url;
 
 type ModuleId = String;
 
 #[derive(Serialize, Deserialize, Debug, Default, Clone)]
 pub struct RequireJsMergedConfig {
-
     pub dir: Option<String>,
 
     #[serde(rename = "baseUrl")]
@@ -35,23 +34,18 @@ pub struct RequireJsMergedConfig {
 impl RequireJsMergedConfig {
     pub fn mixins(&self) -> Vec<String> {
         match self.config {
-            serde_json::Value::Object(ref v) => {
-                match v.get("mixins") {
-                    Some(f) => {
-                        match f {
-                            serde_json::Value::Object(ref v) => {
-                                let names: Vec<String> = v.iter().map(|(key, value)| {
-                                    key.to_string()
-                                }).collect();
-                                names
-                            }
-                            _ => vec![]
-                        }
+            serde_json::Value::Object(ref v) => match v.get("mixins") {
+                Some(f) => match f {
+                    serde_json::Value::Object(ref v) => {
+                        let names: Vec<String> =
+                            v.iter().map(|(key, value)| key.to_string()).collect();
+                        names
                     }
-                    None => vec![]
-                }
-            }
-            _ => vec![]
+                    _ => vec![],
+                },
+                None => vec![],
+            },
+            _ => vec![],
         }
     }
     pub fn module_list(mixins: Vec<String>, modules: Vec<Module>) -> String {
@@ -59,17 +53,22 @@ impl RequireJsMergedConfig {
             .iter()
             .filter(|module| module.name != "requirejs/require")
             .map(|module| {
-                let module_list: Vec<String> = module.include.iter().map(|name| {
-                    let is_mixin_trigger = mixins.contains(&name);
-                    match is_mixin_trigger {
-                        true => format!("         // mixin trigger: \"{}\",", name),
-                        false => format!("        \"{}\",", name)
-                    }
-                }).collect();
+                let module_list: Vec<String> = module
+                    .include
+                    .iter()
+                    .map(|name| {
+                        let is_mixin_trigger = mixins.contains(&name);
+                        match is_mixin_trigger {
+                            true => format!("         // mixin trigger: \"{}\",", name),
+                            false => format!("        \"{}\",", name),
+                        }
+                    })
+                    .collect();
 
-                format!("require.config({{\n  bundles: {{\n    \"{}\": [\n{}\n    ]\n  }}\n}});",
-                        module.name,
-                        module_list.join("\n")
+                format!(
+                    "require.config({{\n  bundles: {{\n    \"{}\": [\n{}\n    ]\n  }}\n}});",
+                    module.name,
+                    module_list.join("\n")
                 )
             })
             .collect();
@@ -77,26 +76,46 @@ impl RequireJsMergedConfig {
     }
 }
 
-fn default_optimize() -> Option<String> { Some("none".to_string()) }
-fn default_inline_text() -> Option<bool> { Some(true) }
+fn default_optimize() -> Option<String> {
+    Some("none".to_string())
+}
+fn default_inline_text() -> Option<bool> {
+    Some(true)
+}
 
 #[test]
 fn test_parse_incoming_from_browser() {
     let input = include_bytes!("../../test/fixtures/example-post.json");
     let s: RequireJsMergedConfig = serde_json::from_slice(input).unwrap();
-    assert_eq!(s.deps, vec![
-        "Magento_Theme/js/responsive",
-        "Magento_Theme/js/theme"
-    ]);
-    assert_eq!(s.base_url, Some("/static/version1517228438/frontend/Magento/luma/en_US/".to_string()));
-    assert_eq!(s.paths.get("jquery/ui"), Some(&"jquery/jquery-ui".to_string()));
+    assert_eq!(
+        s.deps,
+        vec!["Magento_Theme/js/responsive", "Magento_Theme/js/theme"]
+    );
+    assert_eq!(
+        s.base_url,
+        Some(
+            "http://127.0.0.1:9090/static/version1517228438/frontend/Magento/luma/en_US/"
+                .to_string()
+        )
+    );
+    assert_eq!(
+        s.paths.get("jquery/ui"),
+        Some(&"jquery/jquery-ui".to_string())
+    );
 }
 
 #[test]
 fn test_filter_mixins() {
     let input = include_bytes!("../../test/fixtures/example-post.json");
     let s: RequireJsMergedConfig = serde_json::from_slice(input).unwrap();
-    assert_eq!(s.mixins(), vec!["Magento_Checkout/js/action/place-order", "Magento_Checkout/js/action/set-payment-information", "jquery/jstree/jquery.jstree"]);
+    assert_eq!(
+        s.mixins(),
+        vec![
+            "Magento_Checkout/js/action/place-order",
+            "Magento_Checkout/js/action/set-payment-information",
+            "jquery/jstree/jquery.jstree",
+        ]
+    );
 
     let s2 = RequireJsMergedConfig::default();
     let expected: Vec<String> = vec![];
@@ -109,22 +128,22 @@ fn test_module_list() {
     let list = RequireJsMergedConfig::module_list(
         vec!["js/shane".to_string()],
         vec![
-            Module{
+            Module {
                 name: String::from("requirejs/require"),
                 include: vec![],
                 exclude: vec![],
             },
-            Module{
+            Module {
                 name: String::from("bundle/base"),
                 include: vec!["js/shane".to_string(), "js/kittie".to_string()],
                 exclude: vec![],
             },
-            Module{
+            Module {
                 name: String::from("bundle/product"),
                 include: vec!["js/gallery".to_string(), "js/zoomer".to_string()],
                 exclude: vec![],
-            }
-        ]
+            },
+        ],
     );
     let expected = r#"require.config({
   bundles: {
@@ -142,22 +161,30 @@ require.config({
     ]
   }
 });"#;
-//    println!("{}", list);
+    //    println!("{}", list);
     assert_eq!(list, expected);
 }
 
 #[derive(Debug)]
 pub struct BaseDirs {
     pub dir: String,
-    pub base_url: String
+    pub base_url: String,
 }
 
 pub fn base_to_dirs(input: &str) -> Result<BaseDirs, String> {
     match Url::parse(input) {
         Ok(mut url) => {
-            url.path_segments_mut().map_err(|_| "cannot be base").expect("url").pop_if_empty();
+            url.path_segments_mut()
+                .map_err(|_| "cannot be base")
+                .expect("url")
+                .pop_if_empty();
             let mut segs = url.path_segments().map(|c| c.collect::<Vec<_>>());
-            let mut last = segs.clone().unwrap().pop().expect("can take last").to_string();
+            let mut last = segs
+                .clone()
+                .unwrap()
+                .pop()
+                .expect("can take last")
+                .to_string();
             let last_for_dir = last.clone();
 
             let mut base_output = vec!["static"];
@@ -174,16 +201,19 @@ pub fn base_to_dirs(input: &str) -> Result<BaseDirs, String> {
             last.push_str("_src");
             base_output.push(&last);
 
-            Ok(BaseDirs{ dir: dir_output.join("/"), base_url: base_output.join("/") })
-        },
-        Err(err) => {
-            Err(err.to_string())
+            Ok(BaseDirs {
+                dir: dir_output.join("/"),
+                base_url: base_output.join("/"),
+            })
         }
+        Err(err) => Err(err.to_string()),
     }
 }
 
 #[test]
 fn test_base_to_dirs() {
-    let bd = base_to_dirs("https://127.0.0.1:8080/static/version1538053013/frontend/Graham/default/en_GB/");
+    let bd = base_to_dirs(
+        "https://127.0.0.1:8080/static/version1538053013/frontend/Graham/default/en_GB/",
+    );
     println!("{:?}", bd)
 }
