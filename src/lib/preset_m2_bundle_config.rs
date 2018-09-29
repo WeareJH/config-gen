@@ -5,12 +5,6 @@ use preset_m2_config_gen::ConfigItems;
 use std::fs::File;
 use std::io::prelude::*;
 
-#[derive(Eq, PartialEq, Debug, Deserialize)]
-pub struct Person {
-    name: String,
-    age: usize,
-}
-
 #[derive(Debug)]
 pub enum ConfigType {
     Invalid,
@@ -49,7 +43,7 @@ pub fn resolve_from_string(input: String) -> Result<ConfigItems, ConfigError> {
 
 ///
 /// From a string like `file:config.yaml`, try to read the file
-/// and if it exists, parse into a strongly typed struct `Person`
+/// and if it exists, parse into a strongly typed struct
 ///
 fn get_config(input: &str) -> Result<ConfigItems, ConfigError> {
     get_file_path(&input)
@@ -82,7 +76,7 @@ fn read_from_path(maybe_path: String) -> Result<String, ConfigError> {
 }
 
 ///
-/// Parse any YAML string directly into a Person Struct
+/// Parse any YAML string directly into a Struct
 ///
 fn parse_from_string(contents: String) -> Result<Vec<ConfigItem>, ConfigError> {
     serde_yaml::from_str(&contents).map_err(|e| ConfigError::SerdeError(e))
