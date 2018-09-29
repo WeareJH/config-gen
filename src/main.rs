@@ -87,9 +87,9 @@ fn run_with_opts(opts: ProxyOpts) -> Result<(), ProgramStartError> {
             opts: opts.clone(),
             rewrites: vec![],
             module_items: Mutex::new(vec![]),
-            require_merged_config: Arc::new(Mutex::new(RequireJsMergedConfig {
-                ..Default::default()
-            })),
+            require_merged_config: Arc::new(Mutex::new(
+                RequireJsMergedConfig::from_seed(Some("test/fixtures/example-config.json".to_string()))
+            )),
         };
 
         //

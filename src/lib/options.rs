@@ -22,6 +22,7 @@ pub struct ProxyOpts {
     pub scheme: ProxyScheme,
     pub port: u16,
     pub config_file: Option<String>,
+    pub seed_file: Option<String>,
 }
 
 impl ProxyOpts {
@@ -53,6 +54,7 @@ impl Default for ProxyOpts {
             scheme: ProxyScheme::Http,
             port: 8080,
             config_file: None,
+            seed_file: None
         }
     }
 }

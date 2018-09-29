@@ -32,6 +32,12 @@ pub struct RequireJsMergedConfig {
 }
 
 impl RequireJsMergedConfig {
+    pub fn from_seed(maybe_path: Option<String>) -> RequireJsMergedConfig {
+        maybe_path.map(|_path| {
+            RequireJsMergedConfig::default()
+        })
+            .unwrap_or_else(|| RequireJsMergedConfig::default())
+    }
     pub fn mixins(&self) -> Vec<String> {
         match self.config {
             serde_json::Value::Object(ref v) => match v.get("mixins") {
@@ -121,6 +127,12 @@ fn test_filter_mixins() {
     let expected: Vec<String> = vec![];
 
     assert_eq!(s2.mixins(), expected);
+}
+
+#[test]
+fn test_hydrate() {
+    let input = include_bytes!("../../test/fixtures/example-config.json");
+    let s: RequireJsMergedConfig = serde_json::from_slice(input).unwrap();
 }
 
 #[test]
