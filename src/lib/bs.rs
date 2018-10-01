@@ -33,3 +33,4 @@ pub mod replacer;
 pub mod rewrites;
 pub mod with_body;
 pub mod without_body;
+pub mod from_file;

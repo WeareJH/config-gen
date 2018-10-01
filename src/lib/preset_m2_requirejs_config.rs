@@ -4,6 +4,7 @@ use preset_m2_config_gen::Module;
 use serde_json::{Error, Value};
 use std::collections::HashMap;
 use url::Url;
+use from_file::FromFile;
 
 type ModuleId = String;
 
@@ -31,12 +32,21 @@ pub struct RequireJsMergedConfig {
     pub modules: Option<Vec<Module>>,
 }
 
+impl FromFile for RequireJsMergedConfig {}
+
 impl RequireJsMergedConfig {
     pub fn from_seed(maybe_path: Option<String>) -> RequireJsMergedConfig {
-        maybe_path.map(|_path| {
-            RequireJsMergedConfig::default()
+        maybe_path.map(|path| {
+            match RequireJsMergedConfig::from_yml_file(&path) {
+                Ok(c) => Some(c),
+                Err(e) => {
+                    eprintln!("Couldn't load seed, e={:?}", e);
+                    None
+                }
+            }
         })
-            .unwrap_or_else(|| RequireJsMergedConfig::default())
+            .unwrap_or(Some(RequireJsMergedConfig::default()))
+            .unwrap()
     }
     pub fn mixins(&self) -> Vec<String> {
         match self.config {
