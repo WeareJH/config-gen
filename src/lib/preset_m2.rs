@@ -22,6 +22,7 @@ use regex::Regex;
 use rewrites::RewriteContext;
 use std::sync::Arc;
 use std::sync::Mutex;
+use from_file::FromFile;
 
 ///
 /// The Magento 2 Preset
@@ -216,8 +217,12 @@ fn serve_instrumented_require_js(_req: &HttpRequest<AppState>) -> HttpResponse {
 
 #[derive(Serialize, Deserialize)]
 pub struct SeedData {
-    merged_config: RequireJsMergedConfig,
-    module_items: Vec<ModuleData>
+    pub merged_config: RequireJsMergedConfig,
+    pub module_items: Vec<ModuleData>
+}
+
+impl FromFile for SeedData {
+
 }
 
 /// serve a JSON dump of the current accumulated
