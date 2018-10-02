@@ -29,6 +29,8 @@ pub struct RequireJsMergedConfig {
     pub config: serde_json::Value,
     pub shim: serde_json::Value,
     pub paths: HashMap<String, String>,
+
+    #[serde(default = "default_modules")]
     pub modules: Option<Vec<Module>>,
 }
 
@@ -97,6 +99,9 @@ fn default_optimize() -> Option<String> {
 }
 fn default_inline_text() -> Option<bool> {
     Some(true)
+}
+fn default_modules() -> Option<Vec<Module>> {
+    Some(vec![])
 }
 
 #[test]

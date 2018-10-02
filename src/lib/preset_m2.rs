@@ -215,7 +215,7 @@ fn serve_instrumented_require_js(_req: &HttpRequest<AppState>) -> HttpResponse {
 }
 
 #[derive(Serialize, Deserialize)]
-pub struct SeedOutput {
+pub struct SeedData {
     merged_config: RequireJsMergedConfig,
     module_items: Vec<ModuleData>
 }
@@ -235,8 +235,7 @@ fn serve_seed_dump_json(req: &HttpRequest<AppState>) -> HttpResponse {
         .lock()
         .expect("should lock & unwrap require_merged_config");
 
-    let output = SeedOutput{merged_config: merged_config.clone(), module_items: module_items.to_vec()};
-
+    let output = SeedData { merged_config: merged_config.clone(), module_items: module_items.to_vec() };
 
     let output = match serde_json::to_string_pretty(&output) {
         Ok(t) => Ok(t),
