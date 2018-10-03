@@ -27,6 +27,8 @@ use actix_web::client::ClientResponse;
 use proxy_transform::create_outgoing;
 use proxy_transform::get_host_port;
 
+type FutResp = Box<Future<Item = HttpResponse, Error = Error>>;
+
 ///
 /// The Magento 2 Preset
 ///
@@ -76,7 +78,7 @@ impl M2Preset {
 ///
 fn handle_post_data(
     req: &HttpRequest<AppState>,
-) -> Box<Future<Item = HttpResponse, Error = Error>> {
+) -> FutResp {
     let a = req.state().require_client_config.clone();
 
     req.payload()
@@ -222,7 +224,20 @@ fn serve_instrumented_require_js(_req: &HttpRequest<AppState>) -> HttpResponse {
         .body(bytes)
 }
 
-fn serve_requirejs_config(original_request: &HttpRequest<AppState>) -> Box<Future<Item = HttpResponse, Error = Error>> {
+fn serve_requirejs_config(original_request: &HttpRequest<AppState>) -> FutResp {
+    apply_to_proxy_body(original_request, |mut b| {
+        b.push_str(include_str!("./static/post_config.js"));
+        b
+    })
+}
+
+///
+/// A helper for applying a transformation on a proxy
+/// response before sending it back to the origin requester
+///
+fn apply_to_proxy_body<F>(original_request: &HttpRequest<AppState>, f: F) -> FutResp
+    where F: Fn(String) -> String + 'static
+{
     let mut outgoing = proxy_req_setup(original_request);
     let target_domain = original_request.state().opts.target.clone();
     let bind_port = original_request.state().opts.port;
@@ -243,31 +258,13 @@ fn serve_requirejs_config(original_request: &HttpRequest<AppState>) -> Box<Futur
 
                     let req_target = format!("{}:{}", host, port);
                     let body_content = str::from_utf8(&body[..]).unwrap();
-
-                    let mut next_body: String = String::from(body_content);
-                    next_body.push_str(
-                            r#"
-var xhr = new XMLHttpRequest();
-
-xhr.open('POST', '/__bs/post');
-xhr.setRequestHeader('Content-Type', 'application/json');
-xhr.onload = function() {
-    if (xhr.status === 200) {
-        console.log('sent');
-    }
-    else if (xhr.status !== 200) {
-        alert('Request failed.  Returned status of ' + xhr.status);
-    }
-};
-xhr.send(JSON.stringify(requirejs.s.contexts._.config));
-                "#
-                    );
+                    let next_body: String = String::from(body_content);
 
                     Ok(create_outgoing(
                         &proxy_response.headers(),
                         target_domain.to_string(),
                         req_target,
-                    ).body(next_body))
+                    ).body(f(next_body)))
                 })
         })
         .responder()
