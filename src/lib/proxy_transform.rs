@@ -11,6 +11,7 @@ use preset_m2_opts::M2PresetOptions;
 use std::str;
 use with_body::forward_request_with_body;
 use without_body::forward_request_without_body;
+use actix_web::client::ClientRequestBuilder;
 
 ///
 /// This function will clone incoming requests
@@ -19,6 +20,16 @@ use without_body::forward_request_without_body;
 pub fn proxy_transform(
     original_request: &HttpRequest<AppState>,
 ) -> Box<Future<Item = HttpResponse, Error = Error>> {
+
+    let outgoing = proxy_req_setup(original_request);
+
+    match *original_request.method() {
+        Method::POST => forward_request_with_body(original_request, outgoing),
+        _ => forward_request_without_body(original_request, outgoing),
+    }
+}
+
+pub fn proxy_req_setup(original_request: &HttpRequest<AppState>) -> ClientRequestBuilder {
     let original_req_headers = original_request.headers().clone();
     let next_host = original_request.uri().clone();
     let req_host = next_host.host().unwrap_or("");
@@ -91,10 +102,7 @@ pub fn proxy_transform(
         });
     });
 
-    match *original_request.method() {
-        Method::POST => forward_request_with_body(original_request, outgoing),
-        _ => forward_request_without_body(original_request, outgoing),
-    }
+    outgoing
 }
 
 pub fn create_outgoing(
@@ -109,6 +117,22 @@ pub fn create_outgoing(
         outgoing.header(key.clone(), value.clone());
     }
     outgoing
+}
+
+pub fn get_host_port(incoming_request: &HttpRequest<AppState>, bind_port: u16) -> (String, u16) {
+    let split = match incoming_request.headers().get(header::HOST) {
+        Some(h) => {
+            let output: Vec<&str> = h.to_str().expect("host to str").split(":").collect();
+            output
+        }
+        None => vec![],
+    };
+
+    match (split.get(0), split.get(1)) {
+        (Some(h), Some(p)) => (h.to_string(), p.parse().expect("parsed port")),
+        (Some(h), None) => (h.to_string(), 80 as u16),
+        _ => ("127.0.0.1".to_string(), bind_port),
+    }
 }
 
 #[cfg(test)]

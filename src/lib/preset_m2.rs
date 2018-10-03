@@ -22,6 +22,10 @@ use regex::Regex;
 use rewrites::RewriteContext;
 use from_file::FromFile;
 use preset_m2_requirejs_config::RequireJsBuildConfig;
+use proxy_transform::proxy_req_setup;
+use actix_web::client::ClientResponse;
+use proxy_transform::create_outgoing;
+use proxy_transform::get_host_port;
 
 ///
 /// The Magento 2 Preset
@@ -57,9 +61,13 @@ impl M2Preset {
                 acc_app.resource(&path, move |r| r.method(method).f(cb))
             });
 
-        app.resource("/__bs/post", move |r| {
-            r.method(Method::POST).f(handle_post_data)
-        })
+        app.resource(
+            "/__bs/post",
+            move |r| r.method(Method::POST).f(handle_post_data)
+        ).resource(
+            "/static/{version}/frontend/{vendor}/{theme}/{locale}/requirejs-config.js",
+            move |r| r.method(Method::GET).f(serve_requirejs_config)
+        )
     }
 }
 
@@ -214,6 +222,57 @@ fn serve_instrumented_require_js(_req: &HttpRequest<AppState>) -> HttpResponse {
         .body(bytes)
 }
 
+fn serve_requirejs_config(original_request: &HttpRequest<AppState>) -> Box<Future<Item = HttpResponse, Error = Error>> {
+    let mut outgoing = proxy_req_setup(original_request);
+    let target_domain = original_request.state().opts.target.clone();
+    let bind_port = original_request.state().opts.port;
+    let (host, port) = get_host_port(original_request, bind_port);
+
+    outgoing
+        .finish()
+        .unwrap()
+        .send()
+        .map_err(Error::from)
+        .and_then(move |proxy_response: ClientResponse| {
+            proxy_response
+                .body()
+                .limit(1_000_000)
+                .from_err()
+                .and_then(move |body| {
+                    use std::str;
+
+                    let req_target = format!("{}:{}", host, port);
+                    let body_content = str::from_utf8(&body[..]).unwrap();
+
+                    let mut next_body: String = String::from(body_content);
+                    next_body.push_str(
+                            r#"
+var xhr = new XMLHttpRequest();
+
+xhr.open('POST', '/__bs/post');
+xhr.setRequestHeader('Content-Type', 'application/json');
+xhr.onload = function() {
+    if (xhr.status === 200) {
+        console.log('sent');
+    }
+    else if (xhr.status !== 200) {
+        alert('Request failed.  Returned status of ' + xhr.status);
+    }
+};
+xhr.send(JSON.stringify(requirejs.s.contexts._.config));
+                "#
+                    );
+
+                    Ok(create_outgoing(
+                        &proxy_response.headers(),
+                        target_domain.to_string(),
+                        req_target,
+                    ).body(next_body))
+                })
+        })
+        .responder()
+}
+
 #[derive(Serialize, Deserialize, Default)]
 pub struct SeedData {
     pub client_config: RequireJsClientConfig,
@@ -312,7 +371,7 @@ fn gather_state(
                         derived_build_config.base_url = Some(dir.base_url);
                         derived_build_config.dir = Some(dir.dir);
                     }
-                    Err(e) => {
+                    Err(_e) => {
                         eprintln!("Could not use base_url to create baseUrl + dir");
                     }
                 }

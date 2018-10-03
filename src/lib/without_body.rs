@@ -11,6 +11,7 @@ use preset::RewriteFns;
 use proxy_transform::create_outgoing;
 use replacer::{Replacer, Subject};
 use rewrites::{replace_host, RewriteContext};
+use proxy_transform::get_host_port;
 
 ///
 /// Process regular GET requests where we don't need to consider
@@ -25,19 +26,7 @@ pub fn forward_request_without_body(
     let req_uri = incoming_request.uri().clone();
     let rewrites = incoming_request.state().rewrites.clone();
 
-    let split = match incoming_request.headers().get(header::HOST) {
-        Some(h) => {
-            let output: Vec<&str> = h.to_str().expect("host to str").split(":").collect();
-            output
-        }
-        None => vec![],
-    };
-
-    let (host, port) = match (split.get(0), split.get(1)) {
-        (Some(h), Some(p)) => (h.to_string(), p.parse().expect("parsed port")),
-        (Some(h), None) => (h.to_string(), 80 as u16),
-        _ => ("127.0.0.1".to_string(), bind_port),
-    };
+    let (host, port) = get_host_port(incoming_request, bind_port);
 
     outgoing
         .finish()
@@ -50,7 +39,6 @@ pub fn forward_request_without_body(
             if should_rewrite_body(&req_uri, &proxy_response) {
                 Either::A(response_from_rewrite(
                     proxy_response,
-                    req_uri,
                     host,
                     port,
                     target_domain,
@@ -61,7 +49,8 @@ pub fn forward_request_without_body(
                 // so we just stream it back to the client
                 Either::B(pass_through_response(
                     proxy_response,
-                    req_uri,
+                    host,
+                    port,
                     target_domain,
                 ))
             }
@@ -72,12 +61,11 @@ pub fn forward_request_without_body(
 /// Pass-through response
 fn pass_through_response(
     proxy_response: ClientResponse,
-    req_uri: Uri,
+    host: String,
+    port: u16,
     target_domain: String,
 ) -> Box<Future<Item = HttpResponse, Error = Error>> {
-    let req_host = req_uri.host().unwrap_or("");
-    let req_port = req_uri.port().unwrap_or(80);
-    let req_target = format!("{}:{}", req_host, req_port);
+    let req_target = format!("{}:{}", host, port);
 
     let output = ok(create_outgoing(
         &proxy_response.headers(),
@@ -96,14 +84,11 @@ fn pass_through_response(
 ///
 fn response_from_rewrite(
     proxy_response: ClientResponse,
-    req_uri: Uri,
     req_host: String,
     req_port: u16,
     target_domain: String,
     rewrites: RewriteFns,
 ) -> Box<Future<Item = HttpResponse, Error = Error>> {
-    let next_host = req_uri.clone();
-    println!("{:?}", next_host);
 
     let output = proxy_response
         .body()
@@ -112,7 +97,6 @@ fn response_from_rewrite(
         .and_then(move |body| {
             use std::str;
 
-            let is_require_config = next_host.path().contains("requirejs-config.js");
             let req_target = format!("{}:{}", req_host, req_port);
             let context = RewriteContext {
                 host_to_replace: target_domain.clone(),
@@ -122,32 +106,10 @@ fn response_from_rewrite(
 
             let body_content = str::from_utf8(&body[..]).unwrap();
 
-            let next_body: String = if is_require_config {
-                let mut b = String::from(body_content);
-                b.push_str(
-                    r#"
-var xhr = new XMLHttpRequest();
-
-xhr.open('POST', '/__bs/post');
-xhr.setRequestHeader('Content-Type', 'application/json');
-xhr.onload = function() {
-    if (xhr.status === 200) {
-        console.log('sent');
-    }
-    else if (xhr.status !== 200) {
-        alert('Request failed.  Returned status of ' + xhr.status);
-    }
-};
-xhr.send(JSON.stringify(requirejs.s.contexts._.config));
-                "#,
-                );
-                b
-            } else {
-                // Append any rewrites from presets
-                let mut fns: RewriteFns = vec![replace_host];
-                fns.extend(rewrites);
-                Subject::new(body_content).apply(&context, fns)
-            };
+            // Append any rewrites from presets
+            let mut fns: RewriteFns = vec![replace_host];
+            fns.extend(rewrites);
+            let next_body = Subject::new(body_content).apply(&context, fns);
 
             Ok(create_outgoing(
                 &proxy_response.headers(),
