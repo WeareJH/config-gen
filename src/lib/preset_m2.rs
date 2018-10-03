@@ -17,10 +17,11 @@ use preset_m2_config_gen;
 use preset_m2_config_gen::Module;
 use preset_m2_opts::M2PresetOptions;
 use preset_m2_requirejs_config::base_to_dirs;
-use preset_m2_requirejs_config::RequireJsMergedConfig;
+use preset_m2_requirejs_config::{RequireJsClientConfig};
 use regex::Regex;
 use rewrites::RewriteContext;
 use from_file::FromFile;
+use preset_m2_requirejs_config::RequireJsBuildConfig;
 
 ///
 /// The Magento 2 Preset
@@ -68,13 +69,13 @@ impl M2Preset {
 fn handle_post_data(
     req: &HttpRequest<AppState>,
 ) -> Box<Future<Item = HttpResponse, Error = Error>> {
-    let a = req.state().require_merged_config.clone();
+    let a = req.state().require_client_config.clone();
 
     req.payload()
         .concat2()
         .from_err()
         .and_then(move |body| {
-            let result: Result<RequireJsMergedConfig, serde_json::Error> =
+            let result: Result<RequireJsClientConfig, serde_json::Error> =
                 serde_json::from_str(std::str::from_utf8(&body).unwrap());
             //
             match result {
@@ -215,7 +216,7 @@ fn serve_instrumented_require_js(_req: &HttpRequest<AppState>) -> HttpResponse {
 
 #[derive(Serialize, Deserialize, Default)]
 pub struct SeedData {
-    pub merged_config: RequireJsMergedConfig,
+    pub client_config: RequireJsClientConfig,
     pub module_items: Vec<ModuleData>
 }
 
@@ -230,13 +231,13 @@ fn serve_seed_dump_json(req: &HttpRequest<AppState>) -> HttpResponse {
         .lock()
         .expect("should lock & unwrap module_items");
 
-    let merged_config = req
+    let client_config = req
         .state()
-        .require_merged_config
+        .require_client_config
         .lock()
-        .expect("should lock & unwrap require_merged_config");
+        .expect("should lock & unwrap require_client_config");
 
-    let output = SeedData { merged_config: merged_config.clone(), module_items: module_items.to_vec() };
+    let output = SeedData { client_config: client_config.clone(), module_items: module_items.to_vec() };
 
     let output = match serde_json::to_string_pretty(&output) {
         Ok(t) => Ok(t),
@@ -263,7 +264,9 @@ fn serve_req_dump_json(req: &HttpRequest<AppState>) -> HttpResponse {
 fn serve_loaders_dump_json(req: &HttpRequest<AppState>) -> HttpResponse {
     let output = match gather_state(req) {
         Ok((merged_config, modules)) => {
-            let module_list = RequireJsMergedConfig::module_list(merged_config.mixins(), modules);
+            let module_list = RequireJsClientConfig::module_list(
+                RequireJsClientConfig::mixins(&merged_config.config)
+            , modules);
             Ok(module_list)
         }
         Err(e) => Err(e),
@@ -277,18 +280,18 @@ fn serve_loaders_dump_json(req: &HttpRequest<AppState>) -> HttpResponse {
 
 fn gather_state(
     req: &HttpRequest<AppState>,
-) -> Result<(RequireJsMergedConfig, Vec<Module>), String> {
+) -> Result<(RequireJsBuildConfig, Vec<Module>), String> {
     let modules = &req
         .state()
         .module_items
         .lock()
         .expect("should lock & unwrap module_items");
 
-    let merged_config = req
+    let client_config = req
         .state()
-        .require_merged_config
+        .require_client_config
         .lock()
-        .expect("should lock & unwrap require_merged_config");
+        .expect("should lock & unwrap require_client_config");
 
     let maybe_opts = M2PresetOptions::get_opts(&req.state().program_config)
         .expect("should clone program config");
@@ -298,20 +301,23 @@ fn gather_state(
         Some(bun_config) => match resolve_from_string(bun_config) {
             Ok(conf) => {
                 let modules = preset_m2_config_gen::run(modules.to_vec(), conf);
-                let mut next_config = (*merged_config).clone();
+                let mut derived_build_config = RequireJsBuildConfig::default();
 
-                next_config.modules = Some(modules.clone());
-                next_config.optimize = next_config.optimize.or(Some("none".to_string()));
-                next_config.inline_text = next_config.inline_text.or(Some(true));
-                next_config.generate_source_maps = next_config.generate_source_maps.or(Some(true));
+                derived_build_config.modules = Some(modules.clone());
 
-                let dir = base_to_dirs(&next_config.base_url.expect("should access base_url"))
-                    .expect("can create dirs");
+                let base_url = client_config.base_url.clone().unwrap_or("".to_string());
 
-                next_config.base_url = Some(dir.base_url);
-                next_config.dir = Some(dir.dir);
+                match base_to_dirs(&base_url) {
+                    Ok(dir) => {
+                        derived_build_config.base_url = Some(dir.base_url);
+                        derived_build_config.dir = Some(dir.dir);
+                    }
+                    Err(e) => {
+                        eprintln!("Could not use base_url to create baseUrl + dir");
+                    }
+                }
 
-                Ok((next_config, modules))
+                Ok((derived_build_config, modules))
             }
             Err(_e) => Err("Couldn't convert to string".to_string()),
         },
@@ -320,7 +326,7 @@ fn gather_state(
 }
 
 fn serve_config_dump_json(req: &HttpRequest<AppState>) -> HttpResponse {
-    let output = match req.state().require_merged_config.lock() {
+    let output = match req.state().require_client_config.lock() {
         Ok(config) => match serde_json::to_string_pretty(&*config) {
             Ok(t) => Ok(t),
             Err(e) => Err(e.to_string()),

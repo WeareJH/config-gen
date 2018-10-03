@@ -104,13 +104,19 @@ pub fn get_program_config_from_cli() -> Result<ProxyOpts, ProgramStartError> {
                 .takes_value(true)
                 .required(true),
         )
+        .arg(
+            Arg::with_name("seed")
+                .long("seed")
+                .takes_value(true),
+        )
         .get_matches();
 
     match get_host(matches.value_of("input").unwrap_or("")) {
         Ok((host, scheme)) => {
             let opts = ProxyOpts::new(host, scheme)
                 .with_port(matches.value_of("port").unwrap_or("8080").parse().unwrap())
-                .with_config_file(matches.value_of("config").unwrap());
+                .with_config_file(matches.value_of("config").unwrap())
+                .with_seed_file(matches.value_of("seed"));
 
             Ok(opts)
         }

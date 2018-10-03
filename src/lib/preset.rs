@@ -5,7 +5,7 @@ use actix_web::HttpResponse;
 use config::ProgramConfig;
 use options::ProxyOpts;
 use preset_m2::ModuleData;
-use preset_m2_requirejs_config::RequireJsMergedConfig;
+use preset_m2_requirejs_config::RequireJsClientConfig;
 use rewrites::RewriteContext;
 use std::sync::Arc;
 use std::sync::Mutex;
@@ -34,5 +34,5 @@ pub struct AppState {
     pub opts: ProxyOpts,
     pub rewrites: RewriteFns,
     pub module_items: Mutex<Vec<ModuleData>>,
-    pub require_merged_config: Arc<Mutex<RequireJsMergedConfig>>,
+    pub require_client_config: Arc<Mutex<RequireJsClientConfig>>,
 }

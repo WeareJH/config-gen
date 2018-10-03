@@ -1,5 +1,3 @@
-extern crate serde_json;
-
 use preset_m2_config_gen::Module;
 use std::collections::HashMap;
 use url::Url;
@@ -7,12 +5,39 @@ use from_file::FromFile;
 
 type ModuleId = String;
 
-#[derive(Serialize, Deserialize, Debug, Default, Clone)]
-pub struct RequireJsMergedConfig {
-    pub dir: Option<String>,
-
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct RequireJsClientConfig {
     #[serde(rename = "baseUrl")]
     pub base_url: Option<String>,
+    pub deps: Vec<ModuleId>,
+    pub map: serde_json::Value,
+    pub config: serde_json::Value,
+    pub shim: serde_json::Value,
+    pub paths: HashMap<String, String>,
+}
+
+impl Default for RequireJsClientConfig {
+    fn default() -> RequireJsClientConfig {
+        RequireJsClientConfig {
+            base_url: Some("".into()),
+            deps: vec![],
+            map: json!({}),
+            config: json!({}),
+            shim: json!({}),
+            paths: HashMap::new(),
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct RequireJsBuildConfig {
+    #[serde(rename = "baseUrl")]
+    pub base_url: Option<String>,
+    pub deps: Vec<ModuleId>,
+    pub map: serde_json::Value,
+    pub config: serde_json::Value,
+    pub shim: serde_json::Value,
+    pub paths: HashMap<String, String>,
 
     #[serde(rename = "generateSourceMaps")]
     pub generate_source_maps: Option<bool>,
@@ -20,37 +45,38 @@ pub struct RequireJsMergedConfig {
     #[serde(default = "default_inline_text")]
     pub inline_text: Option<bool>,
 
+    pub dir: Option<String>,
+
     #[serde(default = "default_optimize")]
     pub optimize: Option<String>,
-
-    pub deps: Vec<ModuleId>,
-    pub map: serde_json::Value,
-    pub config: serde_json::Value,
-    pub shim: serde_json::Value,
-    pub paths: HashMap<String, String>,
 
     #[serde(default = "default_modules")]
     pub modules: Option<Vec<Module>>,
 }
 
-impl FromFile for RequireJsMergedConfig {}
-
-impl RequireJsMergedConfig {
-    pub fn from_seed(maybe_path: Option<String>) -> RequireJsMergedConfig {
-        maybe_path.map(|path| {
-            match RequireJsMergedConfig::from_yml_file(&path) {
-                Ok(c) => Some(c),
-                Err(e) => {
-                    eprintln!("Couldn't load seed, e={:?}", e);
-                    None
-                }
-            }
-        })
-            .unwrap_or(Some(RequireJsMergedConfig::default()))
-            .unwrap()
+impl Default for RequireJsBuildConfig {
+    fn default() -> RequireJsBuildConfig {
+        RequireJsBuildConfig {
+            base_url: Some("".into()),
+            deps: vec![],
+            map: json!({}),
+            config: json!({}),
+            shim: json!({}),
+            paths: HashMap::new(),
+            generate_source_maps: Some(true),
+            inline_text: Some(true),
+            dir: Some("".into()),
+            optimize: Some("none".into()),
+            modules: Some(vec![])
+        }
     }
-    pub fn mixins(&self) -> Vec<String> {
-        match self.config {
+}
+
+impl FromFile for RequireJsClientConfig {}
+
+impl RequireJsClientConfig {
+    pub fn mixins(val: &serde_json::Value) -> Vec<String> {
+        match *val {
             serde_json::Value::Object(ref v) => match v.get("mixins") {
                 Some(f) => match f {
                     serde_json::Value::Object(ref v) => {
@@ -104,9 +130,23 @@ fn default_modules() -> Option<Vec<Module>> {
 }
 
 #[test]
+fn test_default_require_js_config() {
+    let r = RequireJsClientConfig::default();
+    let as_string = serde_json::to_string_pretty(&r).unwrap();
+    assert_eq!(as_string, r#"{
+  "baseUrl": "",
+  "deps": [],
+  "map": {},
+  "config": {},
+  "shim": {},
+  "paths": {}
+}"#);
+}
+
+#[test]
 fn test_parse_incoming_from_browser() {
     let input = include_bytes!("../../test/fixtures/example-post.json");
-    let s: RequireJsMergedConfig = serde_json::from_slice(input).unwrap();
+    let s: RequireJsClientConfig = serde_json::from_slice(input).unwrap();
     assert_eq!(
         s.deps,
         vec!["Magento_Theme/js/responsive", "Magento_Theme/js/theme"]
@@ -127,31 +167,26 @@ fn test_parse_incoming_from_browser() {
 #[test]
 fn test_filter_mixins() {
     let input = include_bytes!("../../test/fixtures/example-post.json");
-    let s: RequireJsMergedConfig = serde_json::from_slice(input).unwrap();
+    let s: RequireJsClientConfig = serde_json::from_slice(input).unwrap();
     assert_eq!(
-        s.mixins(),
+        RequireJsClientConfig::mixins(&s.config),
         vec![
             "Magento_Checkout/js/action/place-order",
             "Magento_Checkout/js/action/set-payment-information",
             "jquery/jstree/jquery.jstree",
         ]
     );
-
-    let s2 = RequireJsMergedConfig::default();
-    let expected: Vec<String> = vec![];
-
-    assert_eq!(s2.mixins(), expected);
 }
 
 #[test]
 fn test_hydrate() {
     let input = include_bytes!("../../test/fixtures/example-config.json");
-    let _s: RequireJsMergedConfig = serde_json::from_slice(input).unwrap();
+    let _s: RequireJsClientConfig = serde_json::from_slice(input).unwrap();
 }
 
 #[test]
 fn test_module_list() {
-    let list = RequireJsMergedConfig::module_list(
+    let list = RequireJsClientConfig::module_list(
         vec!["js/shane".to_string()],
         vec![
             Module {

@@ -25,7 +25,7 @@ use bs::preset::AppState;
 use bs::preset::Preset;
 use bs::preset_m2::{M2Preset, SeedData};
 use bs::preset_m2_opts::M2PresetOptions;
-use bs::preset_m2_requirejs_config::RequireJsMergedConfig;
+use bs::preset_m2_requirejs_config::RequireJsClientConfig;
 use bs::proxy_transform::proxy_transform;
 use openssl::ssl::SslAcceptorBuilder;
 use std::collections::HashMap;
@@ -73,6 +73,8 @@ fn run_with_opts(opts: ProxyOpts) -> Result<(), ProgramStartError> {
     //
     let server_opts = opts.clone();
 
+    let maybe_seed = server_opts.seed_file.clone();
+
     //
     // Now start the server
     //
@@ -83,12 +85,15 @@ fn run_with_opts(opts: ProxyOpts) -> Result<(), ProgramStartError> {
         //
         let mut presets_map: HashMap<usize, Box<Preset<AppState>>> = HashMap::new();
 
-        let (modules, config) = match SeedData::from_json_file("test/fixtures/seed.json") {
-            Ok(seed) => (seed.module_items, seed.merged_config),
-            Err(e) => {
-                eprintln!("Could not read seed");
-                (vec![], RequireJsMergedConfig::default())
+        let (modules, config) = match maybe_seed {
+            Some(ref s) => match SeedData::from_json_file(&s) {
+                Ok(seed) => (seed.module_items, seed.client_config),
+                Err(e) => {
+                    eprintln!("Could not read seed, {:?}", e);
+                    (vec![], RequireJsClientConfig::default())
+                }
             }
+            None => (vec![], RequireJsClientConfig::default())
         };
 
         let mut app_state = AppState {
@@ -96,7 +101,7 @@ fn run_with_opts(opts: ProxyOpts) -> Result<(), ProgramStartError> {
             opts: opts.clone(),
             rewrites: vec![],
             module_items: Mutex::new(modules),
-            require_merged_config: Arc::new(Mutex::new(
+            require_client_config: Arc::new(Mutex::new(
                 config
             ))
         };

@@ -45,6 +45,12 @@ impl ProxyOpts {
         self.config_file = Some(path.into());
         self
     }
+    pub fn with_seed_file(mut self, path: Option<&str>) -> ProxyOpts {
+        path.map(|p| {
+            self.seed_file = Some(p.into());
+        });
+        self
+    }
 }
 
 impl Default for ProxyOpts {

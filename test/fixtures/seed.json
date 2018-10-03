@@ -1,10 +1,6 @@
 {
-  "merged_config": {
-    "dir": null,
+  "client_config": {
     "baseUrl": "http://127.0.0.1:9090/static/version1517228438/frontend/Magento/luma/en_US/",
-    "generateSourceMaps": true,
-    "inline_text": true,
-    "optimize": "none",
     "deps": [
       "Magento_Theme/js/responsive",
       "Magento_Theme/js/theme"
@@ -226,8 +222,7 @@
       "paypalInContextExpressCheckout": "https://www.paypalobjects.com/api/checkout",
       "prototype": "legacy-build.min",
       "text": "mage/requirejs/text"
-    },
-    "modules": null
+    }
   },
   "module_items": [
     {
