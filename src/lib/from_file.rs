@@ -32,16 +32,6 @@ pub enum ConfigError {
 /// - conf/app.yaml
 /// - file:conf/app.yaml
 ///
-/// # Examples
-///
-/// ```
-/// struct Person { name: String }
-///
-/// impl FromFile for Person {}
-///
-/// let p = Person::from_yml_file("person.yaml");
-/// ```
-///
 pub trait FromFile {
     ///
     /// From a string like `file:config.yaml`, try to read the file
