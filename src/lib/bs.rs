@@ -14,6 +14,8 @@ extern crate regex;
 extern crate serde;
 extern crate serde_yaml;
 extern crate url;
+extern crate ratel;
+
 
 #[macro_use]
 extern crate serde_derive;
@@ -29,6 +31,7 @@ pub mod preset_m2;
 pub mod preset_m2_bundle_config;
 pub mod preset_m2_config_gen;
 pub mod preset_m2_opts;
+pub mod preset_m2_parse;
 pub mod preset_m2_requirejs_config;
 pub mod proxy_transform;
 pub mod replacer;
