@@ -360,6 +360,11 @@ fn gather_state(
                 let mut derived_build_config = RequireJsBuildConfig::default();
 
                 derived_build_config.modules = Some(modules.clone());
+                derived_build_config.deps = client_config.deps.clone();
+                derived_build_config.map = client_config.map.clone();
+                derived_build_config.config = client_config.config.clone();
+                derived_build_config.shim = client_config.shim.clone();
+                derived_build_config.paths = client_config.paths.clone();
 
                 let base_url = client_config.base_url.clone().unwrap_or("".to_string());
 

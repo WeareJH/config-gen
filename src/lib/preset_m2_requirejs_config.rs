@@ -39,6 +39,7 @@ pub struct RequireJsBuildConfig {
     pub shim: serde_json::Value,
     pub paths: HashMap<String, String>,
 
+
     #[serde(rename = "generateSourceMaps")]
     pub generate_source_maps: Option<bool>,
 
