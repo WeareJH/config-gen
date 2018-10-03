@@ -1,7 +1,6 @@
 extern crate serde_json;
 
 use preset_m2_config_gen::Module;
-use serde_json::{Error, Value};
 use std::collections::HashMap;
 use url::Url;
 use from_file::FromFile;
@@ -56,7 +55,7 @@ impl RequireJsMergedConfig {
                 Some(f) => match f {
                     serde_json::Value::Object(ref v) => {
                         let names: Vec<String> =
-                            v.iter().map(|(key, value)| key.to_string()).collect();
+                            v.iter().map(|(key, _)| key.to_string()).collect();
                         names
                     }
                     _ => vec![],
@@ -147,7 +146,7 @@ fn test_filter_mixins() {
 #[test]
 fn test_hydrate() {
     let input = include_bytes!("../../test/fixtures/example-config.json");
-    let s: RequireJsMergedConfig = serde_json::from_slice(input).unwrap();
+    let _s: RequireJsMergedConfig = serde_json::from_slice(input).unwrap();
 }
 
 #[test]
@@ -217,7 +216,7 @@ pub fn base_to_dirs(input: &str) -> Result<BaseDirs, String> {
             let mut base_output = vec!["static"];
             let mut dir_output = vec!["static"];
 
-            for (i, item) in segs.expect("can iter over segs").iter().enumerate().skip(2) {
+            for (_, item) in segs.expect("can iter over segs").iter().enumerate().skip(2) {
                 if *item != last.as_str() {
                     base_output.push(item);
                     dir_output.push(item);

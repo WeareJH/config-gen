@@ -2,7 +2,6 @@ use actix_web::client::ClientRequestBuilder;
 use actix_web::client::ClientResponse;
 use actix_web::http::header;
 use actix_web::http::uri::Uri;
-use actix_web::http::HeaderMap;
 use actix_web::{AsyncResponder, Body, Error, HttpMessage, HttpRequest, HttpResponse};
 use futures::future::{ok, Either};
 use futures::{Future, Stream};

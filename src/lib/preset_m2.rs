@@ -20,8 +20,6 @@ use preset_m2_requirejs_config::base_to_dirs;
 use preset_m2_requirejs_config::RequireJsMergedConfig;
 use regex::Regex;
 use rewrites::RewriteContext;
-use std::sync::Arc;
-use std::sync::Mutex;
 use from_file::FromFile;
 
 ///
@@ -79,7 +77,7 @@ fn handle_post_data(
             let result: Result<RequireJsMergedConfig, serde_json::Error> =
                 serde_json::from_str(std::str::from_utf8(&body).unwrap());
             //
-            let output = match result {
+            match result {
                 Ok(next_config) => {
                     let mut mutex = a.lock().unwrap();
                     mutex.base_url = next_config.base_url;
@@ -88,9 +86,9 @@ fn handle_post_data(
                     mutex.config = next_config.config;
                     mutex.paths = next_config.paths;
                     mutex.shim = next_config.shim;
-                    "Was Good!"
+                    "Was Good!".to_string()
                 }
-                Err(e) => "Was Bad!",
+                Err(e) => e.to_string(),
             };
 
             Ok(HttpResponse::Ok()
@@ -215,15 +213,13 @@ fn serve_instrumented_require_js(_req: &HttpRequest<AppState>) -> HttpResponse {
         .body(bytes)
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Default)]
 pub struct SeedData {
     pub merged_config: RequireJsMergedConfig,
     pub module_items: Vec<ModuleData>
 }
 
-impl FromFile for SeedData {
-
-}
+impl FromFile for SeedData {}
 
 /// serve a JSON dump of the current accumulated
 fn serve_seed_dump_json(req: &HttpRequest<AppState>) -> HttpResponse {
@@ -270,12 +266,12 @@ fn serve_loaders_dump_json(req: &HttpRequest<AppState>) -> HttpResponse {
             let module_list = RequireJsMergedConfig::module_list(merged_config.mixins(), modules);
             Ok(module_list)
         }
-        Err(e) => Err("nah".to_string()),
+        Err(e) => Err(e),
     };
 
     match output {
         Ok(t) => HttpResponse::Ok().content_type("text/plain").body(t),
-        Err(e) => HttpResponse::Ok().content_type("text/plain").body("NAH"),
+        Err(_e) => HttpResponse::Ok().content_type("text/plain").body("NAH"),
     }
 }
 
@@ -317,7 +313,7 @@ fn gather_state(
 
                 Ok((next_config, modules))
             }
-            Err(e) => Err("Couldn't convert to string".to_string()),
+            Err(_e) => Err("Couldn't convert to string".to_string()),
         },
         _ => Err("didnt match both".to_string()),
     }
@@ -327,29 +323,29 @@ fn serve_config_dump_json(req: &HttpRequest<AppState>) -> HttpResponse {
     let output = match req.state().require_merged_config.lock() {
         Ok(config) => match serde_json::to_string_pretty(&*config) {
             Ok(t) => Ok(t),
-            Err(e) => Err("nah".to_string()),
+            Err(e) => Err(e.to_string()),
         },
         Err(e) => Err(e.to_string())
     };
 
     match output {
         Ok(t) => HttpResponse::Ok().content_type("application/json").body(t),
-        Err(e) => HttpResponse::Ok().content_type("application/json").body("Could not serve config"),
+        Err(_e) => HttpResponse::Ok().content_type("application/json").body("Could not serve config"),
     }
 }
 
 fn serve_build_json(req: &HttpRequest<AppState>) -> HttpResponse {
     let output = match gather_state(req) {
-        Ok((merged_config, modules)) => match serde_json::to_string_pretty(&merged_config) {
+        Ok((merged_config, _)) => match serde_json::to_string_pretty(&merged_config) {
             Ok(t) => Ok(t),
-            Err(e) => Err("nah".to_string()),
+            Err(e) => Err(e.to_string()),
         },
-        Err(e) => Err("nah".to_string()),
+        Err(e) => Err(e.to_string()),
     };
 
     match output {
         Ok(t) => HttpResponse::Ok().content_type("application/json").body(t),
-        Err(e) => HttpResponse::Ok().content_type("application/json").body("Could not serve build json"),
+        Err(e) => HttpResponse::Ok().content_type("application/json").body(e.to_string()),
     }
 }
 

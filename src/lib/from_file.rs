@@ -1,8 +1,6 @@
 extern crate serde_yaml;
 extern crate serde_json;
 
-use std::error::Error;
-use std::path::PathBuf;
 use std::fs::File;
 use std::io::prelude::*;
 use serde::Deserialize;
@@ -14,6 +12,18 @@ pub enum ConfigError {
     FileRead,
     SerdeError(String)
 }
+
+//impl From<ConfigError> for String {
+//    fn from(e: ConfigError) -> Self {
+//        let output = match e {
+//            ConfigError::InvalidInput => "Invalid Input",
+//            ConfigError::FileOpen => "Couldn't open the file",
+//            ConfigError::FileRead => "Couldn't read the file contents",
+//            ConfigError::SerdeError(e) => e.to_string(),
+//        };
+//        output.to_string()
+//    }
+//}
 
 ///
 /// Implement this trait to enable your Struct's to deserialized

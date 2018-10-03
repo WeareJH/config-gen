@@ -1,6 +1,4 @@
 use config::ProgramConfig;
-use preset_m2_requirejs_config::RequireJsMergedConfig;
-use std::sync::Mutex;
 
 #[derive(Deserialize, Debug)]
 pub struct M2PresetOptions {
