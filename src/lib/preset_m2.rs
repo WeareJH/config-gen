@@ -26,6 +26,7 @@ use proxy_transform::proxy_req_setup;
 use actix_web::client::ClientResponse;
 use proxy_transform::create_outgoing;
 use proxy_transform::get_host_port;
+use preset_m2_parse::get_deps_from_str;
 
 type FutResp = Box<Future<Item = HttpResponse, Error = Error>>;
 
@@ -92,7 +93,6 @@ fn handle_post_data(
                 Ok(next_config) => {
                     let mut mutex = a.lock().unwrap();
                     mutex.base_url = next_config.base_url;
-                    mutex.deps = next_config.deps;
                     mutex.map = next_config.map;
                     mutex.config = next_config.config;
                     mutex.paths = next_config.paths;
@@ -225,7 +225,13 @@ fn serve_instrumented_require_js(_req: &HttpRequest<AppState>) -> HttpResponse {
 }
 
 fn serve_requirejs_config(original_request: &HttpRequest<AppState>) -> FutResp {
-    apply_to_proxy_body(original_request, |mut b| {
+    let client_config_clone = original_request.state().require_client_config.clone();
+    apply_to_proxy_body(&original_request, move |mut b| {
+        let c2 = client_config_clone.clone();
+        if let Ok(deps) = get_deps_from_str(&b) {
+            let mut w = c2.lock().expect("unwraped");
+            w.deps = deps;
+        };
         b.push_str(include_str!("./static/post_config.js"));
         b
     })

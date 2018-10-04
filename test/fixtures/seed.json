@@ -2,6 +2,12 @@
   "client_config": {
     "baseUrl": "http://127.0.0.1:9090/static/version1517228438/frontend/Magento/luma/en_US/",
     "deps": [
+      "jquery/jquery.mobile.custom",
+      "mage/common",
+      "mage/dataPost",
+      "mage/bootstrap",
+      "jquery/jquery-migrate",
+      "mage/translate-inline",
       "Magento_Theme/js/responsive",
       "Magento_Theme/js/theme"
     ],
@@ -204,24 +210,24 @@
       "vimeoAPI": {}
     },
     "paths": {
-      "jquery/file-uploader": "jquery/fileUploader/jquery.fileupload-fp",
-      "temandoCustomerAddressRateProcessor": "Temando_Shipping/js/model/shipping-rate-processor/customer-address",
-      "trackingCode": "Dotdigitalgroup_Email/js/trackingCode",
-      "jquery/jquery-storageapi": "jquery/jquery.storageapi.min",
-      "jquery/hover-intent": "jquery/jquery.hoverIntent",
-      "jquery/ui": "jquery/jquery-ui",
-      "domReady": "requirejs/domReady",
-      "temandoNewAddressRateProcessor": "Temando_Shipping/js/model/shipping-rate-processor/new-address",
-      "ui/template": "Magento_Ui/templates",
-      "temandoShippingRatesValidator": "Temando_Shipping/js/model/shipping-rates-validator/temando",
-      "temandoCheckoutFieldsDefinition": "Temando_Shipping/js/model/fields-definition",
       "tinymce": "tiny_mce/tiny_mce_src",
+      "temandoShippingRatesValidator": "Temando_Shipping/js/model/shipping-rates-validator/temando",
       "jquery/validate": "jquery/jquery.validate",
+      "jquery/jquery-storageapi": "jquery/jquery.storageapi.min",
+      "text": "mage/requirejs/text",
+      "temandoCustomerAddressRateProcessor": "Temando_Shipping/js/model/shipping-rate-processor/customer-address",
+      "jquery/ui": "jquery/jquery-ui",
+      "jquery/file-uploader": "jquery/fileUploader/jquery.fileupload-fp",
       "temandoShippingRatesValidationRules": "Temando_Shipping/js/model/shipping-rates-validation-rules/temando",
-      "jquery/jquery.hashchange": "jquery/jquery.ba-hashchange.min",
+      "temandoNewAddressRateProcessor": "Temando_Shipping/js/model/shipping-rate-processor/new-address",
       "paypalInContextExpressCheckout": "https://www.paypalobjects.com/api/checkout",
+      "jquery/jquery.hashchange": "jquery/jquery.ba-hashchange.min",
+      "ui/template": "Magento_Ui/templates",
+      "jquery/hover-intent": "jquery/jquery.hoverIntent",
+      "temandoCheckoutFieldsDefinition": "Temando_Shipping/js/model/fields-definition",
+      "trackingCode": "Dotdigitalgroup_Email/js/trackingCode",
       "prototype": "legacy-build.min",
-      "text": "mage/requirejs/text"
+      "domReady": "requirejs/domReady"
     }
   },
   "module_items": [
