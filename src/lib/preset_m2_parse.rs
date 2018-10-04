@@ -3,6 +3,7 @@ use ratel::parser::parse;
 use ratel::operator::OperatorKind::*;
 use ratel::grammar::Statement::{VariableDeclaration};
 use ratel::grammar::Expression;
+use ratel::grammar::{Value, ObjectMember, ObjectKey};
 
 
 #[test]
@@ -24,7 +25,8 @@ fn test_get_deps() {
                     zxcvbn: 'Magento_Customer/js/zxcvbn',
                     addressValidation: 'Magento_Customer/js/addressValidation'
                 }
-            }
+            },
+            deps: ["first", "second"]
         };
 
         require.config(config);
@@ -41,7 +43,29 @@ fn parse_body(items: Vec<Statement>) {
         match statement {
             Statement::VariableDeclaration {kind, declarators} => {
                 for d in declarators.iter().filter(|d| d.name.as_str() == "config") {
-                    println!("d={:?}", d.name);
+                    match d.value {
+                        Some(ref d) => match d {
+                            Expression::Object(xs) => {
+                                if let Some(v) = get_object_value(xs, "deps") {
+                                    match v {
+                                        Expression::Array(vs) => {
+                                            for v in vs {
+                                                match v {
+                                                    Expression::Literal(Value::String(s)) => {
+                                                        println!("s={}", s);
+                                                    }
+                                                    _ => println!("no")
+                                                }
+                                            }
+                                        }
+                                        _ => println!("no")
+                                    }
+                                }
+                            },
+                            _ => println!("no")
+                        },
+                        None => println!("no")
+                    }
                 }
             },
             Statement::Expression { value } => {
@@ -60,5 +84,33 @@ fn parse_body(items: Vec<Statement>) {
             }
             _ => println!("none-variable")
         }
+    }
+}
+
+fn get_object_value(xs: &Vec<ObjectMember>, name: &str) -> Option<Expression> {
+    xs.iter().find(|x| filter_deps(*x, "deps"))
+        .and_then(|x| {
+            match x {
+                ObjectMember::Value { key, value } => {
+                    Some(value.clone())
+                }
+                _ => None
+            }
+        })
+        .or(None)
+}
+
+fn filter_deps(x: &ObjectMember, name: &str) -> bool {
+
+    match x {
+        ObjectMember::Value { key, value } => {
+            match key {
+                ObjectKey::Literal(s) => {
+                    s.as_str() == name
+                }
+                _ => false
+            }
+        }
+        _ => false
     }
 }
