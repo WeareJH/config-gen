@@ -33,13 +33,6 @@ impl Default for RequireJsClientConfig {
 pub struct RequireJsBuildConfig {
     #[serde(rename = "baseUrl")]
     pub base_url: Option<String>,
-    pub deps: Vec<ModuleId>,
-    pub map: serde_json::Value,
-    pub config: serde_json::Value,
-    pub shim: serde_json::Value,
-    pub paths: HashMap<String, String>,
-
-
     #[serde(rename = "generateSourceMaps")]
     pub generate_source_maps: Option<bool>,
 
@@ -50,6 +43,14 @@ pub struct RequireJsBuildConfig {
 
     #[serde(default = "default_optimize")]
     pub optimize: Option<String>,
+
+    pub deps: Vec<ModuleId>,
+    pub map: serde_json::Value,
+    pub config: serde_json::Value,
+    pub shim: serde_json::Value,
+    pub paths: HashMap<String, String>,
+
+
 
     #[serde(default = "default_modules")]
     pub modules: Option<Vec<Module>>,
