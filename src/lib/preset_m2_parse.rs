@@ -90,32 +90,24 @@ fn test_from_large_file() {
 fn parse_body(items: Vec<Statement>, deps: &mut Vec<String>) {
     for statement in items.iter() {
         match statement {
-            // var config
             Statement::VariableDeclaration { declarators, ..} => {
                 for d in declarators.iter().filter(|d| d.name.as_str() == "config") {
                     match d.value {
-                        Some(ref d) => match d {
-                            Expression::Object(xs) => {
-                                if let Some(v) = get_object_value(xs, "deps") {
+                        Some(Expression::Object(ref xs)) => {
+                            if let Some(Expression::Array(vs)) = get_object_value(&xs, "deps") {
+                                for v in vs {
                                     match v {
-                                        Expression::Array(vs) => {
-                                            for v in vs {
-                                                match v {
-                                                    Expression::Literal(Value::String(s)) => {
-                                                        let len = s.len();
-                                                        let next_s = &s[1..len-1];
-                                                        deps.push(next_s.to_string());
-                                                    }
-                                                    _ => { /* */ }
-                                                }
-                                            }
+                                        Expression::Literal(Value::String(s)) => {
+                                            let len = s.len();
+                                            let next_s = &s[1..len-1];
+                                            deps.push(next_s.to_string());
                                         }
                                         _ => { /* */ }
                                     }
                                 }
-                            },
-                            _ => { /* */ }
+                            }
                         },
+                        Some(_) => { /* */ },
                         None => { /* */ }
                     }
                 }
