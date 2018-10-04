@@ -1,10 +1,7 @@
 use ratel::grammar::*;
 use ratel::parser::parse;
-use ratel::operator::OperatorKind::*;
-use ratel::grammar::Statement::{VariableDeclaration};
 use ratel::grammar::Expression;
 use ratel::grammar::{Value, ObjectMember, ObjectKey};
-
 
 #[test]
 fn test_get_deps() {
@@ -31,17 +28,70 @@ fn test_get_deps() {
 
         require.config(config);
     })();
+    (function() {
+        var config = {
+            deps: ["third", "forth"]
+        };
+        require.config(config);
+    })();
+    (function() {
+        var config = {
+            'deps': [
+                'jquery/jquery-single'
+            ],
+        };
+        require.config(config);
+    })();
+    (function() {
+        var config = {
+            "deps": [
+                'jquery/jquery-double'
+            ],
+        };
+        require.config(config);
+    })();
     "#;
 
 
     let out = parse(input.into()).unwrap();
-    parse_body(out.body);
+    let mut deps: Vec<String> = vec![];
+    parse_body(out.body, &mut deps);
+//    println!("deps={:?}", deps);
+    assert_eq!(deps, vec![
+        "first".to_string(),
+        "second".to_string(),
+        "third".to_string(),
+        "forth".to_string(),
+        "jquery/jquery-single".to_string(),
+        "jquery/jquery-double".to_string(),
+    ]);
 }
 
-fn parse_body(items: Vec<Statement>) {
+#[test]
+fn test_from_large_file() {
+    let input = include_str!("../../test/fixtures/requirejs-config-generated.js");
+
+    let out = parse(input.into()).unwrap();
+    let mut deps: Vec<String> = vec![];
+    parse_body(out.body, &mut deps);
+
+    assert_eq!(deps, vec![
+        "jquery/jquery.mobile.custom",
+        "mage/common",
+        "mage/dataPost",
+        "mage/bootstrap",
+        "jquery/jquery-migrate",
+        "mage/translate-inline",
+        "Magento_Theme/js/responsive",
+        "Magento_Theme/js/theme"
+    ]);
+}
+
+fn parse_body(items: Vec<Statement>, deps: &mut Vec<String>) {
     for statement in items.iter() {
         match statement {
-            Statement::VariableDeclaration {kind, declarators} => {
+            // var config
+            Statement::VariableDeclaration { declarators, ..} => {
                 for d in declarators.iter().filter(|d| d.name.as_str() == "config") {
                     match d.value {
                         Some(ref d) => match d {
@@ -52,46 +102,48 @@ fn parse_body(items: Vec<Statement>) {
                                             for v in vs {
                                                 match v {
                                                     Expression::Literal(Value::String(s)) => {
-                                                        println!("s={}", s);
+                                                        let len = s.len();
+                                                        let next_s = &s[1..len-1];
+                                                        deps.push(next_s.to_string());
                                                     }
-                                                    _ => println!("no")
+                                                    _ => { /* */ }
                                                 }
                                             }
                                         }
-                                        _ => println!("no")
+                                        _ => { /* */ }
                                     }
                                 }
                             },
-                            _ => println!("no")
+                            _ => { /* */ }
                         },
-                        None => println!("no")
+                        None => { /* */ }
                     }
                 }
             },
             Statement::Expression { value } => {
                 match value {
-                    Expression::Call { callee, arguments } => {
+                    Expression::Call { callee, .. } => {
                         let fun = (**callee).clone();
                         match fun {
-                            Expression::Function { name, params, body } => {
-                                parse_body(body);
+                            Expression::Function { body, .. } => {
+                                parse_body(body, deps);
                             }
-                            _ => println!("none-expression")
+                            _ => { /* */ }
                         }
                     }
-                    _ => println!("none-expression")
+                    _ => { /* */ }
                 }
             }
-            _ => println!("none-variable")
+            _ => { /* */ }
         }
     }
 }
 
 fn get_object_value(xs: &Vec<ObjectMember>, name: &str) -> Option<Expression> {
-    xs.iter().find(|x| filter_deps(*x, "deps"))
+    xs.iter().find(|x| filter_deps(*x, name))
         .and_then(|x| {
             match x {
-                ObjectMember::Value { key, value } => {
+                ObjectMember::Value { value, .. } => {
                     Some(value.clone())
                 }
                 _ => None
@@ -101,12 +153,15 @@ fn get_object_value(xs: &Vec<ObjectMember>, name: &str) -> Option<Expression> {
 }
 
 fn filter_deps(x: &ObjectMember, name: &str) -> bool {
-
     match x {
-        ObjectMember::Value { key, value } => {
+        ObjectMember::Value { key, .. } => {
             match key {
                 ObjectKey::Literal(s) => {
-                    s.as_str() == name
+                    let as_str = s.as_str();
+                    let len = as_str.len();
+                    let stripped = &as_str[1..len-1];
+                    let possible = vec![as_str, stripped];
+                    possible.contains(&name)
                 }
                 _ => false
             }
