@@ -2,9 +2,37 @@ use ratel::grammar::*;
 use ratel::parser::parse;
 use ratel::grammar::Expression;
 use ratel::grammar::{Value, ObjectMember, ObjectKey};
+use ratel::error::ParseError;
 
-#[test]
-fn test_get_deps() {
+///
+/// Parse a Magento 2 generated requirejs-config.js file
+/// to pull out the top-level 'deps' arrays
+///
+/// # Examples
+///
+/// ```
+/// # use bs::preset_m2_parse::*;
+/// let input = r#"
+///   (function() {
+///        var config = {
+///            deps: ["one", "two"]
+///        };
+///        require.config(config);
+///    })();
+/// "#;
+/// let deps = get_deps_from_str(input).unwrap();
+/// assert_eq!(deps, vec!["one".to_string(), "two".to_string()]);
+/// ```
+///
+///
+pub fn get_deps_from_str(input: &str) -> Result<Vec<String>, ParseError> {
+    let out = parse(input.into())?;
+    let mut deps: Vec<String> = vec![];
+    parse_body(out.body, &mut deps);
+    Ok(deps)
+}
+
+fn test_get_deps_from_str() {
     let input = r#"
     (function() {
         /**
@@ -52,11 +80,7 @@ fn test_get_deps() {
     })();
     "#;
 
-
-    let out = parse(input.into()).unwrap();
-    let mut deps: Vec<String> = vec![];
-    parse_body(out.body, &mut deps);
-//    println!("deps={:?}", deps);
+    let deps = get_deps_from_str(input).unwrap();
     assert_eq!(deps, vec![
         "first".to_string(),
         "second".to_string(),
@@ -70,10 +94,7 @@ fn test_get_deps() {
 #[test]
 fn test_from_large_file() {
     let input = include_str!("../../test/fixtures/requirejs-config-generated.js");
-
-    let out = parse(input.into()).unwrap();
-    let mut deps: Vec<String> = vec![];
-    parse_body(out.body, &mut deps);
+    let deps = get_deps_from_str(input).unwrap();
 
     assert_eq!(deps, vec![
         "jquery/jquery.mobile.custom",
