@@ -1,4 +1,4 @@
-- name: requirejs/require
+- name: bundles/main
   urls:
     - /
     - /furniture/tables/coffee-tables
@@ -9,10 +9,9 @@
       children: []
     - name: bundles/basket
       urls:
-        - /checkout/cart/
+        - /uk/checkout/cart/
       children:
         - name: bundles/checkout
           urls:
-            - /checkout/
+            - /uk/checkout/
           children: []
-

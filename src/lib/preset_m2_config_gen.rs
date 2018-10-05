@@ -7,6 +7,7 @@ use preset_m2::ModuleData;
 use std::collections::HashMap;
 use std::path::PathBuf;
 use std::str::FromStr;
+use serde_json::Error;
 
 pub type Items = Vec<ModuleData>;
 
@@ -48,9 +49,15 @@ pub fn collect_items(
 }
 
 pub fn run(items: Items, config: impl Into<ConfigItems>) -> Vec<Module> {
-    let h: Vec<Module> = vec![];
+    let h: Vec<Module> = vec![
+        Module {
+            name: "requirejs/require".into(),
+            include: vec![],
+            exclude: vec![]
+        }
+    ];
     let conf = config.into();
-    collect_items(h, &conf.items, &items, &mut vec![], &mut vec![])
+    collect_items(h, &conf.items, &items, &mut vec![], &mut vec!["requirejs/require".to_string()])
 }
 
 pub fn to_string(bundles: Vec<Module>) -> String {
@@ -126,7 +133,54 @@ fn test_parse_config() {
     assert_eq!("requirejs/require", c.items[0].name);
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[test]
+fn test_create_modules() {
+    let c: ConfigItems = r#"
+    [
+      {
+        "name": "bundles/main",
+        "urls": [
+          "/",
+          "/nav/home-fragrance.html"
+        ],
+        "children": [
+          {
+            "name": "bundles/basket",
+            "urls": [
+              "/index.php/checkout/cart/"
+            ],
+            "children": [
+              {
+                "name": "bundles/checkout",
+                "urls": [
+                  "/index.php/checkout/"
+                ],
+                "children": [
+                  {
+                    "name": "bundles/checkout-success",
+                    "urls": [
+                      "/index.php/checkout/onepage/success/"
+                    ],
+                    "children": []
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+    "#.into();
+    let reqs: Vec<ModuleData> = serde_json::from_str(include_str!("../../test/fixtures/example-reqs.json")).unwrap();
+    let out = run(reqs, c);
+    assert_eq!(out[0], Module {
+        include: vec![],
+        exclude: vec![],
+        name: "requirejs/require".to_string()
+    });
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct Module {
     pub name: String,
     pub include: Vec<String>,
