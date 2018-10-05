@@ -31,15 +31,12 @@ impl Default for RequireJsClientConfig {
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct RequireJsBuildConfig {
-    #[serde(rename = "baseUrl")]
-    pub base_url: Option<String>,
+
     #[serde(rename = "generateSourceMaps")]
     pub generate_source_maps: Option<bool>,
 
     #[serde(default = "default_inline_text")]
     pub inline_text: Option<bool>,
-
-    pub dir: Option<String>,
 
     #[serde(default = "default_optimize")]
     pub optimize: Option<String>,
@@ -59,7 +56,6 @@ pub struct RequireJsBuildConfig {
 impl Default for RequireJsBuildConfig {
     fn default() -> RequireJsBuildConfig {
         RequireJsBuildConfig {
-            base_url: Some("".into()),
             deps: vec![],
             map: json!({}),
             config: json!({}),
@@ -67,7 +63,6 @@ impl Default for RequireJsBuildConfig {
             paths: HashMap::new(),
             generate_source_maps: Some(true),
             inline_text: Some(true),
-            dir: Some("".into()),
             optimize: Some("none".into()),
             modules: Some(vec![])
         }

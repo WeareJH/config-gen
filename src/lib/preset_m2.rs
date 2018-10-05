@@ -372,17 +372,17 @@ fn gather_state(
                 derived_build_config.shim = client_config.shim.clone();
                 derived_build_config.paths = client_config.paths.clone();
 
-                let base_url = client_config.base_url.clone().unwrap_or("".to_string());
-
-                match base_to_dirs(&base_url) {
-                    Ok(dir) => {
-                        derived_build_config.base_url = Some(dir.base_url);
-                        derived_build_config.dir = Some(dir.dir);
-                    }
-                    Err(_e) => {
-                        eprintln!("Could not use base_url to create baseUrl + dir");
-                    }
-                }
+//                let base_url = client_config.base_url.clone().unwrap_or("".to_string());
+//
+//                match base_to_dirs(&base_url) {
+//                    Ok(dir) => {
+//                        derived_build_config.base_url = Some(dir.base_url);
+//                        derived_build_config.dir = Some(dir.dir);
+//                    }
+//                    Err(_e) => {
+//                        eprintln!("Could not use base_url to create baseUrl + dir");
+//                    }
+//                }
 
                 Ok((derived_build_config, modules))
             }
