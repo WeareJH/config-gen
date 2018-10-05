@@ -194,11 +194,13 @@ fn test_module_list() {
                 name: String::from("bundle/base"),
                 include: vec!["js/shane".to_string(), "js/kittie".to_string()],
                 exclude: vec![],
+                create: true,
             },
             Module {
                 name: String::from("bundle/product"),
                 include: vec!["js/gallery".to_string(), "js/zoomer".to_string()],
                 exclude: vec![],
+                create: true,
             },
         ],
     );

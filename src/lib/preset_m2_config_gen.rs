@@ -37,6 +37,7 @@ pub fn collect_items(
             name: conf_item.name.to_string(),
             include: outgoing.clone(),
             exclude: exclude.clone(),
+            create: true,
         };
         target.push(module);
         if conf_item.children.len() > 0 {
@@ -53,7 +54,8 @@ pub fn run(items: Items, config: impl Into<ConfigItems>) -> Vec<Module> {
         Module {
             name: "requirejs/require".into(),
             include: vec![],
-            exclude: vec![]
+            exclude: vec![],
+            create: false,
         }
     ];
     let conf = config.into();
@@ -176,8 +178,10 @@ fn test_create_modules() {
     assert_eq!(out[0], Module {
         include: vec![],
         exclude: vec![],
-        name: "requirejs/require".to_string()
+        name: "requirejs/require".to_string(),
+        create: false
     });
+    assert_eq!(out[1].create, true);
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
@@ -185,6 +189,7 @@ pub struct Module {
     pub name: String,
     pub include: Vec<String>,
     pub exclude: Vec<String>,
+    pub create: bool,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
