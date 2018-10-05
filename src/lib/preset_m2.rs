@@ -16,7 +16,6 @@ use preset_m2_bundle_config::resolve_from_string;
 use preset_m2_config_gen;
 use preset_m2_config_gen::Module;
 use preset_m2_opts::M2PresetOptions;
-use preset_m2_requirejs_config::base_to_dirs;
 use preset_m2_requirejs_config::{RequireJsClientConfig};
 use regex::Regex;
 use rewrites::RewriteContext;
@@ -370,7 +369,9 @@ fn gather_state(
                 derived_build_config.map = client_config.map.clone();
                 derived_build_config.config = client_config.config.clone();
                 derived_build_config.shim = client_config.shim.clone();
-                derived_build_config.paths = client_config.paths.clone();
+
+                let mut c = client_config.paths.clone();
+                derived_build_config.paths = RequireJsBuildConfig::strip_paths(&c);
 
 //                let base_url = client_config.base_url.clone().unwrap_or("".to_string());
 //

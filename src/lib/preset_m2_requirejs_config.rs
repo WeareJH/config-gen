@@ -53,6 +53,39 @@ pub struct RequireJsBuildConfig {
     pub modules: Option<Vec<Module>>,
 }
 
+impl RequireJsBuildConfig {
+    pub fn strip_paths(paths: &HashMap<String, String>) -> HashMap<String, String> {
+        let mut hm: HashMap<String, String> = HashMap::new();
+
+        for (key, value) in paths.iter() {
+            if value.starts_with("http://") ||
+                value.starts_with("https://") ||
+                value.starts_with("//") {
+                hm.insert(key.clone(), "empty:".to_string());
+            } else {
+                hm.insert(key.clone(), value.clone());
+            }
+        }
+
+        hm
+    }
+}
+
+#[test]
+fn test_strip_paths() {
+    let mut ps: HashMap<String, String> = HashMap::new();
+    ps.insert("one".into(), "one/one".into());
+    ps.insert("two".into(), "http://two.com/two".into());
+
+    let mut expected: HashMap<String, String> = HashMap::new();
+    expected.insert("one".into(), "one/one".into());
+    expected.insert("two".into(), "empty:".into());
+
+    let actual = RequireJsBuildConfig::strip_paths(&ps);
+
+    assert_eq!(actual, expected);
+}
+
 impl Default for RequireJsBuildConfig {
     fn default() -> RequireJsBuildConfig {
         RequireJsBuildConfig {
