@@ -69,6 +69,23 @@ impl RequireJsBuildConfig {
 
         hm
     }
+    pub fn fix_shims(shim: &mut serde_json::Value) -> &mut serde_json::Value {
+        match shim {
+            serde_json::Value::Object(m) => {
+                for (key, value) in m.into_iter().filter(|(key, _)| key.as_str() == "jquery/jquery-migrate") {
+
+                    let deps = value.pointer("/deps").unwrap().clone();
+                    println!(":?{}", deps);
+
+                    *value.pointer_mut("/deps").unwrap() =
+                        serde_json::Value::Array(vec![serde_json::Value::String("hey".to_string())]);
+                }
+            },
+            _ => println!("no")
+        };
+
+        shim
+    }
 }
 
 #[test]
@@ -205,6 +222,29 @@ fn test_filter_mixins() {
             "jquery/jstree/jquery.jstree",
         ]
     );
+}
+
+#[test]
+fn test_require_build_shim() {
+    let input = include_bytes!("../../test/fixtures/example-post.json");
+    let mut s: RequireJsClientConfig = serde_json::from_slice(input).unwrap();
+//    println!("{:?}", s.shim);
+    let next_shim = RequireJsBuildConfig::fix_shims(&mut s.shim);
+
+//    println!("{}", *s.shim.pointer_mut("/jquery-jquery-migrate/deps").unwrap());
+    println!("{:#?}", next_shim);
+
+//    *s.shim.pointer_mut("/jquery/jquery-migrate/deps").unwrap() =
+//        serde_json::Value::Array(vec![serde_json::Value::String("hey".to_string())]);
+
+//    assert_eq!(
+//        RequireJsClientConfig::mixins(&s.config),
+//        vec![
+//            "Magento_Checkout/js/action/place-order",
+//            "Magento_Checkout/js/action/set-payment-information",
+//            "jquery/jstree/jquery.jstree",
+//        ]
+//    );
 }
 
 #[test]
