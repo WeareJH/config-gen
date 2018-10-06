@@ -368,10 +368,17 @@ fn gather_state(
                 derived_build_config.deps = client_config.deps.clone();
                 derived_build_config.map = client_config.map.clone();
                 derived_build_config.config = client_config.config.clone();
-                derived_build_config.shim = client_config.shim.clone();
 
                 let mut c = client_config.paths.clone();
                 derived_build_config.paths = RequireJsBuildConfig::strip_paths(&c);
+
+                let mut shims = client_config.shim.clone();
+
+                {
+                    RequireJsBuildConfig::fix_shims(&mut shims);
+                }
+
+                derived_build_config.shim = shims;
 
 //                let base_url = client_config.base_url.clone().unwrap_or("".to_string());
 //
