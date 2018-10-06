@@ -6,6 +6,7 @@ pub struct M2PresetOptions {
     pub require_path: Option<String>,
     pub bundle_config: Option<String>,
     pub auth_basic: Option<AuthBasic>,
+    pub module_blacklist: Option<Vec<String>>,
 }
 
 fn default_require_path() -> Option<String> {
@@ -18,6 +19,7 @@ impl Default for M2PresetOptions {
             require_path: None,
             bundle_config: None,
             auth_basic: None,
+            module_blacklist: None,
         }
     }
 }

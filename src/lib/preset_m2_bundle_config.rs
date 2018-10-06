@@ -1,7 +1,6 @@
 extern crate serde_yaml;
 
-use preset_m2_config_gen::ConfigItem;
-use preset_m2_config_gen::ConfigItems;
+use preset_m2_config_gen::BundleConfig;
 use std::fs::File;
 use std::io::prelude::*;
 
@@ -19,7 +18,7 @@ pub enum ConfigError {
     SerdeError(serde_yaml::Error),
 }
 
-pub fn resolve_from_string(input: String) -> Result<ConfigItems, ConfigError> {
+pub fn resolve_from_string(input: String) -> Result<BundleConfig, ConfigError> {
     let conf = get_config(&input);
 
     match conf {
@@ -45,11 +44,10 @@ pub fn resolve_from_string(input: String) -> Result<ConfigItems, ConfigError> {
 /// From a string like `file:config.yaml`, try to read the file
 /// and if it exists, parse into a strongly typed struct
 ///
-fn get_config(input: &str) -> Result<ConfigItems, ConfigError> {
+fn get_config(input: &str) -> Result<BundleConfig, ConfigError> {
     get_file_path(&input)
         .and_then(read_from_path)
         .and_then(parse_from_string)
-        .map(|items: Vec<ConfigItem>| ConfigItems { items })
 }
 
 ///
@@ -78,6 +76,6 @@ fn read_from_path(maybe_path: String) -> Result<String, ConfigError> {
 ///
 /// Parse any YAML string directly into a Struct
 ///
-fn parse_from_string(contents: String) -> Result<Vec<ConfigItem>, ConfigError> {
+fn parse_from_string(contents: String) -> Result<BundleConfig, ConfigError> {
     serde_yaml::from_str(&contents).map_err(|e| ConfigError::SerdeError(e))
 }

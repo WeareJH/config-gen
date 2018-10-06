@@ -49,7 +49,7 @@ pub fn collect_items(
     target
 }
 
-pub fn run(items: Items, config: impl Into<ConfigItems>) -> Vec<Module> {
+pub fn run(items: Items, config: impl Into<BundleConfig>) -> Vec<Module> {
     let h: Vec<Module> = vec![
         Module {
             name: "requirejs/require".into(),
@@ -59,7 +59,7 @@ pub fn run(items: Items, config: impl Into<ConfigItems>) -> Vec<Module> {
         }
     ];
     let conf = config.into();
-    collect_items(h, &conf.items, &items, &mut vec![], &mut vec!["requirejs/require".to_string()])
+    collect_items(h, &conf.bundles, &items, &mut vec![], &mut vec!["requirejs/require".to_string()])
 }
 
 pub fn to_string(bundles: Vec<Module>) -> String {
@@ -92,86 +92,92 @@ fn create_entry_point(item: &ModuleData) -> String {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Default)]
 pub struct ConfigItem {
     name: String,
     urls: Vec<String>,
     children: Vec<ConfigItem>,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
-pub struct ConfigItems {
-    pub items: Vec<ConfigItem>,
+#[derive(Serialize, Deserialize, Debug, Default)]
+pub struct BundleConfig {
+    pub bundles: Vec<ConfigItem>,
+    pub module_blacklist: Option<Vec<String>>,
 }
 
-impl<'a> Into<ConfigItems> for &'a str {
-    fn into(self) -> ConfigItems {
-        let items: Vec<ConfigItem> = match serde_yaml::from_str(&self) {
+impl<'a> Into<BundleConfig> for &'a str {
+    fn into(self) -> BundleConfig {
+        let items: BundleConfig = match serde_yaml::from_str(&self) {
             Ok(i) => i,
             Err(e) => {
                 eprintln!("{}", e);
-                vec![]
+                BundleConfig::default()
             }
         };
-        ConfigItems { items }
+        items
     }
 }
 
 #[test]
 fn test_parse_config() {
-    let c: ConfigItems = r#"
-    [
-      {
-        "name": "requirejs/require",
-        "urls": [
-          "/",
-          "/nav/home-fragrance.html"
-        ],
-        "children": []
-      }
-    ]
+    let c: BundleConfig = r#"
+    {
+      "bundles": [
+          {
+            "name": "requirejs/require",
+            "urls": [
+              "/",
+              "/nav/home-fragrance.html"
+            ],
+            "children": []
+          }
+      ]
+    }
     "#.into();
 
-    assert_eq!("requirejs/require", c.items[0].name);
+    assert_eq!("requirejs/require", c.bundles[0].name);
 }
 
 #[test]
 fn test_create_modules() {
-    let c: ConfigItems = r#"
-    [
-      {
-        "name": "bundles/main",
-        "urls": [
-          "/",
-          "/nav/home-fragrance.html"
-        ],
-        "children": [
+    let c: BundleConfig = r#"
+    {
+        "module_blacklist": ["mage/bootstrap"],
+        "bundles": [
           {
-            "name": "bundles/basket",
+            "name": "bundles/main",
             "urls": [
-              "/index.php/checkout/cart/"
+              "/",
+              "/nav/home-fragrance.html"
             ],
             "children": [
               {
-                "name": "bundles/checkout",
+                "name": "bundles/basket",
                 "urls": [
-                  "/index.php/checkout/"
+                  "/index.php/checkout/cart/"
                 ],
                 "children": [
                   {
-                    "name": "bundles/checkout-success",
+                    "name": "bundles/checkout",
                     "urls": [
-                      "/index.php/checkout/onepage/success/"
+                      "/index.php/checkout/"
                     ],
-                    "children": []
+                    "children": [
+                      {
+                        "name": "bundles/checkout-success",
+                        "urls": [
+                          "/index.php/checkout/onepage/success/"
+                        ],
+                        "children": []
+                      }
+                    ]
                   }
                 ]
               }
             ]
           }
         ]
-      }
-    ]
+    }
     "#.into();
     let reqs: Vec<ModuleData> = serde_json::from_str(include_str!("../../test/fixtures/example-reqs.json")).unwrap();
     let out = run(reqs, c);

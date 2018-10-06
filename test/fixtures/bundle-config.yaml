@@ -1,17 +1,21 @@
-- name: bundles/main
-  urls:
-    - /
-    - /furniture/tables/coffee-tables
-  children:
-    - name: bundles/product
-      urls:
-        - /magpie-coffee-table
-      children: []
-    - name: bundles/basket
-      urls:
-        - /uk/checkout/cart/
-      children:
-        - name: bundles/checkout
-          urls:
-            - /uk/checkout/
-          children: []
+module_blacklist:
+  - Amazon_Login/js/view/login-button-wrapper
+bundles:
+  - name: bundles/main
+    urls:
+      - /
+      - /uk/heels/stiletto-heels
+      - /uk/sandals/slides
+    children:
+      - name: bundles/product
+        urls:
+          - /uk/new-in/myla-rose-gold-clear-diamante-stiletto-heels
+        children: []
+      - name: bundles/basket
+        urls:
+          - /uk/checkout/cart/
+        children:
+          - name: bundles/checkout
+            urls:
+              - /uk/checkout/
+            children: []

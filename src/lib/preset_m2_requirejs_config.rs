@@ -2,6 +2,7 @@ use preset_m2_config_gen::Module;
 use std::collections::HashMap;
 use url::Url;
 use from_file::FromFile;
+use preset_m2::ModuleData;
 
 type ModuleId = String;
 
@@ -85,6 +86,17 @@ impl RequireJsBuildConfig {
         };
 
         shim
+    }
+    pub fn drop_blacklisted(modules: &Vec<ModuleData>, blacklist: &Vec<String>) -> Vec<ModuleData> {
+        let mut output = vec![];
+
+        for m in modules.iter() {
+            if !blacklist.contains(&m.id) {
+                output.push(m.clone());
+            }
+        }
+
+        output
     }
 }
 

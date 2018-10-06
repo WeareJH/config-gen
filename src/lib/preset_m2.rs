@@ -361,10 +361,14 @@ fn gather_state(
     match bundle_path {
         Some(bun_config) => match resolve_from_string(bun_config) {
             Ok(conf) => {
-                let modules = preset_m2_config_gen::run(modules.to_vec(), conf);
+                let module_blacklist = conf.module_blacklist.clone().unwrap_or(vec![]);
+                let mut blacklist = vec!["js-translation".to_string()];
+                blacklist.extend(module_blacklist);
+
+                let filtered = RequireJsBuildConfig::drop_blacklisted(&modules.to_vec(), &blacklist);
+                let bundle_modules = preset_m2_config_gen::run(filtered, conf);
                 let mut derived_build_config = RequireJsBuildConfig::default();
 
-                derived_build_config.modules = Some(modules.clone());
                 derived_build_config.deps = client_config.deps.clone();
                 derived_build_config.map = client_config.map.clone();
                 derived_build_config.config = client_config.config.clone();
@@ -380,21 +384,11 @@ fn gather_state(
 
                 derived_build_config.shim = shims;
 
-//                let base_url = client_config.base_url.clone().unwrap_or("".to_string());
-//
-//                match base_to_dirs(&base_url) {
-//                    Ok(dir) => {
-//                        derived_build_config.base_url = Some(dir.base_url);
-//                        derived_build_config.dir = Some(dir.dir);
-//                    }
-//                    Err(_e) => {
-//                        eprintln!("Could not use base_url to create baseUrl + dir");
-//                    }
-//                }
+                derived_build_config.modules = Some(bundle_modules.clone());
 
-                Ok((derived_build_config, modules))
+                Ok((derived_build_config, bundle_modules))
             }
-            Err(_e) => Err("Couldn't convert to string".to_string()),
+            Err(e) => Err("Couldn't read the bundle config".to_string()),
         },
         _ => Err("didnt match both".to_string()),
     }
