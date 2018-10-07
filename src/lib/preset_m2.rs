@@ -325,7 +325,7 @@ fn serve_req_dump_json(req: &HttpRequest<AppState>) -> HttpResponse {
 fn serve_loaders_dump_json(req: &HttpRequest<AppState>) -> HttpResponse {
     let output = match gather_state(req) {
         Ok((merged_config, modules)) => {
-            let module_list = RequireJsClientConfig::module_list(
+            let module_list = RequireJsClientConfig::bundle_loaders(
                 RequireJsClientConfig::mixins(&merged_config.config)
             , modules);
             Ok(module_list)
@@ -388,7 +388,7 @@ fn gather_state(
 
                 Ok((derived_build_config, bundle_modules))
             }
-            Err(e) => Err("Couldn't read the bundle config".to_string()),
+            Err(_e) => Err("Couldn't read the bundle config".to_string()),
         },
         _ => Err("didnt match both".to_string()),
     }

@@ -150,9 +150,10 @@ impl RequireJsClientConfig {
             _ => vec![],
         }
     }
-    pub fn module_list(mixins: Vec<String>, modules: Vec<Module>) -> String {
+    pub fn bundle_loaders(mixins: Vec<String>, modules: Vec<Module>) -> String {
         let items: Vec<String> = modules
             .iter()
+            .filter(|m| m.name.as_str() != "requirejs/require")
             .map(|module| {
                 let module_list: Vec<String> = module
                     .include
@@ -285,9 +286,15 @@ fn test_hydrate() {
 
 #[test]
 fn test_module_list() {
-    let list = RequireJsClientConfig::module_list(
+    let list = RequireJsClientConfig::bundle_loaders(
         vec!["js/shane".to_string()],
         vec![
+            Module {
+                name: String::from("requirejs/require"),
+                include: vec![],
+                exclude: vec![],
+                create: false,
+            },
             Module {
                 name: String::from("bundle/base"),
                 include: vec!["js/shane".to_string(), "js/kittie".to_string()],
