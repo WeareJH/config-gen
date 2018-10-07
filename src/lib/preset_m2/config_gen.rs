@@ -3,11 +3,13 @@
 
 extern crate serde_json;
 
-use preset_m2::ModuleData;
+use from_file::FromFile;
+use preset_m2::bundle_config::{BundleConfig, ConfigItem, Module};
+use preset_m2::preset::ModuleData;
+use serde_json::Error;
 use std::collections::HashMap;
 use std::path::PathBuf;
 use std::str::FromStr;
-use serde_json::Error;
 
 pub type Items = Vec<ModuleData>;
 
@@ -49,27 +51,21 @@ pub fn collect_items(
     target
 }
 
-pub fn run(items: Items, config: impl Into<BundleConfig>) -> Vec<Module> {
-    let h: Vec<Module> = vec![
-        Module {
-            name: "requirejs/require".into(),
-            include: vec![],
-            exclude: vec![],
-            create: false,
-        }
-    ];
+pub fn generate_modules(items: Items, config: impl Into<BundleConfig>) -> Vec<Module> {
+    let h: Vec<Module> = vec![Module {
+        name: "requirejs/require".into(),
+        include: vec![],
+        exclude: vec![],
+        create: false,
+    }];
     let conf = config.into();
-    collect_items(h, &conf.bundles, &items, &mut vec![], &mut vec!["requirejs/require".to_string()])
-}
-
-pub fn to_string(bundles: Vec<Module>) -> String {
-    match serde_json::to_string_pretty(&Outgoing { bundles }) {
-        Ok(output) => output,
-        Err(err) => {
-            println!("Could not create bundles, {:?}", err);
-            r#""Could not create bundles""#.into()
-        }
-    }
+    collect_items(
+        h,
+        &conf.bundles,
+        &items,
+        &mut vec![],
+        &mut vec!["requirejs/require".to_string()],
+    )
 }
 
 #[test]
@@ -89,32 +85,6 @@ fn create_entry_point(item: &ModuleData) -> String {
             _ => item.id.to_string(),
         },
         None => item.id.to_string(),
-    }
-}
-
-#[derive(Serialize, Deserialize, Debug, Default)]
-pub struct ConfigItem {
-    name: String,
-    urls: Vec<String>,
-    children: Vec<ConfigItem>,
-}
-
-#[derive(Serialize, Deserialize, Debug, Default)]
-pub struct BundleConfig {
-    pub bundles: Vec<ConfigItem>,
-    pub module_blacklist: Option<Vec<String>>,
-}
-
-impl<'a> Into<BundleConfig> for &'a str {
-    fn into(self) -> BundleConfig {
-        let items: BundleConfig = match serde_yaml::from_str(&self) {
-            Ok(i) => i,
-            Err(e) => {
-                eprintln!("{}", e);
-                BundleConfig::default()
-            }
-        };
-        items
     }
 }
 
@@ -179,26 +149,17 @@ fn test_create_modules() {
         ]
     }
     "#.into();
-    let reqs: Vec<ModuleData> = serde_json::from_str(include_str!("../../test/fixtures/example-reqs.json")).unwrap();
-    let out = run(reqs, c);
-    assert_eq!(out[0], Module {
-        include: vec![],
-        exclude: vec![],
-        name: "requirejs/require".to_string(),
-        create: false
-    });
+    let reqs: Vec<ModuleData> =
+        serde_json::from_str(include_str!("../../../test/fixtures/example-reqs.json")).unwrap();
+    let out = generate_modules(reqs, c);
+    assert_eq!(
+        out[0],
+        Module {
+            include: vec![],
+            exclude: vec![],
+            name: "requirejs/require".to_string(),
+            create: false,
+        }
+    );
     assert_eq!(out[1].create, true);
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-pub struct Module {
-    pub name: String,
-    pub include: Vec<String>,
-    pub exclude: Vec<String>,
-    pub create: bool,
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct Outgoing {
-    pub bundles: Vec<Module>,
 }

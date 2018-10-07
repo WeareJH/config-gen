@@ -1,31 +1,24 @@
 extern crate serde;
 extern crate serde_json;
 
-use actix_web::http::Method;
-use actix_web::middleware::Finished;
-use actix_web::middleware::Middleware;
-use actix_web::HttpRequest;
-use actix_web::HttpResponse;
-use actix_web::{App, AsyncResponder, Error, HttpMessage};
-use futures::{Future, Stream};
-use preset::AppState;
-use preset::Preset;
-use preset::ResourceDef;
-use preset::RewriteFns;
-use preset_m2_bundle_config::resolve_from_string;
-use preset_m2_config_gen;
-use preset_m2_config_gen::Module;
-use preset_m2_opts::M2PresetOptions;
-use preset_m2_requirejs_config::{RequireJsClientConfig};
-use regex::Regex;
-use rewrites::RewriteContext;
-use from_file::FromFile;
-use preset_m2_requirejs_config::RequireJsBuildConfig;
-use proxy_transform::proxy_req_setup;
 use actix_web::client::ClientResponse;
-use proxy_transform::create_outgoing;
-use proxy_transform::get_host_port;
-use preset_m2_parse::get_deps_from_str;
+use actix_web::http::{Method, StatusCode};
+use actix_web::middleware::{Finished, Middleware};
+use actix_web::{App, AsyncResponder, Error, HttpMessage, HttpRequest, HttpResponse};
+use futures::{Future, Stream};
+use regex::Regex;
+
+use from_file::FromFile;
+use preset::{AppState, Preset, ResourceDef, RewriteFns};
+use preset_m2::bundle_config::BundleConfig;
+use preset_m2::bundle_config::Module;
+use preset_m2::config_gen;
+use preset_m2::handlers::serve_r_js::serve_instrumented_require_js;
+use preset_m2::opts::M2PresetOptions;
+use preset_m2::parse::get_deps_from_str;
+use preset_m2::requirejs_config::{RequireJsBuildConfig, RequireJsClientConfig};
+use proxy_transform::{create_outgoing, get_host_port, proxy_req_setup};
+use rewrites::RewriteContext;
 
 type FutResp = Box<Future<Item = HttpResponse, Error = Error>>;
 
@@ -63,12 +56,11 @@ impl M2Preset {
                 acc_app.resource(&path, move |r| r.method(method).f(cb))
             });
 
-        app.resource(
-            "/__bs/post",
-            move |r| r.method(Method::POST).f(handle_post_data)
-        ).resource(
+        app.resource("/__bs/post", move |r| {
+            r.method(Method::POST).f(handle_post_data)
+        }).resource(
             "/static/{version}/frontend/{vendor}/{theme}/{locale}/requirejs-config.js",
-            move |r| r.method(Method::GET).f(serve_requirejs_config)
+            move |r| r.method(Method::GET).f(serve_requirejs_config),
         )
     }
 }
@@ -76,9 +68,7 @@ impl M2Preset {
 ///
 /// Handle the requirejs post
 ///
-fn handle_post_data(
-    req: &HttpRequest<AppState>,
-) -> FutResp {
+fn handle_post_data(req: &HttpRequest<AppState>) -> FutResp {
     let a = req.state().require_client_config.clone();
 
     req.payload()
@@ -142,7 +132,7 @@ pub struct ModuleData {
 /// # Examples
 ///
 /// ```
-/// # use bs::preset_m2::*;
+/// # use bs::preset_m2::preset::*;
 ///
 /// let data = r#"{
 ///   "url": "https://127.0.0.1:8080/static/version1536567404/frontend/Acme/default/en_GB/Magento_Ui/js/form/form.js",
@@ -214,15 +204,6 @@ impl Middleware<AppState> for ReqCatcher {
     }
 }
 
-/// handler with path parameters like `/user/{name}/`
-fn serve_instrumented_require_js(_req: &HttpRequest<AppState>) -> HttpResponse {
-    let bytes = include_str!("./static/requirejs.js");
-
-    HttpResponse::Ok()
-        .content_type("application/javascript")
-        .body(bytes)
-}
-
 fn serve_requirejs_config(original_request: &HttpRequest<AppState>) -> FutResp {
     let client_config_clone = original_request.state().require_client_config.clone();
     apply_to_proxy_body(&original_request, move |mut b| {
@@ -241,7 +222,8 @@ fn serve_requirejs_config(original_request: &HttpRequest<AppState>) -> FutResp {
 /// response before sending it back to the origin requester
 ///
 fn apply_to_proxy_body<F>(original_request: &HttpRequest<AppState>, f: F) -> FutResp
-    where F: Fn(String) -> String + 'static
+where
+    F: Fn(String) -> String + 'static,
 {
     let mut outgoing = proxy_req_setup(original_request);
     let target_domain = original_request.state().opts.target.clone();
@@ -278,14 +260,13 @@ fn apply_to_proxy_body<F>(original_request: &HttpRequest<AppState>, f: F) -> Fut
 #[derive(Serialize, Deserialize, Default)]
 pub struct SeedData {
     pub client_config: RequireJsClientConfig,
-    pub module_items: Vec<ModuleData>
+    pub module_items: Vec<ModuleData>,
 }
 
 impl FromFile for SeedData {}
 
 /// serve a JSON dump of the current accumulated
 fn serve_seed_dump_json(req: &HttpRequest<AppState>) -> HttpResponse {
-
     let module_items = &req
         .state()
         .module_items
@@ -298,11 +279,14 @@ fn serve_seed_dump_json(req: &HttpRequest<AppState>) -> HttpResponse {
         .lock()
         .expect("should lock & unwrap require_client_config");
 
-    let output = SeedData { client_config: client_config.clone(), module_items: module_items.to_vec() };
+    let output = SeedData {
+        client_config: client_config.clone(),
+        module_items: module_items.to_vec(),
+    };
 
     let output = match serde_json::to_string_pretty(&output) {
         Ok(t) => Ok(t),
-        Err(e) => Err(e.to_string())
+        Err(e) => Err(e.to_string()),
     };
 
     match output {
@@ -326,8 +310,9 @@ fn serve_loaders_dump_json(req: &HttpRequest<AppState>) -> HttpResponse {
     let output = match gather_state(req) {
         Ok((merged_config, modules)) => {
             let module_list = RequireJsClientConfig::bundle_loaders(
-                RequireJsClientConfig::mixins(&merged_config.config)
-            , modules);
+                RequireJsClientConfig::mixins(&merged_config.config),
+                modules,
+            );
             Ok(module_list)
         }
         Err(e) => Err(e),
@@ -359,14 +344,15 @@ fn gather_state(
     let bundle_path = maybe_opts.bundle_config;
 
     match bundle_path {
-        Some(bun_config) => match resolve_from_string(bun_config) {
-            Ok(conf) => {
-                let module_blacklist = conf.module_blacklist.clone().unwrap_or(vec![]);
+        Some(bun_config_path) => match BundleConfig::from_yml_file(&bun_config_path) {
+            Ok(bundle_config) => {
+                let module_blacklist = bundle_config.module_blacklist.clone().unwrap_or(vec![]);
                 let mut blacklist = vec!["js-translation".to_string()];
                 blacklist.extend(module_blacklist);
 
-                let filtered = RequireJsBuildConfig::drop_blacklisted(&modules.to_vec(), &blacklist);
-                let bundle_modules = preset_m2_config_gen::run(filtered, conf);
+                let filtered =
+                    RequireJsBuildConfig::drop_blacklisted(&modules.to_vec(), &blacklist);
+                let bundle_modules = config_gen::generate_modules(filtered, bundle_config);
                 let mut derived_build_config = RequireJsBuildConfig::default();
 
                 derived_build_config.deps = client_config.deps.clone();
@@ -388,7 +374,7 @@ fn gather_state(
 
                 Ok((derived_build_config, bundle_modules))
             }
-            Err(_e) => Err("Couldn't read the bundle config".to_string()),
+            Err(e) => Err(e.to_string()),
         },
         _ => Err("didnt match both".to_string()),
     }
@@ -400,12 +386,14 @@ fn serve_config_dump_json(req: &HttpRequest<AppState>) -> HttpResponse {
             Ok(t) => Ok(t),
             Err(e) => Err(e.to_string()),
         },
-        Err(e) => Err(e.to_string())
+        Err(e) => Err(e.to_string()),
     };
 
     match output {
         Ok(t) => HttpResponse::Ok().content_type("application/json").body(t),
-        Err(_e) => HttpResponse::Ok().content_type("application/json").body("Could not serve config"),
+        Err(_e) => HttpResponse::Ok()
+            .content_type("application/json")
+            .body("Could not serve config"),
     }
 }
 
@@ -420,7 +408,14 @@ fn serve_build_json(req: &HttpRequest<AppState>) -> HttpResponse {
 
     match output {
         Ok(t) => HttpResponse::Ok().content_type("application/json").body(t),
-        Err(e) => HttpResponse::Ok().content_type("application/json").body(e.to_string()),
+        Err(e) => HttpResponse::Ok()
+            .content_type("application/json")
+            .status(StatusCode::from_u16(500).expect("can set 500 resp code"))
+            .body(
+                serde_json::to_string_pretty(&json!({
+                "message": e.to_string()
+            })).unwrap(),
+            ),
     }
 }
 

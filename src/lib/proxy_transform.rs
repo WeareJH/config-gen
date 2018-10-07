@@ -1,3 +1,4 @@
+use actix_web::client::ClientRequestBuilder;
 use actix_web::http::header;
 use actix_web::http::HeaderMap;
 use actix_web::http::Method;
@@ -6,12 +7,10 @@ use base64::encode;
 use futures::Future;
 use headers::clone_headers;
 use preset::AppState;
-use preset_m2_opts::AuthBasic;
-use preset_m2_opts::M2PresetOptions;
+use preset_m2::opts::{AuthBasic, M2PresetOptions};
 use std::str;
 use with_body::forward_request_with_body;
 use without_body::forward_request_without_body;
-use actix_web::client::ClientRequestBuilder;
 
 ///
 /// This function will clone incoming requests
@@ -20,7 +19,6 @@ use actix_web::client::ClientRequestBuilder;
 pub fn proxy_transform(
     original_request: &HttpRequest<AppState>,
 ) -> Box<Future<Item = HttpResponse, Error = Error>> {
-
     let outgoing = proxy_req_setup(original_request);
 
     match *original_request.method() {

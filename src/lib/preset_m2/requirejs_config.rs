@@ -1,8 +1,8 @@
-use preset_m2_config_gen::Module;
+use from_file::FromFile;
+use preset_m2::bundle_config::Module;
+use preset_m2::preset::ModuleData;
 use std::collections::HashMap;
 use url::Url;
-use from_file::FromFile;
-use preset_m2::ModuleData;
 
 type ModuleId = String;
 
@@ -32,7 +32,6 @@ impl Default for RequireJsClientConfig {
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct RequireJsBuildConfig {
-
     #[serde(rename = "generateSourceMaps")]
     pub generate_source_maps: Option<bool>,
 
@@ -48,8 +47,6 @@ pub struct RequireJsBuildConfig {
     pub shim: serde_json::Value,
     pub paths: HashMap<String, String>,
 
-
-
     #[serde(default = "default_modules")]
     pub modules: Option<Vec<Module>>,
 }
@@ -59,9 +56,10 @@ impl RequireJsBuildConfig {
         let mut hm: HashMap<String, String> = HashMap::new();
 
         for (key, value) in paths.iter() {
-            if value.starts_with("http://") ||
-                value.starts_with("https://") ||
-                value.starts_with("//") {
+            if value.starts_with("http://")
+                || value.starts_with("https://")
+                || value.starts_with("//")
+            {
                 hm.insert(key.clone(), "empty:".to_string());
             } else {
                 hm.insert(key.clone(), value.clone());
@@ -73,16 +71,17 @@ impl RequireJsBuildConfig {
     pub fn fix_shims(shim: &mut serde_json::Value) -> &mut serde_json::Value {
         match shim {
             serde_json::Value::Object(m) => {
-                for (_, value) in m.into_iter().filter(|(key, _)| key.as_str() == "jquery/jquery-migrate") {
-
-                    *value.pointer_mut("/deps").unwrap() =
-                        serde_json::Value::Array(vec![
-                            serde_json::Value::String("jquery".to_string()),
-                            serde_json::Value::String("jquery/jquery.cookie".to_string())
-                        ]);
+                for (_, value) in m
+                    .into_iter()
+                    .filter(|(key, _)| key.as_str() == "jquery/jquery-migrate")
+                {
+                    *value.pointer_mut("/deps").unwrap() = serde_json::Value::Array(vec![
+                        serde_json::Value::String("jquery".to_string()),
+                        serde_json::Value::String("jquery/jquery.cookie".to_string()),
+                    ]);
                 }
-            },
-            _ => println!("no")
+            }
+            _ => println!("no"),
         };
 
         shim
@@ -126,7 +125,7 @@ impl Default for RequireJsBuildConfig {
             generate_source_maps: Some(true),
             inline_text: Some(true),
             optimize: Some("none".into()),
-            modules: Some(vec![])
+            modules: Some(vec![]),
         }
     }
 }
@@ -139,8 +138,7 @@ impl RequireJsClientConfig {
             serde_json::Value::Object(ref v) => match v.get("mixins") {
                 Some(f) => match f {
                     serde_json::Value::Object(ref v) => {
-                        let names: Vec<String> =
-                            v.iter().map(|(key, _)| key.to_string()).collect();
+                        let names: Vec<String> = v.iter().map(|(key, _)| key.to_string()).collect();
                         names
                     }
                     _ => vec![],
@@ -192,19 +190,22 @@ fn default_modules() -> Option<Vec<Module>> {
 fn test_default_require_js_config() {
     let r = RequireJsClientConfig::default();
     let as_string = serde_json::to_string_pretty(&r).unwrap();
-    assert_eq!(as_string, r#"{
+    assert_eq!(
+        as_string,
+        r#"{
   "baseUrl": "",
   "deps": [],
   "map": {},
   "config": {},
   "shim": {},
   "paths": {}
-}"#);
+}"#
+    );
 }
 
 #[test]
 fn test_parse_incoming_from_browser() {
-    let input = include_bytes!("../../test/fixtures/example-post.json");
+    let input = include_bytes!("../../../test/fixtures/example-post.json");
     let s: RequireJsClientConfig = serde_json::from_slice(input).unwrap();
     assert_eq!(
         s.deps,
@@ -225,7 +226,7 @@ fn test_parse_incoming_from_browser() {
 
 #[test]
 fn test_filter_mixins() {
-    let input = include_bytes!("../../test/fixtures/example-post.json");
+    let input = include_bytes!("../../../test/fixtures/example-post.json");
     let s: RequireJsClientConfig = serde_json::from_slice(input).unwrap();
     assert_eq!(
         RequireJsClientConfig::mixins(&s.config),
@@ -280,7 +281,7 @@ fn test_require_build_shim() {
 
 #[test]
 fn test_hydrate() {
-    let input = include_bytes!("../../test/fixtures/example-config.json");
+    let input = include_bytes!("../../../test/fixtures/example-config.json");
     let _s: RequireJsClientConfig = serde_json::from_slice(input).unwrap();
 }
 

@@ -60,7 +60,7 @@ impl Default for ProxyOpts {
             scheme: ProxyScheme::Http,
             port: 8080,
             config_file: None,
-            seed_file: None
+            seed_file: None,
         }
     }
 }

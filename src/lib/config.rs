@@ -104,11 +104,7 @@ pub fn get_program_config_from_cli() -> Result<ProxyOpts, ProgramStartError> {
                 .takes_value(true)
                 .required(true),
         )
-        .arg(
-            Arg::with_name("seed")
-                .long("seed")
-                .takes_value(true),
-        )
+        .arg(Arg::with_name("seed").long("seed").takes_value(true))
         .get_matches();
 
     match get_host(matches.value_of("input").unwrap_or("")) {

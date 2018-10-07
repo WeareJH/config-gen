@@ -1,29 +1,17 @@
-extern crate serde_yaml;
 extern crate serde_json;
+extern crate serde_yaml;
 
+use serde::Deserialize;
 use std::fs::File;
 use std::io::prelude::*;
-use serde::Deserialize;
 
 #[derive(Debug)]
-pub enum ConfigError {
+pub enum FromFileError {
     InvalidInput,
     FileOpen,
     FileRead,
-    SerdeError(String)
+    SerdeError(String),
 }
-
-//impl From<ConfigError> for String {
-//    fn from(e: ConfigError) -> Self {
-//        let output = match e {
-//            ConfigError::InvalidInput => "Invalid Input",
-//            ConfigError::FileOpen => "Couldn't open the file",
-//            ConfigError::FileRead => "Couldn't read the file contents",
-//            ConfigError::SerdeError(e) => e.to_string(),
-//        };
-//        output.to_string()
-//    }
-//}
 
 ///
 /// Implement this trait to enable your Struct's to deserialized
@@ -37,8 +25,9 @@ pub trait FromFile {
     /// From a string like `file:config.yaml`, try to read the file
     /// and if it exists, parse into a strongly typed struct `Person`
     ///
-    fn from_yml_file(input: &str) -> Result<Self, ConfigError>
-        where for<'de> Self: Deserialize<'de> + Sized
+    fn from_yml_file(input: &str) -> Result<Self, FromFileError>
+    where
+        for<'de> Self: Deserialize<'de> + Sized,
     {
         <Self as FromFile>::get_file_path(input)
             .and_then(<Self as FromFile>::file_read)
@@ -49,8 +38,9 @@ pub trait FromFile {
     /// From a string like `file:config.yaml`, try to read the file
     /// and if it exists, parse into a strongly typed struct `Person`
     ///
-    fn from_json_file(input: &str) -> Result<Self, ConfigError>
-        where for<'de> Self: Deserialize<'de> + Sized
+    fn from_json_file(input: &str) -> Result<Self, FromFileError>
+    where
+        for<'de> Self: Deserialize<'de> + Sized,
     {
         <Self as FromFile>::get_file_path(input)
             .and_then(<Self as FromFile>::file_read)
@@ -60,40 +50,54 @@ pub trait FromFile {
     ///
     /// Parse strings like file:config.yaml to extract the file path only
     ///
-    fn get_file_path(input: &str) -> Result<String, ConfigError> {
+    fn get_file_path(input: &str) -> Result<String, FromFileError> {
         let split: Vec<&str> = input.split(":").collect();
         match split.len() {
             1 => Ok(split[0].into()),
             2 => Ok(split[1].into()),
-            _ => Err(ConfigError::InvalidInput)
+            _ => Err(FromFileError::InvalidInput),
         }
     }
 
     ///
     /// Attempt to Read the file's contents into a string
     ///
-    fn file_read(input: String) -> Result<String, ConfigError> {
-        let mut file = File::open(input).map_err(|_| ConfigError::FileOpen)?;
+    fn file_read(input: String) -> Result<String, FromFileError> {
+        let mut file = File::open(input).map_err(|_| FromFileError::FileOpen)?;
         let mut contents = String::new();
-        file.read_to_string(&mut contents).map_err(|_| ConfigError::FileRead)?;
+        file.read_to_string(&mut contents)
+            .map_err(|_| FromFileError::FileRead)?;
         Ok(contents)
     }
 
     ///
     /// Parse any YAML string directly into a Self
     ///
-    fn from_yaml_string(contents: String) -> Result<Self, ConfigError>
-        where for<'de> Self: Deserialize<'de>
+    fn from_yaml_string(contents: String) -> Result<Self, FromFileError>
+    where
+        for<'de> Self: Deserialize<'de>,
     {
-        serde_yaml::from_str(&contents).map_err(|e| ConfigError::SerdeError(e.to_string()))
+        serde_yaml::from_str(&contents).map_err(|e| FromFileError::SerdeError(e.to_string()))
     }
 
     ///
     /// Parse json string directly into a Self
     ///
-    fn from_json_string(contents: String) -> Result<Self, ConfigError>
-        where for<'de> Self: Deserialize<'de>
+    fn from_json_string(contents: String) -> Result<Self, FromFileError>
+    where
+        for<'de> Self: Deserialize<'de>,
     {
-        serde_json::from_str(&contents).map_err(|e| ConfigError::SerdeError(e.to_string()))
+        serde_json::from_str(&contents).map_err(|e| FromFileError::SerdeError(e.to_string()))
+    }
+}
+
+impl std::fmt::Display for FromFileError {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        match self {
+            FromFileError::InvalidInput => write!(f, "ConfigError::InvalidInput"),
+            FromFileError::FileOpen => write!(f, "ConfigError::FileOpen"),
+            FromFileError::FileRead => write!(f, "ConfigError::FileRead"),
+            FromFileError::SerdeError(e) => write!(f, "ConfigError::SerdeError - {}", e),
+        }
     }
 }

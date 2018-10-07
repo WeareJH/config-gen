@@ -19,19 +19,19 @@ use openssl::ssl::{SslAcceptor, SslFiletype, SslMethod};
 use bs::config::get_config_contents_from_file;
 use bs::config::get_program_config_from_cli;
 use bs::config::ProgramStartError;
+use bs::from_file::FromFile;
 use bs::options::ProxyOpts;
 use bs::options::ProxyScheme;
 use bs::preset::AppState;
 use bs::preset::Preset;
-use bs::preset_m2::{M2Preset, SeedData};
-use bs::preset_m2_opts::M2PresetOptions;
-use bs::preset_m2_requirejs_config::RequireJsClientConfig;
+use bs::preset_m2::opts::M2PresetOptions;
+use bs::preset_m2::preset::{M2Preset, SeedData};
+use bs::preset_m2::requirejs_config::RequireJsClientConfig;
 use bs::proxy_transform::proxy_transform;
 use openssl::ssl::SslAcceptorBuilder;
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::sync::Mutex;
-use bs::from_file::FromFile;
 
 fn main() {
     match get_program_config_from_cli().and_then(run_with_opts) {
@@ -92,8 +92,8 @@ fn run_with_opts(opts: ProxyOpts) -> Result<(), ProgramStartError> {
                     eprintln!("Could not read seed, {:?}", e);
                     (vec![], RequireJsClientConfig::default())
                 }
-            }
-            None => (vec![], RequireJsClientConfig::default())
+            },
+            None => (vec![], RequireJsClientConfig::default()),
         };
 
         let mut app_state = AppState {
@@ -101,9 +101,7 @@ fn run_with_opts(opts: ProxyOpts) -> Result<(), ProgramStartError> {
             opts: opts.clone(),
             rewrites: vec![],
             module_items: Mutex::new(modules),
-            require_client_config: Arc::new(Mutex::new(
-                config
-            ))
+            require_client_config: Arc::new(Mutex::new(config)),
         };
 
         //

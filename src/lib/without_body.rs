@@ -9,9 +9,9 @@ use futures::{Future, Stream};
 use preset::AppState;
 use preset::RewriteFns;
 use proxy_transform::create_outgoing;
+use proxy_transform::get_host_port;
 use replacer::{Replacer, Subject};
 use rewrites::{replace_host, RewriteContext};
-use proxy_transform::get_host_port;
 
 ///
 /// Process regular GET requests where we don't need to consider
@@ -89,7 +89,6 @@ fn response_from_rewrite(
     target_domain: String,
     rewrites: RewriteFns,
 ) -> Box<Future<Item = HttpResponse, Error = Error>> {
-
     let output = proxy_response
         .body()
         .limit(1_000_000)
