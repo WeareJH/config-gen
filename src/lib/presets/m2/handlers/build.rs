@@ -1,8 +1,8 @@
-use super::super::preset_m2::gather_state;
 use actix_web::http::StatusCode;
 use actix_web::HttpRequest;
 use actix_web::HttpResponse;
 use preset::AppState;
+use presets::m2::state::gather_state;
 
 pub fn handle(req: &HttpRequest<AppState>) -> HttpResponse {
     let output = match gather_state(req) {

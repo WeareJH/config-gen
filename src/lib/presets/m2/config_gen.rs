@@ -5,7 +5,7 @@ extern crate serde_json;
 
 use from_file::FromFile;
 use presets::m2::bundle_config::{BundleConfig, ConfigItem, Module};
-use presets::m2::preset_m2::ModuleData;
+use presets::m2::module_meta_data::ModuleData;
 use serde_json::Error;
 use std::collections::HashMap;
 use std::path::PathBuf;

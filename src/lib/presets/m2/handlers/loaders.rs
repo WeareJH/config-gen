@@ -2,8 +2,8 @@ use actix_web::HttpRequest;
 use actix_web::HttpResponse;
 use preset::AppState;
 
-use presets::m2::preset_m2::gather_state;
 use presets::m2::requirejs_config::RequireJsClientConfig;
+use presets::m2::state::gather_state;
 
 /// serve a JSON dump of the current accumulated config
 pub fn handle(req: &HttpRequest<AppState>) -> HttpResponse {

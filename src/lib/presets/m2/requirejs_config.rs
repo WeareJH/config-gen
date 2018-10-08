@@ -1,6 +1,6 @@
 use from_file::FromFile;
 use presets::m2::bundle_config::Module;
-use presets::m2::preset_m2::ModuleData;
+use presets::m2::module_meta_data::ModuleData;
 use std::collections::HashMap;
 use url::Url;
 

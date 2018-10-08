@@ -1,6 +1,6 @@
 use actix_web::{HttpRequest, HttpResponse};
 use preset::AppState;
-use presets::m2::preset_m2::SeedData;
+use presets::m2::seed::SeedData;
 
 pub fn handle(req: &HttpRequest<AppState>) -> HttpResponse {
     let module_items = &req

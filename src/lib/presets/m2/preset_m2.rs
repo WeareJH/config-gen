@@ -2,19 +2,14 @@ extern crate serde;
 extern crate serde_json;
 
 use actix_web::http::Method;
-use actix_web::{App, Error, HttpRequest, HttpResponse};
+use actix_web::{App, Error, HttpResponse};
 use futures::Future;
 
-use from_file::FromFile;
 use preset::{AppState, Preset, ResourceDef, RewriteFns};
 
-use super::bundle_config::BundleConfig;
-use super::bundle_config::Module;
-use super::config_gen;
 use super::handlers;
 use super::opts::M2PresetOptions;
 use super::replace_cookie_domain;
-use super::requirejs_config::{RequireJsBuildConfig, RequireJsClientConfig};
 use preset::AsyncResourceDef;
 
 pub type FutResp = Box<Future<Item = HttpResponse, Error = Error>>;
@@ -103,80 +98,5 @@ impl Preset<AppState> for M2Preset {
     ///
     fn add_before_middleware(&self, app: App<AppState>) -> App<AppState> {
         app.middleware(handlers::req_capture::ReqCapture::new())
-    }
-}
-
-///
-/// This is the data type that is comes from each request
-/// in a query param
-///
-#[derive(Debug, Serialize, Deserialize, PartialEq, Default, Clone)]
-pub struct ModuleData {
-    pub url: String,
-    pub id: String,
-    pub referrer: String,
-}
-
-#[derive(Serialize, Deserialize, Default)]
-pub struct SeedData {
-    pub client_config: RequireJsClientConfig,
-    pub module_items: Vec<ModuleData>,
-}
-
-impl FromFile for SeedData {}
-
-pub fn gather_state(
-    req: &HttpRequest<AppState>,
-) -> Result<(RequireJsBuildConfig, Vec<Module>), String> {
-    let modules = &req
-        .state()
-        .module_items
-        .lock()
-        .expect("should lock & unwrap module_items");
-
-    let client_config = req
-        .state()
-        .require_client_config
-        .lock()
-        .expect("should lock & unwrap require_client_config");
-
-    let maybe_opts = M2PresetOptions::get_opts(&req.state().program_config)
-        .expect("should clone program config");
-    let bundle_path = maybe_opts.bundle_config;
-
-    match bundle_path {
-        Some(bun_config_path) => match BundleConfig::from_yml_file(&bun_config_path) {
-            Ok(bundle_config) => {
-                let module_blacklist = bundle_config.module_blacklist.clone().unwrap_or(vec![]);
-                let mut blacklist = vec!["js-translation".to_string()];
-                blacklist.extend(module_blacklist);
-
-                let filtered =
-                    RequireJsBuildConfig::drop_blacklisted(&modules.to_vec(), &blacklist);
-                let bundle_modules = config_gen::generate_modules(filtered, bundle_config);
-                let mut derived_build_config = RequireJsBuildConfig::default();
-
-                derived_build_config.deps = client_config.deps.clone();
-                derived_build_config.map = client_config.map.clone();
-                derived_build_config.config = client_config.config.clone();
-
-                let mut c = client_config.paths.clone();
-                derived_build_config.paths = RequireJsBuildConfig::strip_paths(&c);
-
-                let mut shims = client_config.shim.clone();
-
-                {
-                    RequireJsBuildConfig::fix_shims(&mut shims);
-                }
-
-                derived_build_config.shim = shims;
-
-                derived_build_config.modules = Some(bundle_modules.clone());
-
-                Ok((derived_build_config, bundle_modules))
-            }
-            Err(e) => Err(e.to_string()),
-        },
-        _ => Err("didnt match both".to_string()),
     }
 }
