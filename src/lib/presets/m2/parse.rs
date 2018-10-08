@@ -11,7 +11,7 @@ use ratel::parser::parse;
 /// # Examples
 ///
 /// ```
-/// # use bs::preset_m2::parse::*;
+/// # use bs::presets::m2::parse::*;
 /// let input = r#"
 ///   (function() {
 ///        var config = {
@@ -96,7 +96,7 @@ fn test_get_deps_from_str() {
 
 #[test]
 fn test_from_large_file() {
-    let input = include_str!("../../../test/fixtures/requirejs-config-generated.js");
+    let input = include_str!("../../../../test/fixtures/requirejs-config-generated.js");
     let deps = get_deps_from_str(input).unwrap();
 
     assert_eq!(

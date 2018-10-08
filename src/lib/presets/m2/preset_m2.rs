@@ -10,13 +10,13 @@ use regex::Regex;
 
 use from_file::FromFile;
 use preset::{AppState, Preset, ResourceDef, RewriteFns};
-use preset_m2::bundle_config::BundleConfig;
-use preset_m2::bundle_config::Module;
-use preset_m2::config_gen;
-use preset_m2::handlers::serve_r_js::serve_instrumented_require_js;
-use preset_m2::opts::M2PresetOptions;
-use preset_m2::parse::get_deps_from_str;
-use preset_m2::requirejs_config::{RequireJsBuildConfig, RequireJsClientConfig};
+use presets::m2::bundle_config::BundleConfig;
+use presets::m2::bundle_config::Module;
+use presets::m2::config_gen;
+use presets::m2::handlers::serve_r_js::serve_instrumented_require_js;
+use presets::m2::opts::M2PresetOptions;
+use presets::m2::parse::get_deps_from_str;
+use presets::m2::requirejs_config::{RequireJsBuildConfig, RequireJsClientConfig};
 use proxy_transform::{create_outgoing, get_host_port, proxy_req_setup};
 use rewrites::RewriteContext;
 
@@ -132,7 +132,7 @@ pub struct ModuleData {
 /// # Examples
 ///
 /// ```
-/// # use bs::preset_m2::preset::*;
+/// # use bs::presets::m2::preset_m2::*;
 ///
 /// let data = r#"{
 ///   "url": "https://127.0.0.1:8080/static/version1536567404/frontend/Acme/default/en_GB/Magento_Ui/js/form/form.js",

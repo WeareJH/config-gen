@@ -4,8 +4,8 @@
 extern crate serde_json;
 
 use from_file::FromFile;
-use preset_m2::bundle_config::{BundleConfig, ConfigItem, Module};
-use preset_m2::preset::ModuleData;
+use presets::m2::bundle_config::{BundleConfig, ConfigItem, Module};
+use presets::m2::preset_m2::ModuleData;
 use serde_json::Error;
 use std::collections::HashMap;
 use std::path::PathBuf;
@@ -150,7 +150,7 @@ fn test_create_modules() {
     }
     "#.into();
     let reqs: Vec<ModuleData> =
-        serde_json::from_str(include_str!("../../../test/fixtures/example-reqs.json")).unwrap();
+        serde_json::from_str(include_str!("../../../../test/fixtures/example-reqs.json")).unwrap();
     let out = generate_modules(reqs, c);
     assert_eq!(
         out[0],

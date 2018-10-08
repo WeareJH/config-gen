@@ -1,6 +1,6 @@
 use from_file::FromFile;
-use preset_m2::bundle_config::Module;
-use preset_m2::preset::ModuleData;
+use presets::m2::bundle_config::Module;
+use presets::m2::preset_m2::ModuleData;
 use std::collections::HashMap;
 use url::Url;
 
@@ -205,7 +205,7 @@ fn test_default_require_js_config() {
 
 #[test]
 fn test_parse_incoming_from_browser() {
-    let input = include_bytes!("../../../test/fixtures/example-post.json");
+    let input = include_bytes!("../../../../test/fixtures/example-post.json");
     let s: RequireJsClientConfig = serde_json::from_slice(input).unwrap();
     assert_eq!(
         s.deps,
@@ -226,7 +226,7 @@ fn test_parse_incoming_from_browser() {
 
 #[test]
 fn test_filter_mixins() {
-    let input = include_bytes!("../../../test/fixtures/example-post.json");
+    let input = include_bytes!("../../../../test/fixtures/example-post.json");
     let s: RequireJsClientConfig = serde_json::from_slice(input).unwrap();
     assert_eq!(
         RequireJsClientConfig::mixins(&s.config),
@@ -281,7 +281,7 @@ fn test_require_build_shim() {
 
 #[test]
 fn test_hydrate() {
-    let input = include_bytes!("../../../test/fixtures/example-config.json");
+    let input = include_bytes!("../../../../test/fixtures/example-config.json");
     let _s: RequireJsClientConfig = serde_json::from_slice(input).unwrap();
 }
 

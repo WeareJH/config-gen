@@ -27,7 +27,7 @@ pub mod from_file;
 pub mod headers;
 pub mod options;
 pub mod preset;
-pub mod preset_m2;
+pub mod presets;
 pub mod proxy_transform;
 pub mod replacer;
 pub mod rewrites;
