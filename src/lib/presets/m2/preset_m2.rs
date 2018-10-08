@@ -2,25 +2,23 @@ extern crate serde;
 extern crate serde_json;
 
 use actix_web::client::ClientResponse;
-use actix_web::http::{Method, StatusCode};
-use actix_web::middleware::{Finished, Middleware};
+use actix_web::http::Method;
 use actix_web::{App, AsyncResponder, Error, HttpMessage, HttpRequest, HttpResponse};
-use futures::{Future, Stream};
-use regex::Regex;
+use futures::Future;
 
 use from_file::FromFile;
 use preset::{AppState, Preset, ResourceDef, RewriteFns};
-use presets::m2::bundle_config::BundleConfig;
-use presets::m2::bundle_config::Module;
-use presets::m2::config_gen;
-use presets::m2::handlers::serve_r_js::serve_instrumented_require_js;
-use presets::m2::opts::M2PresetOptions;
-use presets::m2::parse::get_deps_from_str;
-use presets::m2::requirejs_config::{RequireJsBuildConfig, RequireJsClientConfig};
 use proxy_transform::{create_outgoing, get_host_port, proxy_req_setup};
-use rewrites::RewriteContext;
 
-type FutResp = Box<Future<Item = HttpResponse, Error = Error>>;
+use super::bundle_config::BundleConfig;
+use super::bundle_config::Module;
+use super::config_gen;
+use super::handlers;
+use super::opts::M2PresetOptions;
+use super::replace_cookie_domain;
+use super::requirejs_config::{RequireJsBuildConfig, RequireJsClientConfig};
+
+pub type FutResp = Box<Future<Item = HttpResponse, Error = Error>>;
 
 ///
 /// The Magento 2 Preset
@@ -41,13 +39,13 @@ impl M2Preset {
             (
                 "/static/{version}/frontend/{vendor}/{theme}/{locale}/requirejs/require.js",
                 Method::GET,
-                serve_instrumented_require_js,
+                handlers::serve_r_js::handle,
             ),
-            ("/__bs/reqs.json", Method::GET, serve_req_dump_json),
-            ("/__bs/config.json", Method::GET, serve_config_dump_json),
-            ("/__bs/build.json", Method::GET, serve_build_json),
-            ("/__bs/loaders.json", Method::GET, serve_loaders_dump_json),
-            ("/__bs/seed.json", Method::GET, serve_seed_dump_json),
+            ("/__bs/reqs.json", Method::GET, handlers::requests::handle),
+            ("/__bs/config.json", Method::GET, handlers::config::handle),
+            ("/__bs/build.json", Method::GET, handlers::build::handle),
+            ("/__bs/loaders.json", Method::GET, handlers::loaders::handle),
+            ("/__bs/seed.json", Method::GET, handlers::seed::handle),
         ];
 
         let app = resources
@@ -57,45 +55,12 @@ impl M2Preset {
             });
 
         app.resource("/__bs/post", move |r| {
-            r.method(Method::POST).f(handle_post_data)
+            r.method(Method::POST).f(handlers::config_post::handle)
         }).resource(
             "/static/{version}/frontend/{vendor}/{theme}/{locale}/requirejs-config.js",
-            move |r| r.method(Method::GET).f(serve_requirejs_config),
+            move |r| r.method(Method::GET).f(handlers::config_capture::handle),
         )
     }
-}
-
-///
-/// Handle the requirejs post
-///
-fn handle_post_data(req: &HttpRequest<AppState>) -> FutResp {
-    let a = req.state().require_client_config.clone();
-
-    req.payload()
-        .concat2()
-        .from_err()
-        .and_then(move |body| {
-            let result: Result<RequireJsClientConfig, serde_json::Error> =
-                serde_json::from_str(std::str::from_utf8(&body).unwrap());
-            //
-            match result {
-                Ok(next_config) => {
-                    let mut mutex = a.lock().unwrap();
-                    mutex.base_url = next_config.base_url;
-                    mutex.map = next_config.map;
-                    mutex.config = next_config.config;
-                    mutex.paths = next_config.paths;
-                    mutex.shim = next_config.shim;
-                    "Was Good!".to_string()
-                }
-                Err(e) => e.to_string(),
-            };
-
-            Ok(HttpResponse::Ok()
-                .content_type("application/json")
-                .body("yo!"))
-        })
-        .responder()
 }
 
 ///
@@ -107,10 +72,10 @@ impl Preset<AppState> for M2Preset {
         self.add_resources(app)
     }
     fn rewrites(&self) -> RewriteFns {
-        vec![replace_cookie_domain_on_page]
+        vec![replace_cookie_domain::rewrite]
     }
     fn add_before_middleware(&self, app: App<AppState>) -> App<AppState> {
-        app.middleware(ReqCatcher::new())
+        app.middleware(handlers::req_capture::ReqCapture::new())
     }
 }
 
@@ -126,102 +91,10 @@ pub struct ModuleData {
 }
 
 ///
-/// Extracting data means to look for a "bs_track" query
-/// param, and then deserialize it's value (a JSON blob)
-///
-/// # Examples
-///
-/// ```
-/// # use bs::presets::m2::preset_m2::*;
-///
-/// let data = r#"{
-///   "url": "https://127.0.0.1:8080/static/version1536567404/frontend/Acme/default/en_GB/Magento_Ui/js/form/form.js",
-///   "id": "Magento_Ui/js/form/form",
-///   "referrer": "/"
-/// }"#;
-/// let d = extract_data(Some(&data.to_string())).unwrap();
-///
-/// assert_eq!(d, ModuleData {
-///     url: String::from("https://127.0.0.1:8080/static/version1536567404/frontend/Acme/default/en_GB/Magento_Ui/js/form/form.js"),
-///     id: String::from("Magento_Ui/js/form/form"),
-///     referrer: String::from("/")
-/// });
-/// ```
-///
-pub fn extract_data(maybe_data: Option<&String>) -> Option<ModuleData> {
-    maybe_data.and_then(|d| {
-        let output = serde_json::from_str::<ModuleData>(&d);
-        match output {
-            Ok(t) => Some(t),
-            Err(e) => {
-                eprintln!("oopS = {}", e);
-                None
-            }
-        }
-    })
-}
-
-pub struct ReqCatcher {}
-
-impl ReqCatcher {
-    pub fn new() -> ReqCatcher {
-        ReqCatcher {}
-    }
-}
-
-///
-/// The ReqCatcher Middleware is responsible for checking if URLs
-/// contain the bs_track payload, deserialising it's data and
-/// then adding that data to the global vec of module data
-///
-impl Middleware<AppState> for ReqCatcher {
-    /// This middleware handler will extract JSON blobs from URLS
-    fn finish(&self, req: &HttpRequest<AppState>, _resp: &HttpResponse) -> Finished {
-        // try to convert some JSON into a valid ModuleData
-        let module_data: Option<ModuleData> = extract_data(req.query().get("bs_track"));
-
-        // We only care if we got a Some(ModuleData)
-        // so we can use .map to unwrap & ignore the none;
-        module_data.map(move |module_data| {
-            // Get a reference to the Mutex wrapper
-            let modules = &req.state().module_items;
-            // acquire lock on the data so we can mutate it
-            let mut data = modules.lock().unwrap();
-            let mut exists = false;
-
-            for d in data.iter() {
-                if d == &module_data {
-                    exists = true;
-                }
-            }
-
-            if !exists {
-                data.push(module_data);
-            }
-        });
-
-        Finished::Done
-    }
-}
-
-fn serve_requirejs_config(original_request: &HttpRequest<AppState>) -> FutResp {
-    let client_config_clone = original_request.state().require_client_config.clone();
-    apply_to_proxy_body(&original_request, move |mut b| {
-        let c2 = client_config_clone.clone();
-        if let Ok(deps) = get_deps_from_str(&b) {
-            let mut w = c2.lock().expect("unwraped");
-            w.deps = deps;
-        };
-        b.push_str(include_str!("./static/post_config.js"));
-        b
-    })
-}
-
-///
 /// A helper for applying a transformation on a proxy
 /// response before sending it back to the origin requester
 ///
-fn apply_to_proxy_body<F>(original_request: &HttpRequest<AppState>, f: F) -> FutResp
+pub fn apply_to_proxy_body<F>(original_request: &HttpRequest<AppState>, f: F) -> FutResp
 where
     F: Fn(String) -> String + 'static,
 {
@@ -265,66 +138,7 @@ pub struct SeedData {
 
 impl FromFile for SeedData {}
 
-/// serve a JSON dump of the current accumulated
-fn serve_seed_dump_json(req: &HttpRequest<AppState>) -> HttpResponse {
-    let module_items = &req
-        .state()
-        .module_items
-        .lock()
-        .expect("should lock & unwrap module_items");
-
-    let client_config = req
-        .state()
-        .require_client_config
-        .lock()
-        .expect("should lock & unwrap require_client_config");
-
-    let output = SeedData {
-        client_config: client_config.clone(),
-        module_items: module_items.to_vec(),
-    };
-
-    let output = match serde_json::to_string_pretty(&output) {
-        Ok(t) => Ok(t),
-        Err(e) => Err(e.to_string()),
-    };
-
-    match output {
-        Ok(t) => HttpResponse::Ok().content_type("application/json").body(t),
-        Err(e) => HttpResponse::Ok().content_type("application/json").body(e),
-    }
-}
-
-/// serve a JSON dump of the current accumulated
-fn serve_req_dump_json(req: &HttpRequest<AppState>) -> HttpResponse {
-    let modules = &req.state().module_items;
-    let modules = modules.lock().unwrap();
-
-    let j = serde_json::to_string_pretty(&*modules).unwrap();
-
-    HttpResponse::Ok().content_type("application/json").body(j)
-}
-
-/// serve a JSON dump of the current accumulated config
-fn serve_loaders_dump_json(req: &HttpRequest<AppState>) -> HttpResponse {
-    let output = match gather_state(req) {
-        Ok((merged_config, modules)) => {
-            let module_list = RequireJsClientConfig::bundle_loaders(
-                RequireJsClientConfig::mixins(&merged_config.config),
-                modules,
-            );
-            Ok(module_list)
-        }
-        Err(e) => Err(e),
-    };
-
-    match output {
-        Ok(t) => HttpResponse::Ok().content_type("text/plain").body(t),
-        Err(_e) => HttpResponse::Ok().content_type("text/plain").body("NAH"),
-    }
-}
-
-fn gather_state(
+pub fn gather_state(
     req: &HttpRequest<AppState>,
 ) -> Result<(RequireJsBuildConfig, Vec<Module>), String> {
     let modules = &req
@@ -377,88 +191,5 @@ fn gather_state(
             Err(e) => Err(e.to_string()),
         },
         _ => Err("didnt match both".to_string()),
-    }
-}
-
-fn serve_config_dump_json(req: &HttpRequest<AppState>) -> HttpResponse {
-    let output = match req.state().require_client_config.lock() {
-        Ok(config) => match serde_json::to_string_pretty(&*config) {
-            Ok(t) => Ok(t),
-            Err(e) => Err(e.to_string()),
-        },
-        Err(e) => Err(e.to_string()),
-    };
-
-    match output {
-        Ok(t) => HttpResponse::Ok().content_type("application/json").body(t),
-        Err(_e) => HttpResponse::Ok()
-            .content_type("application/json")
-            .body("Could not serve config"),
-    }
-}
-
-fn serve_build_json(req: &HttpRequest<AppState>) -> HttpResponse {
-    let output = match gather_state(req) {
-        Ok((merged_config, _)) => match serde_json::to_string_pretty(&merged_config) {
-            Ok(t) => Ok(t),
-            Err(e) => Err(e.to_string()),
-        },
-        Err(e) => Err(e.to_string()),
-    };
-
-    match output {
-        Ok(t) => HttpResponse::Ok().content_type("application/json").body(t),
-        Err(e) => HttpResponse::Ok()
-            .content_type("application/json")
-            .status(StatusCode::from_u16(500).expect("can set 500 resp code"))
-            .body(
-                serde_json::to_string_pretty(&json!({
-                "message": e.to_string()
-            })).unwrap(),
-            ),
-    }
-}
-
-///
-/// Remove an on-page cookie domain (usually in JSON blobs with Magento)
-///
-pub fn replace_cookie_domain_on_page(bytes: &str, context: &RewriteContext) -> String {
-    let matcher = format!(r#""domain": ".{}","#, context.host_to_replace);
-    Regex::new(&matcher)
-        .unwrap()
-        .replace_all(bytes, "")
-        .to_string()
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_replace_cookie_domain_on_page() {
-        let bytes = r#"
-        <script type="text/x-magento-init">
-            {
-                "*": {
-                    "mage/cookies": {
-                        "expires": null,
-                        "path": "/",
-                        "domain": ".www.acme.com",
-                        "secure": false,
-                        "lifetime": "10800"
-                    }
-                }
-            }
-        </script>
-    "#;
-        let replaced = replace_cookie_domain_on_page(
-            &bytes,
-            &RewriteContext {
-                host_to_replace: String::from("www.acme.com"),
-                target_host: String::from("127.0.0.1"),
-                target_port: 80,
-            },
-        );
-        println!("-> {}", replaced);
     }
 }
