@@ -29,6 +29,7 @@ pub mod options;
 pub mod preset;
 pub mod presets;
 pub mod proxy_transform;
+pub mod proxy_utils;
 pub mod replacer;
 pub mod rewrites;
 pub mod with_body;

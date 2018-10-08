@@ -1,7 +1,8 @@
 use actix_web::HttpRequest;
 use preset::AppState;
 use presets::m2::parse::get_deps_from_str;
-use presets::m2::preset_m2::{apply_to_proxy_body, FutResp};
+use presets::m2::preset_m2::FutResp;
+use proxy_utils::apply_to_proxy_body;
 
 pub fn handle(original_request: &HttpRequest<AppState>) -> FutResp {
     let client_config_clone = original_request.state().require_client_config.clone();

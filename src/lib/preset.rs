@@ -4,6 +4,7 @@ use actix_web::HttpRequest;
 use actix_web::HttpResponse;
 use config::ProgramConfig;
 use options::ProxyOpts;
+use presets::m2::preset_m2::FutResp;
 use presets::m2::preset_m2::ModuleData;
 use presets::m2::requirejs_config::RequireJsClientConfig;
 use rewrites::RewriteContext;
@@ -28,6 +29,7 @@ pub trait Preset<T> {
 ///
 pub type RewriteFns = Vec<fn(&str, &RewriteContext) -> String>;
 pub type ResourceDef<'a> = (&'a str, Method, fn(&HttpRequest<AppState>) -> HttpResponse);
+pub type AsyncResourceDef<'a> = (&'a str, Method, fn(&HttpRequest<AppState>) -> FutResp);
 
 pub struct AppState {
     pub program_config: ProgramConfig,
