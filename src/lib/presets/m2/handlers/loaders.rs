@@ -5,7 +5,11 @@ use preset::AppState;
 use presets::m2::requirejs_config::RequireJsClientConfig;
 use presets::m2::state::gather_state;
 
-/// serve a JSON dump of the current accumulated config
+///
+/// This handler will serve a plain text string (should be JS?)
+/// containing the code needed to create the loaders that serve
+/// the additional JS
+///
 pub fn handle(req: &HttpRequest<AppState>) -> HttpResponse {
     let output = match gather_state(req) {
         Ok((merged_config, modules)) => {

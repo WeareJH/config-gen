@@ -4,6 +4,16 @@ use actix_web::HttpResponse;
 use preset::AppState;
 use presets::m2::state::gather_state;
 
+///
+/// This handler will serve up JSON that
+/// can be used directly with the RequireJS optimizer.
+///
+/// It needs to pull together the following 3 items
+///
+/// 1. A log of previous request meta data
+/// 2. The RequireJS Client configuration
+/// 3. The bundle config (that's read from disk on request)
+///
 pub fn handle(req: &HttpRequest<AppState>) -> HttpResponse {
     let output = match gather_state(req) {
         Ok((merged_config, _)) => match serde_json::to_string_pretty(&merged_config) {

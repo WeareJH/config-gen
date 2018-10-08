@@ -2,6 +2,13 @@ use actix_web::HttpRequest;
 use actix_web::HttpResponse;
 use preset::AppState;
 
+///
+/// This handler will just serve back the RequireJS config as
+/// it retrieved from the browser.
+///
+/// Note: this will be the merged-on-client version, so it
+/// will need adjustments before it can be used effectively
+///
 pub fn handle(req: &HttpRequest<AppState>) -> HttpResponse {
     let output = match req.state().require_client_config.lock() {
         Ok(config) => match serde_json::to_string_pretty(&*config) {

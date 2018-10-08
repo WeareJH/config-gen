@@ -6,7 +6,8 @@ use presets::m2::preset_m2::FutResp;
 use presets::m2::requirejs_config::RequireJsClientConfig;
 
 ///
-/// Handle the requirejs config post
+/// This handler accepts the incoming RequireJS merged
+/// config from the client
 ///
 pub fn handle(req: &HttpRequest<AppState>) -> FutResp {
     let a = req.state().require_client_config.clone();

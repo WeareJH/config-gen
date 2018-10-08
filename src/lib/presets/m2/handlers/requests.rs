@@ -2,7 +2,9 @@ use actix_web::HttpRequest;
 use actix_web::HttpResponse;
 use preset::AppState;
 
-/// serve a JSON dump of the current accumulated
+///
+/// serve a JSON dump of the current request log
+///
 pub fn handle(req: &HttpRequest<AppState>) -> HttpResponse {
     let modules = &req.state().module_items;
     let modules = modules.lock().unwrap();

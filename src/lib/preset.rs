@@ -35,6 +35,6 @@ pub struct AppState {
     pub program_config: ProgramConfig,
     pub opts: ProxyOpts,
     pub rewrites: RewriteFns,
-    pub module_items: Mutex<Vec<ModuleData>>,
-    pub require_client_config: Arc<Mutex<RequireJsClientConfig>>,
+    pub req_log: Mutex<Vec<ModuleData>>,
+    pub rjs_client_config: Arc<Mutex<RequireJsClientConfig>>,
 }

@@ -100,8 +100,8 @@ fn run_with_opts(opts: ProxyOpts) -> Result<(), ProgramStartError> {
             program_config: program_config.clone(),
             opts: opts.clone(),
             rewrites: vec![],
-            module_items: Mutex::new(modules),
-            require_client_config: Arc::new(Mutex::new(config)),
+            req_log: Mutex::new(modules),
+            rjs_client_config: Arc::new(Mutex::new(config)),
         };
 
         //
