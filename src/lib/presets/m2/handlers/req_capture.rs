@@ -27,7 +27,7 @@ impl Middleware<AppState> for ReqCapture {
         // so we can use .map to unwrap & ignore the none;
         module_data.map(move |module_data| {
             // Get a reference to the Mutex wrapper
-            let modules = &req.state().module_items;
+            let modules = &req.state().req_log;
             // acquire lock on the data so we can mutate it
             let mut data = modules.lock().unwrap();
             let mut exists = false;

@@ -16,7 +16,7 @@ use proxy_utils::apply_to_proxy_body;
 /// to send back the configuration.
 ///
 pub fn handle(original_request: &HttpRequest<AppState>) -> FutResp {
-    let client_config_clone = original_request.state().require_client_config.clone();
+    let client_config_clone = original_request.state().rjs_client_config.clone();
     apply_to_proxy_body(&original_request, move |mut b| {
         let c2 = client_config_clone.clone();
         if let Ok(deps) = get_deps_from_str(&b) {

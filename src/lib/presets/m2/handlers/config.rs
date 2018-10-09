@@ -10,7 +10,7 @@ use preset::AppState;
 /// will need adjustments before it can be used effectively
 ///
 pub fn handle(req: &HttpRequest<AppState>) -> HttpResponse {
-    let output = match req.state().require_client_config.lock() {
+    let output = match req.state().rjs_client_config.lock() {
         Ok(config) => match serde_json::to_string_pretty(&*config) {
             Ok(t) => Ok(t),
             Err(e) => Err(e.to_string()),

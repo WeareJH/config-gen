@@ -10,7 +10,7 @@ use presets::m2::requirejs_config::RequireJsClientConfig;
 /// config from the client
 ///
 pub fn handle(req: &HttpRequest<AppState>) -> FutResp {
-    let a = req.state().require_client_config.clone();
+    let a = req.state().rjs_client_config.clone();
 
     req.payload()
         .concat2()

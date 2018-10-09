@@ -4,8 +4,8 @@ use presets::m2::requirejs_config::RequireJsClientConfig;
 
 #[derive(Serialize, Deserialize, Default)]
 pub struct SeedData {
-    pub client_config: RequireJsClientConfig,
-    pub module_items: Vec<ModuleData>,
+    pub rjs_client_config: RequireJsClientConfig,
+    pub req_log: Vec<ModuleData>,
 }
 
 impl FromFile for SeedData {}

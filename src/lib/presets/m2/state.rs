@@ -13,15 +13,15 @@ pub fn gather_state(
 ) -> Result<(RequireJsBuildConfig, Vec<Module>), String> {
     let modules = &req
         .state()
-        .module_items
+        .req_log
         .lock()
-        .expect("should lock & unwrap module_items");
+        .expect("should lock & unwrap req_log");
 
     let client_config = req
         .state()
-        .require_client_config
+        .rjs_client_config
         .lock()
-        .expect("should lock & unwrap require_client_config");
+        .expect("should lock & unwrap rjs_client_config");
 
     let maybe_opts = M2PresetOptions::get_opts(&req.state().program_config)
         .expect("should clone program config");

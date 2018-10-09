@@ -1,5 +1,5 @@
 {
-  "client_config": {
+  "rjs_client_config": {
     "baseUrl": "http://127.0.0.1:9090/static/version1517228438/frontend/Magento/luma/en_US/",
     "deps": [
       "jquery/jquery.mobile.custom",
@@ -230,7 +230,7 @@
       "domReady": "requirejs/domReady"
     }
   },
-  "module_items": [
+  "req_log": [
     {
       "url": "http://127.0.0.1:9090/static/version1517228438/frontend/Magento/luma/en_US/jquery/jquery.mobile.custom.js",
       "id": "jquery/jquery.mobile.custom",

@@ -87,7 +87,7 @@ fn run_with_opts(opts: ProxyOpts) -> Result<(), ProgramStartError> {
 
         let (modules, config) = match maybe_seed {
             Some(ref s) => match SeedData::from_json_file(&s) {
-                Ok(seed) => (seed.module_items, seed.client_config),
+                Ok(seed) => (seed.req_log, seed.rjs_client_config),
                 Err(e) => {
                     eprintln!("Could not read seed, {:?}", e);
                     (vec![], RequireJsClientConfig::default())
