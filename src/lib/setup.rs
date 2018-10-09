@@ -1,17 +1,17 @@
-use std::collections::HashMap;
-use preset::Preset;
-use preset::AppState;
-use config::ProgramConfig;
 use actix_web::App;
-use proxy_transform::proxy_transform;
+use config::ProgramConfig;
+use from_file::FromFile;
 use options::ProgramOptions;
+use preset::AppState;
+use preset::Preset;
 use presets::m2::opts::M2PresetOptions;
 use presets::m2::preset_m2::M2Preset;
-use presets::m2::seed::SeedData;
-use from_file::FromFile;
 use presets::m2::requirejs_config::RequireJsClientConfig;
-use std::sync::Mutex;
+use presets::m2::seed::SeedData;
+use proxy_transform::proxy_transform;
+use std::collections::HashMap;
 use std::sync::Arc;
+use std::sync::Mutex;
 
 pub type PresetsMap = HashMap<usize, Box<Preset<AppState>>>;
 

@@ -26,12 +26,12 @@ use bs::presets::m2::preset_m2::M2Preset;
 use bs::presets::m2::requirejs_config::RequireJsClientConfig;
 use bs::presets::m2::seed::SeedData;
 use bs::proxy_transform::proxy_transform;
+use bs::setup::apply_presets;
+use bs::setup::state_and_presets;
 use openssl::ssl::SslAcceptorBuilder;
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::sync::Mutex;
-use bs::setup::state_and_presets;
-use bs::setup::apply_presets;
 
 fn main() {
     match ProgramOptions::from_vec(&mut std::env::args_os()).and_then(run_with_opts) {

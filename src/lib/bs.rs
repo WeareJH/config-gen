@@ -32,6 +32,6 @@ pub mod proxy_transform;
 pub mod proxy_utils;
 pub mod replacer;
 pub mod rewrites;
+pub mod setup;
 pub mod with_body;
 pub mod without_body;
-pub mod setup;
