@@ -4,11 +4,12 @@ extern crate serde_yaml;
 use serde::Deserialize;
 use std::fs::File;
 use std::io::prelude::*;
+use std::path::PathBuf;
 
 #[derive(Debug)]
 pub enum FromFileError {
     InvalidInput,
-    FileOpen,
+    FileOpen(PathBuf),
     FileRead,
     SerdeError(String),
 }
@@ -63,7 +64,9 @@ pub trait FromFile {
     /// Attempt to Read the file's contents into a string
     ///
     fn file_read(input: String) -> Result<String, FromFileError> {
-        let mut file = File::open(input).map_err(|_| FromFileError::FileOpen)?;
+        let mut maybe_path = std::env::current_dir().expect("can read current dir");
+        maybe_path.push(&input);
+        let mut file = File::open(&input).map_err(|_| FromFileError::FileOpen(maybe_path))?;
         let mut contents = String::new();
         file.read_to_string(&mut contents)
             .map_err(|_| FromFileError::FileRead)?;
@@ -95,7 +98,9 @@ impl std::fmt::Display for FromFileError {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
             FromFileError::InvalidInput => write!(f, "ConfigError::InvalidInput"),
-            FromFileError::FileOpen => write!(f, "ConfigError::FileOpen"),
+            FromFileError::FileOpen(path) => {
+                write!(f, "ConfigError::FileOpen - couldn't open {:?}", path)
+            }
             FromFileError::FileRead => write!(f, "ConfigError::FileRead"),
             FromFileError::SerdeError(e) => write!(f, "ConfigError::SerdeError - {}", e),
         }

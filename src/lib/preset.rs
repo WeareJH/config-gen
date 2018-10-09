@@ -3,7 +3,7 @@ use actix_web::App;
 use actix_web::HttpRequest;
 use actix_web::HttpResponse;
 use config::ProgramConfig;
-use options::ProxyOpts;
+use options::ProgramOptions;
 use presets::m2::module_meta_data::ModuleData;
 use presets::m2::preset_m2::FutResp;
 use presets::m2::requirejs_config::RequireJsClientConfig;
@@ -33,7 +33,7 @@ pub type AsyncResourceDef<'a> = (&'a str, Method, fn(&HttpRequest<AppState>) -> 
 
 pub struct AppState {
     pub program_config: ProgramConfig,
-    pub opts: ProxyOpts,
+    pub opts: ProgramOptions,
     pub rewrites: RewriteFns,
     pub req_log: Mutex<Vec<ModuleData>>,
     pub rjs_client_config: Arc<Mutex<RequireJsClientConfig>>,

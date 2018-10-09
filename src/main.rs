@@ -16,11 +16,9 @@ extern crate url;
 use actix_web::{server, App};
 use openssl::ssl::{SslAcceptor, SslFiletype, SslMethod};
 
-use bs::config::get_config_contents_from_file;
-use bs::config::get_program_config_from_cli;
-use bs::config::ProgramStartError;
+use bs::config::{ProgramConfig, ProgramStartError};
 use bs::from_file::FromFile;
-use bs::options::ProxyOpts;
+use bs::options::ProgramOptions;
 use bs::options::ProxyScheme;
 use bs::preset::{AppState, Preset};
 use bs::presets::m2::opts::M2PresetOptions;
@@ -34,13 +32,16 @@ use std::sync::Arc;
 use std::sync::Mutex;
 
 fn main() {
-    match get_program_config_from_cli().and_then(run_with_opts) {
+    match ProgramOptions::from_vec(&mut std::env::args_os()).and_then(run_with_opts) {
         Ok(opts) => println!("Running!"),
-        Err(e) => eprintln!("{}", e),
+        Err(e) => {
+            eprintln!("{}", e);
+            std::process::exit(1);
+        }
     }
 }
 
-fn run_with_opts(opts: ProxyOpts) -> Result<(), ProgramStartError> {
+fn run_with_opts(opts: ProgramOptions) -> Result<(), ProgramStartError> {
     //
     // Logging config
     //
@@ -53,11 +54,6 @@ fn run_with_opts(opts: ProxyOpts) -> Result<(), ProgramStartError> {
     let sys = actix::System::new("https-proxy");
 
     //
-    // Enable SSL (self signed
-    //
-    let ssl_builder = get_ssl_builder();
-
-    //
     // The address that the server will be accessible on
     //
     let local_addr = format!("127.0.0.1:{}", opts.port);
@@ -66,7 +62,16 @@ fn run_with_opts(opts: ProxyOpts) -> Result<(), ProgramStartError> {
     // Get program configuration, from the input above, and
     // then eventuall from a file
     //
-    let program_config = get_config_contents_from_file(opts.config_file.clone().unwrap())?;
+    let file_path = opts
+        .config_file
+        .clone()
+        .expect("config_file cannot be missing");
+
+    //
+    // Pull the ProgramConfig from a  file
+    //
+    let program_config =
+        ProgramConfig::from_yml_file(&file_path).map_err(|e| ProgramStartError::FromFile(e))?;
 
     //
     // Clone server opts to be used in multi threads
@@ -85,24 +90,7 @@ fn run_with_opts(opts: ProxyOpts) -> Result<(), ProgramStartError> {
         //
         let mut presets_map: HashMap<usize, Box<Preset<AppState>>> = HashMap::new();
 
-        let (modules, config) = match maybe_seed {
-            Some(ref s) => match SeedData::from_json_file(&s) {
-                Ok(seed) => (seed.req_log, seed.rjs_client_config),
-                Err(e) => {
-                    eprintln!("Could not read seed, {:?}", e);
-                    (vec![], RequireJsClientConfig::default())
-                }
-            },
-            None => (vec![], RequireJsClientConfig::default()),
-        };
-
-        let mut app_state = AppState {
-            program_config: program_config.clone(),
-            opts: opts.clone(),
-            rewrites: vec![],
-            req_log: Mutex::new(modules),
-            rjs_client_config: Arc::new(Mutex::new(config)),
-        };
+        let mut app_state = create_state(maybe_seed.clone(), program_config.clone(), opts.clone());
 
         //
         // Loop through any presets and create an instance
@@ -151,15 +139,12 @@ fn run_with_opts(opts: ProxyOpts) -> Result<(), ProgramStartError> {
 
     let s = match server_opts.scheme {
         ProxyScheme::Http => s.bind(&local_addr),
-        ProxyScheme::Https => s.bind_ssl(&local_addr, ssl_builder),
+        ProxyScheme::Https => s.bind_ssl(&local_addr, get_ssl_builder()),
     };
 
     s.expect("Couldn't bind").start();
 
-    println!(
-        "Started https server: {}://{}",
-        server_opts.scheme, local_addr
-    );
+    println!("Started server: {}://{}", server_opts.scheme, local_addr);
 
     let _ = sys.run();
 
@@ -178,4 +163,33 @@ fn get_ssl_builder() -> SslAcceptorBuilder {
         .unwrap();
     builder.set_certificate_chain_file("src/cert.pem").unwrap();
     builder
+}
+
+///
+/// Build up the application state based on a potential
+/// incoming seed
+///
+pub fn create_state(
+    maybe_seed: Option<String>,
+    program_config: ProgramConfig,
+    opts: ProgramOptions,
+) -> AppState {
+    let (req_log, rjs_client_config) = match maybe_seed {
+        Some(ref s) => match SeedData::from_json_file(&s) {
+            Ok(seed) => (seed.req_log, seed.rjs_client_config),
+            Err(e) => {
+                eprintln!("Could not read seed, {:?}", e);
+                (vec![], RequireJsClientConfig::default())
+            }
+        },
+        None => (vec![], RequireJsClientConfig::default()),
+    };
+
+    AppState {
+        program_config,
+        opts,
+        rewrites: vec![],
+        req_log: Mutex::new(req_log),
+        rjs_client_config: Arc::new(Mutex::new(rjs_client_config)),
+    }
 }
