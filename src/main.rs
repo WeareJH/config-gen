@@ -30,6 +30,8 @@ use openssl::ssl::SslAcceptorBuilder;
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::sync::Mutex;
+use bs::setup::state_and_presets;
+use bs::setup::apply_presets;
 
 fn main() {
     match ProgramOptions::from_vec(&mut std::env::args_os()).and_then(run_with_opts) {
@@ -54,11 +56,6 @@ fn run_with_opts(opts: ProgramOptions) -> Result<(), ProgramStartError> {
     let sys = actix::System::new("https-proxy");
 
     //
-    // The address that the server will be accessible on
-    //
-    let local_addr = format!("127.0.0.1:{}", opts.port);
-
-    //
     // Get program configuration, from the input above, and
     // then eventuall from a file
     //
@@ -78,63 +75,21 @@ fn run_with_opts(opts: ProgramOptions) -> Result<(), ProgramStartError> {
     //
     let server_opts = opts.clone();
 
+    //
+    // The address that the server will be accessible on
+    //
+    let local_addr = format!("127.0.0.1:{}", opts.port.clone());
+
     let maybe_seed = server_opts.seed_file.clone();
 
     //
     // Now start the server
     //
     let s = server::new(move || {
-        //
-        // Use a HashMap + index lookup for anything
-        // that implements Preset
-        //
-        let mut presets_map: HashMap<usize, Box<Preset<AppState>>> = HashMap::new();
-
-        let mut app_state = create_state(maybe_seed.clone(), program_config.clone(), opts.clone());
-
-        //
-        // Loop through any presets and create an instance
-        // that's stored in the hashmap based on it's index
-        //
-        // This is done so that we can use the index later
-        // to lookup this item in order
-        //
-        for (index, p) in program_config.presets.iter().enumerate() {
-            match p.name.as_str() {
-                "m2" => {
-                    let preset_opts: M2PresetOptions =
-                        serde_yaml::from_value(p.options.clone()).unwrap();
-                    let preset = M2Preset::new(preset_opts);
-                    presets_map.insert(index, Box::new(preset));
-                }
-                _ => println!("unsupported"),
-            }
-        }
-
-        // Add rewrites phase
-        for (index, _) in program_config.presets.iter().enumerate() {
-            let subject_preset = presets_map.get(&index).expect("Missing preset");
-            app_state.rewrites.extend(subject_preset.rewrites());
-        }
-
+        let (app_state, presets_map) = state_and_presets(&opts, &program_config, &maybe_seed);
         let mut app = App::with_state(app_state);
-
-        // before middlewares
-        for (index, _) in program_config.presets.iter().enumerate() {
-            let subject_preset = presets_map.get(&index).expect("Missing preset");
-            app = subject_preset.add_before_middleware(app);
-        }
-
-        // enhances
-        for (index, _) in program_config.presets.iter().enumerate() {
-            let subject_preset = presets_map.get(&index).expect("Missing preset");
-            app = subject_preset.enhance(app);
-        }
-
-        let app = app.default_resource(|r| r.f(proxy_transform));
-
         // finally return the App
-        app
+        apply_presets(app, &program_config, &presets_map)
     }).workers(1);
 
     let s = match server_opts.scheme {
@@ -163,33 +118,4 @@ fn get_ssl_builder() -> SslAcceptorBuilder {
         .unwrap();
     builder.set_certificate_chain_file("src/cert.pem").unwrap();
     builder
-}
-
-///
-/// Build up the application state based on a potential
-/// incoming seed
-///
-pub fn create_state(
-    maybe_seed: Option<String>,
-    program_config: ProgramConfig,
-    opts: ProgramOptions,
-) -> AppState {
-    let (req_log, rjs_client_config) = match maybe_seed {
-        Some(ref s) => match SeedData::from_json_file(&s) {
-            Ok(seed) => (seed.req_log, seed.rjs_client_config),
-            Err(e) => {
-                eprintln!("Could not read seed, {:?}", e);
-                (vec![], RequireJsClientConfig::default())
-            }
-        },
-        None => (vec![], RequireJsClientConfig::default()),
-    };
-
-    AppState {
-        program_config,
-        opts,
-        rewrites: vec![],
-        req_log: Mutex::new(req_log),
-        rjs_client_config: Arc::new(Mutex::new(rjs_client_config)),
-    }
 }

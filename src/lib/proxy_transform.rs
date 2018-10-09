@@ -135,66 +135,85 @@ pub fn get_host_port(incoming_request: &HttpRequest<AppState>, bind_port: u16) -
 
 #[cfg(test)]
 mod tests {
-    //    use super::*;
-    //    use actix_web::http::Cookie;
-    //    use actix_web::test;
-    //    use mime::TEXT_HTML;
-    //    use options::ProxyOpts;
-    //
-    //    const STR: &str = "Hello world";
-    //    #[test]
-    //    fn test_forwards_headers() {
-    //        let server = test::TestServer::new(|app| {
-    //            app.handler(|req: &HttpRequest| {
-    //                println!("headers received at proxy addr: {:#?}", req.headers());
-    //                assert_eq!(req.headers().get(header::ACCEPT).unwrap(), "text/html");
-    //                assert_eq!(
-    //                    req.headers().get(header::COOKIE).unwrap(),
-    //                    "hello there; hello there 2"
-    //                );
-    //                HttpResponse::Ok()
-    //                    .header("shane", "kittens")
-    //                    .header(header::CONTENT_TYPE, TEXT_HTML)
-    //                    .body(STR)
-    //            })
-    //        });
-    //
-    //        let srv_address = server.addr().to_string();
-    //
-    //        let mut proxy = test::TestServer::build_with_state(move || {
-    //            let addr = srv_address.clone();
-    //            let opts = ProxyOpts::new(addr.clone(), "http");
-    //            AppState {
-    //                opts,
-    //                ..Default::default()
-    //            }
-    //        }).start(move |app| {
-    //            app.handler(proxy_transform);
-    //        });
-    //
-    //        let request = proxy
-    //            .get()
-    //            .header(header::ACCEPT, "text/html")
-    //            .header("cookie", "hello there")
-    //            .header("cookie", "hello there 2")
-    //            .set_header(
-    //                header::ORIGIN,
-    //                format!("https://{}", proxy.addr().to_string()),
-    //            ).uri(proxy.url("/"))
-    //            .finish()
-    //            .unwrap();
-    //
-    //        let response = proxy.execute(request.send()).unwrap();
-    //        let _bytes = proxy.execute(response.body()).unwrap();
-    //
-    //        println!("main resp: {:#?}", response.headers());
-    //        println!("bytes={:#?}", _bytes);
-    //
-    //        let has_header = response.headers().get("shane").is_some();
-    //
-    //        assert_eq!(has_header, true);
-    //    }
-    //
+        use super::*;
+        use actix_web::http::Cookie;
+        use actix_web::test;
+        use mime::TEXT_HTML;
+    use setup::state_and_presets;
+    use options::ProgramOptions;
+    use config::ProgramConfig;
+    use config::PresetConfig;
+
+    const STR: &str = "Hello world";
+        #[test]
+        fn test_forwards_headers() {
+            let server = test::TestServer::new(|app| {
+                app.handler(|req: &HttpRequest| {
+                    println!("headers received at proxy addr: {:#?}", req.headers());
+                    assert_eq!(req.headers().get(header::ACCEPT).unwrap(), "text/html");
+                    assert_eq!(
+                        req.headers().get(header::COOKIE).unwrap(),
+                        "hello there; hello there 2"
+                    );
+                    HttpResponse::Ok()
+                        .header("shane", "kittens")
+                        .header(header::CONTENT_TYPE, TEXT_HTML)
+                        .body(STR)
+                })
+            });
+
+            let srv_address = server.addr().to_string();
+            let opts = ProgramOptions {
+                ..ProgramOptions::default()
+            };
+            let program_config = ProgramConfig {
+                presets: vec![
+                    PresetConfig {
+                        name: "m2".to_string(),
+                        options: serde_json::from_str(r#"
+                        {
+                            "bundle_config": "file:test/fixtures/bundle-config.yaml"
+                        }
+                        "#).unwrap(),
+                    }
+                ]
+            };
+            let maybe_seed = Some("test/fixtures/bundle-config.yaml".to_string());
+            let (app_state, presets_map) = state_and_presets(&opts, &program_config, &maybe_seed);
+
+//            let mut proxy = test::TestServer::build_with_state(move || {
+//                let addr = srv_address.clone();
+//                let opts = ProxyOpts::new(addr.clone(), "http");
+//                AppState {
+//                    opts,
+//                    ..Default::default()
+//                }
+//            }).start(move |app| {
+//                app.handler(proxy_transform);
+//            });
+//
+//            let request = proxy
+//                .get()
+//                .header(header::ACCEPT, "text/html")
+//                .header("cookie", "hello there")
+//                .header("cookie", "hello there 2")
+//                .set_header(
+//                    header::ORIGIN,
+//                    format!("https://{}", proxy.addr().to_string()),
+//                ).uri(proxy.url("/"))
+//                .finish()
+//                .unwrap();
+//
+//            let response = proxy.execute(request.send()).unwrap();
+//            let _bytes = proxy.execute(response.body()).unwrap();
+//
+//            println!("main resp: {:#?}", response.headers());
+//            println!("bytes={:#?}", _bytes);
+//
+//            let has_header = response.headers().get("shane").is_some();
+//
+//            assert_eq!(has_header, true);
+        }
     //    #[test]
     //    fn test_forwards_post_requests() {
     //        use actix_web::AsyncResponder;
