@@ -75,3 +75,25 @@ r_js -o build.json \
 exists etc - but I'm not providing a full script here since requirements will differ.
 
 **Note 2**: change `optimize=none` to `optimize=uglify` when you've confirmed the bundling is working.
+
+---
+
+## Loading additional bundles
+
+When you access `/__bs/loaders.json`, it will provide Javascript snippets that will allow the additional bundles
+to be loaded - exactly how you implement this part is up to you, however we will soon be providing a reference
+implementation that shows how to add/remove the additional bundles based on some admin flags.
+
+For now though, an example should how to load `bundles/default` on every page, would look like this...
+
+```html
+<script src="http://example.com/../requirejs/require.js"></script>
+<script src="http://example.com/../mage/requirejs/mixins.js"></script>
+<script src="http://example.com/../requirejs-config.js"></script>
+<script src="http://example.com/../default-loader.js"></script> <!-- <<<< this is the new file -->
+```
+
+Where the contents of `default-loader.js` is obtained from the config-gen api `/__bs/loaders.js`.
+
+The key point here though, is that during development you wont want that bundle file in place, so this file
+should be conditionally added via xml config when in production.
