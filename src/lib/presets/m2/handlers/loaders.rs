@@ -23,7 +23,7 @@ pub fn handle(req: &HttpRequest<AppState>) -> HttpResponse {
     };
 
     match output {
-        Ok(t) => HttpResponse::Ok().content_type("text/plain").body(t),
-        Err(_e) => HttpResponse::Ok().content_type("text/plain").body("NAH"),
+        Ok(t) => HttpResponse::Ok().content_type("application/javascript").body(t),
+        Err(e) => super::err_response::create(e),
     }
 }

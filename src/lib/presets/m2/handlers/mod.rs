@@ -7,3 +7,4 @@ pub mod req_capture;
 pub mod requests;
 pub mod seed;
 pub mod serve_r_js;
+pub mod err_response;
