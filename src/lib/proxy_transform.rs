@@ -1,7 +1,5 @@
 use actix_web::client::ClientRequestBuilder;
-use actix_web::http::header;
-use actix_web::http::HeaderMap;
-use actix_web::http::Method;
+use actix_web::http::{header, HeaderMap, Method};
 use actix_web::{client, dev, http, Error, HttpMessage, HttpRequest, HttpResponse};
 use base64::encode;
 use futures::Future;

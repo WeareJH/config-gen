@@ -6,8 +6,8 @@ use presets::m2::module_meta_data::ModuleData;
 use presets::m2::preset_m2::FutResp;
 use presets::m2::requirejs_config::RequireJsClientConfig;
 use rewrites::RewriteContext;
-use std::sync::{Arc, Mutex};
 use std::fmt;
+use std::sync::{Arc, Mutex};
 
 pub trait Preset<T> {
     fn enhance(&self, app: App<T>) -> App<T>;
@@ -39,7 +39,9 @@ pub struct AppState {
 
 impl fmt::Debug for AppState {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "AppState {{
+        write!(
+            f,
+            "AppState {{
     program_config: {:?},
     opts: {:?},
     rewrites: {} rewrite fns,
@@ -47,9 +49,9 @@ impl fmt::Debug for AppState {
     rjs_client_config: Arc<Mutex<RequireJsClientConfig>>
 }}
         ",
-               self.program_config,
-               self.opts,
-               self.rewrites.len()
+            self.program_config,
+            self.opts,
+            self.rewrites.len()
         )
     }
 }
