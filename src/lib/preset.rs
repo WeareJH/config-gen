@@ -1,15 +1,13 @@
 use actix_web::http::Method;
-use actix_web::App;
-use actix_web::HttpRequest;
-use actix_web::HttpResponse;
+use actix_web::{App, HttpRequest, HttpResponse};
 use config::ProgramConfig;
 use options::ProgramOptions;
 use presets::m2::module_meta_data::ModuleData;
 use presets::m2::preset_m2::FutResp;
 use presets::m2::requirejs_config::RequireJsClientConfig;
 use rewrites::RewriteContext;
-use std::sync::Arc;
-use std::sync::Mutex;
+use std::sync::{Arc, Mutex};
+use std::fmt;
 
 pub trait Preset<T> {
     fn enhance(&self, app: App<T>) -> App<T>;
@@ -37,4 +35,21 @@ pub struct AppState {
     pub rewrites: RewriteFns,
     pub req_log: Mutex<Vec<ModuleData>>,
     pub rjs_client_config: Arc<Mutex<RequireJsClientConfig>>,
+}
+
+impl fmt::Debug for AppState {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "AppState {{
+    program_config: {:?},
+    opts: {:?},
+    rewrites: {} rewrite fns,
+    req_log: Mutex<Vec<ModuleData>>,
+    rjs_client_config: Arc<Mutex<RequireJsClientConfig>>
+}}
+        ",
+               self.program_config,
+               self.opts,
+               self.rewrites.len()
+        )
+    }
 }
