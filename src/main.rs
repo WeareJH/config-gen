@@ -19,16 +19,8 @@ use openssl::ssl::{SslAcceptor, SslFiletype, SslMethod};
 use bs::config::{ProgramConfig, ProgramStartError};
 use bs::from_file::FromFile;
 use bs::options::{ProgramOptions, ProxyScheme};
-use bs::preset::{AppState, Preset};
-use bs::presets::m2::opts::M2PresetOptions;
-use bs::presets::m2::preset_m2::M2Preset;
-use bs::presets::m2::requirejs_config::RequireJsClientConfig;
-use bs::presets::m2::seed::SeedData;
-use bs::proxy_transform::proxy_transform;
 use bs::setup::{apply_presets, state_and_presets};
 use openssl::ssl::SslAcceptorBuilder;
-use std::collections::HashMap;
-use std::sync::{Arc, Mutex};
 
 fn main() {
     match ProgramOptions::from_vec(&mut std::env::args_os()).and_then(run_with_opts) {
@@ -87,7 +79,7 @@ fn run_with_opts(opts: ProgramOptions) -> Result<(), ProgramStartError> {
     //
     let s = server::new(move || {
         let (app_state, presets_map) = state_and_presets(&opts, &program_config, &maybe_seed);
-        let mut app = App::with_state(app_state);
+        let app = App::with_state(app_state);
         apply_presets(app, &program_config, &presets_map)
     }).workers(1);
 

@@ -55,7 +55,7 @@ impl ProgramOptions {
         T: Into<OsString> + Clone,
     {
         let matches = ClapApp::new("bs-rust")
-            .arg(Arg::with_name("input").required(true))
+            .arg(Arg::with_name("url").required(true))
             .arg(
                 Arg::with_name("port")
                     .short("p")
@@ -79,7 +79,7 @@ impl ProgramOptions {
     ) -> Result<ProgramOptions, ProgramStartError> {
         let matches = _matches.map_err(|e| ProgramStartError::InvalidArgs(e))?;
 
-        let (host, scheme) = get_host(matches.value_of("input").expect("input is required"))
+        let (host, scheme) = get_host(matches.value_of("url").expect("input is required"))
             .map_err(|e| ProgramStartError::ConfigCliError(e))?;
 
         let port: u16 = matches
