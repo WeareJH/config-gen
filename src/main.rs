@@ -92,7 +92,9 @@ fn run_with_opts(opts: ProgramOptions) -> Result<(), ProgramStartError> {
         ProxyScheme::Https => s.bind_ssl(&local_addr, get_ssl_builder()),
     };
 
-    s.expect("Couldn't start the application").start();
+    s.expect("Couldn't start the application")
+        .shutdown_timeout(0)
+        .start();
 
     println!("Started server: {}://{}", server_opts.scheme, local_addr);
 
