@@ -55,7 +55,7 @@ impl Preset<AppState> for M2Preset {
             ("/__bs/reqs.json", Method::GET, handlers::requests::handle),
             ("/__bs/config.json", Method::GET, handlers::config::handle),
             ("/__bs/build.json", Method::GET, handlers::build::handle),
-            ("/__bs/loaders.json", Method::GET, handlers::loaders::handle),
+            ("/__bs/loaders.js", Method::GET, handlers::loaders::handle),
             ("/__bs/seed.json", Method::GET, handlers::seed::handle),
         ];
 
@@ -74,14 +74,14 @@ impl Preset<AppState> for M2Preset {
 
         let app = http_responders
             .into_iter()
-            .fold(app, |acc_app, (path, method, cb)| {
-                acc_app.resource(&path, move |r| r.method(method).f(cb))
+            .fold(app, |acc_app, (path, _method, handle)| {
+                acc_app.resource(&path, move |r| r.f(handle))
             });
 
         http_async_responders
             .into_iter()
-            .fold(app, |acc_app, (path, method, cb)| {
-                acc_app.resource(&path, move |r| r.method(method).f(cb))
+            .fold(app, |acc_app, (path, method, handle)| {
+                acc_app.resource(&path, move |r| r.f(handle))
             })
     }
     ///

@@ -20,8 +20,6 @@ pub fn handle(req: &HttpRequest<AppState>) -> HttpResponse {
 
     match output {
         Ok(t) => HttpResponse::Ok().content_type("application/json").body(t),
-        Err(_e) => HttpResponse::Ok()
-            .content_type("application/json")
-            .body("Could not serve config"),
+        Err(e) => super::err_response::create(e),
     }
 }

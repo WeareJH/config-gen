@@ -30,6 +30,6 @@ pub fn handle(req: &HttpRequest<AppState>) -> HttpResponse {
 
     match output {
         Ok(t) => HttpResponse::Ok().content_type("application/json").body(t),
-        Err(e) => HttpResponse::Ok().content_type("application/json").body(e),
+        Err(e) => super::err_response::create(e),
     }
 }

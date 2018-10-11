@@ -9,7 +9,10 @@ pub fn handle(req: &HttpRequest<AppState>) -> HttpResponse {
     let modules = &req.state().req_log;
     let modules = modules.lock().unwrap();
 
-    let j = serde_json::to_string_pretty(&*modules).unwrap();
-
-    HttpResponse::Ok().content_type("application/json").body(j)
+    match serde_json::to_string_pretty(&*modules) {
+        Ok(json) => HttpResponse::Ok()
+            .content_type("application/json")
+            .body(json),
+        Err(e) => super::err_response::create(e.to_string()),
+    }
 }
