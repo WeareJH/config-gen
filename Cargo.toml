@@ -32,3 +32,4 @@ serde_json = "1.0"
 serde_yaml = "0.8"
 
 ratel = "0.7.0"
+tempdir = "0.3.7"
