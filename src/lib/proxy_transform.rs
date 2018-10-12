@@ -1,9 +1,13 @@
+use actix::Actor;
+use actix_web::client::ClientConnector;
 use actix_web::client::ClientRequestBuilder;
 use actix_web::http::{header, HeaderMap, Method};
 use actix_web::{client, dev, http, Error, HttpMessage, HttpRequest, HttpResponse};
 use base64::encode;
 use futures::Future;
 use headers::clone_headers;
+use openssl::ssl::SslConnector;
+use openssl::ssl::{SslMethod, SslVerifyMode};
 use preset::AppState;
 use presets::m2::opts::{AuthBasic, M2PresetOptions};
 use std::str;
@@ -49,11 +53,17 @@ pub fn proxy_req_setup(original_request: &HttpRequest<AppState>) -> ClientReques
         }
     );
 
-    // now choose how to handle it
-    // if the client responds with a request we want to alter (such as HTML)
-    // then we need to buffer the body into memory in order to apply regex's on the string
     let mut outgoing = client::ClientRequest::build();
+
+    // Since this is a development tool only, we're being risky here
+    // and just disabling all SSL verifications
+    let mut ssl_conn = SslConnector::builder(SslMethod::tls()).unwrap();
+    ssl_conn.set_verify(SslVerifyMode::NONE);
+
+    let conn = ClientConnector::with_connector(ssl_conn.build()).start();
+
     outgoing
+        .with_connector(conn)
         .method(original_request.method().clone())
         .uri(next_url);
 
