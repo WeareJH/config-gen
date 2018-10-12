@@ -27,14 +27,13 @@ pub fn handle(req: &HttpRequest<AppState>) -> FutResp {
                     mutex.config = next_config.config;
                     mutex.paths = next_config.paths;
                     mutex.shim = next_config.shim;
-                    "Was Good!".to_string()
-                }
-                Err(e) => e.to_string(),
-            };
 
-            Ok(HttpResponse::Ok()
-                .content_type("application/json")
-                .body("yo!"))
+                    Ok(HttpResponse::Ok()
+                        .content_type("application/json")
+                        .body("ok"))
+                }
+                Err(e) => Ok(super::err_response::create(e.to_string())),
+            }
         })
         .responder()
 }

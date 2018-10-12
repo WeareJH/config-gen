@@ -36,7 +36,6 @@ fn run_with_opts(opts: ProgramOptions) -> Result<(), ProgramStartError> {
     //
     // Logging config
     //
-    ::std::env::set_var("RUST_LOG", "actix_web=info");
     env_logger::init();
 
     //
@@ -96,7 +95,7 @@ fn run_with_opts(opts: ProgramOptions) -> Result<(), ProgramStartError> {
         .shutdown_timeout(0)
         .start();
 
-    println!("Started server: {}://{}", server_opts.scheme, local_addr);
+    println!("{}://{}", server_opts.scheme, local_addr);
 
     let _ = sys.run();
 

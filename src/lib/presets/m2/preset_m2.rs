@@ -80,7 +80,7 @@ impl Preset<AppState> for M2Preset {
 
         http_async_responders
             .into_iter()
-            .fold(app, |acc_app, (path, method, handle)| {
+            .fold(app, |acc_app, (path, _method, handle)| {
                 acc_app.resource(&path, move |r| r.f(handle))
             })
     }
