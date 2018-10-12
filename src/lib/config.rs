@@ -36,6 +36,11 @@ pub enum ProgramStartError {
     ConfigCliError(ConfigError),
     InvalidArgs(Error),
     FromFile(FromFileError),
+    BindHttp(std::io::Error),
+    BindHttps(std::io::Error),
+    SslFailed,
+    SslTempDir,
+    SslTempDirClose,
 }
 
 impl std::fmt::Display for ProgramStartError {
@@ -58,6 +63,16 @@ impl std::fmt::Display for ProgramStartError {
             ProgramStartError::ConfigFileRead => write!(f, "config file content could not be read"),
             ProgramStartError::FromFile(e) => write!(f, "{}", e),
             ProgramStartError::InvalidArgs(e) => write!(f, "{}", e),
+            ProgramStartError::SslFailed => write!(f, "could not create self-signed ssl certs"),
+            ProgramStartError::SslTempDir => write!(
+                f,
+                "could not create the temp dir to hold self-signed ssl certs"
+            ),
+            ProgramStartError::SslTempDirClose => write!(f, "could not clean up the temp dir"),
+            ProgramStartError::BindHttp(e) => write!(f, "could not bind over http, reason: {}", e),
+            ProgramStartError::BindHttps(e) => {
+                write!(f, "could not bind over https, reason: {}", e)
+            }
         }
     }
 }

@@ -21,6 +21,7 @@ extern crate serde_derive;
 
 #[macro_use]
 extern crate serde_json;
+extern crate tempdir;
 
 pub mod config;
 pub mod from_file;
@@ -33,5 +34,6 @@ pub mod proxy_utils;
 pub mod replacer;
 pub mod rewrites;
 pub mod setup;
+pub mod ssl;
 pub mod with_body;
 pub mod without_body;
