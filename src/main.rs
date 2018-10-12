@@ -12,6 +12,7 @@ extern crate openssl;
 extern crate regex;
 extern crate serde_yaml;
 extern crate url;
+extern crate tempdir;
 
 use actix_web::{server, App};
 use openssl::ssl::{SslAcceptor, SslFiletype, SslMethod};
@@ -21,6 +22,10 @@ use bs::from_file::FromFile;
 use bs::options::{ProgramOptions, ProxyScheme};
 use bs::setup::{apply_presets, state_and_presets};
 use openssl::ssl::SslAcceptorBuilder;
+use std::ffi::CString;
+use std::env;
+use tempdir::TempDir;
+use std::fs::File;
 
 fn main() {
     match ProgramOptions::from_vec(&mut std::env::args_os()).and_then(run_with_opts) {
@@ -108,10 +113,29 @@ fn run_with_opts(opts: ProgramOptions) -> Result<(), ProgramStartError> {
 /// Todo: allow key/cert options
 ///
 fn get_ssl_builder() -> SslAcceptorBuilder {
+
+    use std::fs::File;
+    use std::io::{self, Write};
+
+    let tmp_dir = TempDir::new("example").unwrap();
+    let file_key = tmp_dir.path().join("key.pem");
+    let file_cert = tmp_dir.path().join("cert.pem");
+
+    let mut tmp_file = File::create(&file_key).unwrap();
+    tmp_file.write_all(include_bytes!("key.pem")).unwrap();
+    tmp_file.sync_all().unwrap();
+
+    let mut tmp_file2 = File::create(&file_cert).unwrap();
+    tmp_file2.write_all(include_bytes!("cert.pem")).unwrap();
+    tmp_file2.sync_all().unwrap();
+
     let mut builder = SslAcceptor::mozilla_intermediate(SslMethod::tls()).unwrap();
     builder
-        .set_private_key_file("src/key.pem", SslFiletype::PEM)
+        .set_private_key_file(file_key, SslFiletype::PEM)
         .unwrap();
-    builder.set_certificate_chain_file("src/cert.pem").unwrap();
+    builder.set_certificate_chain_file(file_cert).unwrap();
+
+    tmp_dir.close().unwrap();
+
     builder
 }
