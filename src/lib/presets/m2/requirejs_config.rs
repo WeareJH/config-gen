@@ -162,16 +162,14 @@ impl RequireJsClientConfig {
                             true => format!("         // mixin trigger: \"{}\",", name),
                             false => format!("        \"{}\",", name),
                         }
-                    })
-                    .collect();
+                    }).collect();
 
                 format!(
                     "require.config({{\n  bundles: {{\n    \"{}\": [\n{}\n    ]\n  }}\n}});",
                     module.name,
                     module_list.join("\n")
                 )
-            })
-            .collect();
+            }).collect();
         items.join("\n")
     }
 }

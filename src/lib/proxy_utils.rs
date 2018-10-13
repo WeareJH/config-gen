@@ -43,6 +43,5 @@ where
                         req_target,
                     ).body(f(next_body)))
                 })
-        })
-        .responder()
+        }).responder()
 }

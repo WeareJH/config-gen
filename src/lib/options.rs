@@ -49,7 +49,7 @@ impl ProgramOptions {
     /// iterable, like a Vec - this removes the env-specific parts of this
     /// logic to enable simpler testing
     ///
-    pub fn from_vec<I, T>(args: I) -> Result<ProgramOptions, ProgramStartError>
+    pub fn from_args<I, T>(args: I) -> Result<ProgramOptions, ProgramStartError>
     where
         I: IntoIterator<Item = T>,
         T: Into<OsString> + Clone,
@@ -61,15 +61,13 @@ impl ProgramOptions {
                     .short("p")
                     .long("port")
                     .takes_value(true),
-            )
-            .arg(
+            ).arg(
                 Arg::with_name("config")
                     .short("c")
                     .long("config")
                     .takes_value(true)
                     .required(true),
-            )
-            .arg(Arg::with_name("seed").long("seed").takes_value(true))
+            ).arg(Arg::with_name("seed").long("seed").takes_value(true))
             .get_matches_from_safe(args);
         ProgramOptions::from_matches(matches)
     }
@@ -171,7 +169,7 @@ mod tests {
             "--config",
             "test/fixtures/config.yml",
         ];
-        let p = ProgramOptions::from_vec(args).unwrap();
+        let p = ProgramOptions::from_args(args).unwrap();
         assert_eq!(
             p,
             ProgramOptions {
@@ -191,7 +189,7 @@ mod tests {
             "--config",
             "test/fixtures/config.yml",
         ];
-        match ProgramOptions::from_vec(args) {
+        match ProgramOptions::from_args(args) {
             Err(e) => {
                 assert_eq!(
                     e.to_string(),
@@ -211,7 +209,7 @@ mod tests {
             "--port",
             "900o",
         ];
-        match ProgramOptions::from_vec(args) {
+        match ProgramOptions::from_args(args) {
             Err(e) => {
                 assert_eq!(
                     e.to_string(),

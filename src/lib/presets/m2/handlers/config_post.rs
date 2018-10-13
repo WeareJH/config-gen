@@ -34,6 +34,5 @@ pub fn handle(req: &HttpRequest<AppState>) -> FutResp {
                 }
                 Err(e) => Ok(super::err_response::create(e.to_string())),
             }
-        })
-        .responder()
+        }).responder()
 }
