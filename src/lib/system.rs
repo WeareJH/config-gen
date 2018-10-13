@@ -7,6 +7,8 @@ use options::ProxyScheme;
 use setup::apply_presets;
 use setup::state_and_presets;
 use ssl;
+use std::net::SocketAddr;
+use std::net::SocketAddrV4;
 
 pub fn create(opts: ProgramOptions) -> Result<(actix::SystemRunner, String), ProgramStartError> {
     //
@@ -67,9 +69,27 @@ pub fn create(opts: ProgramOptions) -> Result<(actix::SystemRunner, String), Pro
     };
 
     //
+    // Get the first address that was bound successfully
+    //
+    let addrs = s.addrs();
+    let first_addr = match addrs.get(0) {
+        Some(SocketAddr::V4(addr)) => Some(addr),
+        Some(SocketAddr::V6(..)) => None,
+        None => None,
+    };
+
+    //
+    // if there's not at LEAST 1 address, it's a program start error
+    //
+    let addr: &SocketAddrV4 = first_addr.ok_or(ProgramStartError::Ip)?;
+
+    //
     // Start the server
     //
     s.shutdown_timeout(0).start();
 
-    Ok((sys, format!("{}://{}", server_opts.scheme, local_addr)))
+    Ok((
+        sys,
+        format!("{}://{}:{}", server_opts.scheme, addr.ip(), addr.port()),
+    ))
 }

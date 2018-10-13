@@ -82,7 +82,7 @@ impl ProgramOptions {
 
         let port: u16 = matches
             .value_of("port")
-            .unwrap_or("8080")
+            .unwrap_or("0")
             .parse()
             .map_err(|_e| ProgramStartError::ConfigCliError(ConfigError::UrlInvalidPort))?;
 
@@ -116,7 +116,7 @@ impl Default for ProgramOptions {
         ProgramOptions {
             target: String::new(),
             scheme: ProxyScheme::Http,
-            port: 8080,
+            port: 0,
             config_file: None,
             seed_file: None,
         }

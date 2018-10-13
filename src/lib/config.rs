@@ -36,6 +36,7 @@ pub enum ProgramStartError {
     ConfigCliError(ConfigError),
     InvalidArgs(Error),
     FromFile(FromFileError),
+    Ip,
     BindHttp(std::io::Error),
     BindHttps(std::io::Error),
     SslFailed,
@@ -72,6 +73,9 @@ impl std::fmt::Display for ProgramStartError {
             ProgramStartError::BindHttp(e) => write!(f, "could not bind over http, reason: {}", e),
             ProgramStartError::BindHttps(e) => {
                 write!(f, "could not bind over https, reason: {}", e)
+            }
+            ProgramStartError::Ip => {
+                write!(f, "could not retrieve the address for the config-server")
             }
         }
     }
