@@ -1,4 +1,4 @@
-## config-gen
+## config-gen [![Build Status](https://travis-ci.org/WeareJH/config-gen.svg?branch=master)](https://travis-ci.org/WeareJH/config-gen)
 
 > Generate RequireJS Optimizer configuration for Magento 2 website based on real-world usage.
 
