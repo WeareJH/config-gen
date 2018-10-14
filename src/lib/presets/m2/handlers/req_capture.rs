@@ -3,6 +3,7 @@ use actix_web::middleware::Middleware;
 use actix_web::{HttpRequest, HttpResponse};
 use preset::AppState;
 use presets::m2::module_meta_data::ModuleData;
+use serde_json;
 
 pub struct ReqCapture {}
 

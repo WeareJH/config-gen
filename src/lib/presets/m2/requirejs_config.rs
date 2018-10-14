@@ -1,6 +1,7 @@
 use from_file::FromFile;
 use presets::m2::bundle_config::Module;
 use presets::m2::module_meta_data::ModuleData;
+use serde_json;
 use std::collections::HashMap;
 use url::Url;
 

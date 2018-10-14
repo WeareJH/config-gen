@@ -4,6 +4,8 @@ use futures::{Future, Stream};
 use preset::AppState;
 use presets::m2::preset_m2::FutResp;
 use presets::m2::requirejs_config::RequireJsClientConfig;
+use serde_json;
+use std;
 
 ///
 /// This handler accepts the incoming RequireJS merged

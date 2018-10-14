@@ -1,6 +1,7 @@
 use actix_web::HttpRequest;
 use actix_web::HttpResponse;
 use preset::AppState;
+use serde_json;
 
 ///
 /// This handler will just serve back the RequireJS config as

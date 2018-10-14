@@ -3,6 +3,7 @@ use clap::Arg;
 use clap::ArgMatches;
 use clap::Error;
 use config::ProgramStartError;
+use std;
 use std::ffi::OsString;
 use std::fmt;
 use url::ParseError;

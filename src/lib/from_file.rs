@@ -2,6 +2,7 @@ extern crate serde_json;
 extern crate serde_yaml;
 
 use serde::Deserialize;
+use std;
 use std::fs::File;
 use std::io::prelude::*;
 use std::path::PathBuf;

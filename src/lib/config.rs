@@ -5,6 +5,7 @@ use from_file::FromFile;
 use from_file::FromFileError;
 use options::ConfigError;
 use serde_yaml::Value;
+use std;
 
 #[derive(Deserialize, Debug, Clone)]
 pub struct ProgramConfig {

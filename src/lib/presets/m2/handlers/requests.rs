@@ -1,6 +1,7 @@
 use actix_web::HttpRequest;
 use actix_web::HttpResponse;
 use preset::AppState;
+use serde_json;
 
 ///
 /// serve a JSON dump of the current request log

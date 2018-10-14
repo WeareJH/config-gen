@@ -1,5 +1,4 @@
 #![allow(dead_code)]
-#![feature(extern_prelude)]
 extern crate actix;
 extern crate actix_web;
 extern crate base64;
