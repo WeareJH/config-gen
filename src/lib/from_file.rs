@@ -9,6 +9,7 @@ use std::path::PathBuf;
 
 #[derive(Debug)]
 pub enum FromFileError {
+    InvalidExtension,
     InvalidInput,
     FileOpen(PathBuf),
     FileRead,
@@ -23,6 +24,41 @@ pub enum FromFileError {
 /// - file:conf/app.yaml
 ///
 pub trait FromFile {
+    ///
+    /// Support serialising to .yml, .yaml & .json files by
+    /// looking at the file extension and then choosing the correct
+    /// serde method
+    ///
+    /// # Examples
+    ///
+    /// ```ignore
+    /// #[derive(Deserialize, Debug, PartialEq)]
+    /// struct Person {
+    ///   name: String
+    /// }
+    ///
+    /// impl FromFile for Person {}
+    ///
+    /// let p1 = Person::from_file("test/fixtures/person.json").expect("file->Person");
+    /// assert_eq!(p1, Person{name: "Shane".into()});
+    /// ```
+    ///
+    fn from_file(input: &str) -> Result<Self, FromFileError>
+    where
+        for<'de> Self: Deserialize<'de> + Sized,
+    {
+        let pb = PathBuf::from(input);
+        let ext = pb
+            .extension()
+            .and_then(|ext| ext.to_str())
+            .ok_or(FromFileError::InvalidExtension)?;
+        match ext {
+            "json" => <Self as FromFile>::from_json_file(input),
+            "yml" | "yaml" => <Self as FromFile>::from_yml_file(input),
+            _ => Err(FromFileError::InvalidExtension),
+        }
+    }
+
     ///
     /// From a string like `file:config.yaml`, try to read the file
     /// and if it exists, parse into a strongly typed struct `Person`
@@ -98,12 +134,42 @@ pub trait FromFile {
 impl std::fmt::Display for FromFileError {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
-            FromFileError::InvalidInput => write!(f, "ConfigError::InvalidInput"),
+            FromFileError::InvalidExtension => write!(f, "FromFileError::InvalidExtension"),
+            FromFileError::InvalidInput => write!(f, "FromFileError::InvalidInput"),
             FromFileError::FileOpen(path) => {
-                write!(f, "ConfigError::FileOpen - couldn't open {:?}", path)
+                write!(f, "FromFileError::FileOpen - couldn't open {:?}", path)
             }
-            FromFileError::FileRead => write!(f, "ConfigError::FileRead"),
-            FromFileError::SerdeError(e) => write!(f, "ConfigError::SerdeError - {}", e),
+            FromFileError::FileRead => write!(f, "FromFileError::FileRead"),
+            FromFileError::SerdeError(e) => write!(f, "FromFileError::SerdeError - {}", e),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use from_file::FromFile;
+    #[test]
+    fn test_from_file() {
+        #[derive(Deserialize, Debug, PartialEq)]
+        struct Person {
+            name: String,
+        }
+        impl FromFile for Person {}
+
+        let p1 = Person::from_file("test/fixtures/person.json").expect("file->Person");
+        assert_eq!(
+            p1,
+            Person {
+                name: "Shane".into()
+            }
+        );
+
+        let p1 = Person::from_file("test/fixtures/person.yaml").expect("file->Person");
+        assert_eq!(
+            p1,
+            Person {
+                name: "Shane".into()
+            }
+        );
     }
 }

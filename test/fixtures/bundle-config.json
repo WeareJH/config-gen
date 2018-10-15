@@ -1,0 +1,40 @@
+{
+  "bundles": [
+    {
+      "name": "bundles/main",
+      "urls": [
+        "/",
+        "/index.php/women/tops-women/jackets-women.html"
+      ],
+      "children": [
+        {
+          "name": "bundles/product",
+          "urls": [
+            "/index.php/juno-jacket.html"
+          ],
+          "children": [
+
+          ]
+        },
+        {
+          "name": "bundles/basket",
+          "urls": [
+            "/index.php/checkout/cart/",
+            "/index.php/checkout/cart"
+          ],
+          "children": [
+            {
+              "name": "bundles/checkout",
+              "urls": [
+                "/index.php/checkout/"
+              ],
+              "children": [
+
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

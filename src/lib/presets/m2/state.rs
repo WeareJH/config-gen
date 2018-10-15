@@ -28,7 +28,7 @@ pub fn gather_state(
     let bundle_path = maybe_opts.bundle_config;
 
     match bundle_path {
-        Some(bun_config_path) => match BundleConfig::from_yml_file(&bun_config_path) {
+        Some(bun_config_path) => match BundleConfig::from_file(&bun_config_path) {
             Ok(bundle_config) => {
                 let module_blacklist = bundle_config.module_blacklist.clone().unwrap_or(vec![]);
                 let mut blacklist = vec!["js-translation".to_string()];

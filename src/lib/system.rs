@@ -18,7 +18,7 @@ pub fn create(opts: ProgramOptions) -> Result<(actix::SystemRunner, String), Pro
 
     //
     // Get program configuration, from the input above, and
-    // then eventuall from a file
+    // then eventually from a file
     //
     let file_path = opts
         .config_file
@@ -29,7 +29,7 @@ pub fn create(opts: ProgramOptions) -> Result<(actix::SystemRunner, String), Pro
     // Pull the ProgramConfig from a  file
     //
     let program_config =
-        ProgramConfig::from_yml_file(&file_path).map_err(|e| ProgramStartError::FromFile(e))?;
+        ProgramConfig::from_file(&file_path).map_err(|e| ProgramStartError::FromFile(e))?;
 
     //
     // Clone server opts to be used in multi threads

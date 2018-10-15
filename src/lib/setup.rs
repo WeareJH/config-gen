@@ -87,7 +87,7 @@ pub fn create_state(
     opts: ProgramOptions,
 ) -> AppState {
     let (req_log, rjs_client_config) = match maybe_seed {
-        Some(ref s) => match SeedData::from_json_file(&s) {
+        Some(ref s) => match SeedData::from_file(&s) {
             Ok(seed) => (seed.req_log, seed.rjs_client_config),
             Err(e) => {
                 eprintln!("Could not read seed, {:?}", e);

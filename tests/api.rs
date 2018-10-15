@@ -10,6 +10,7 @@ use actix_web::http;
 use bs::config::ProgramStartError;
 use bs::options::ProgramOptions;
 use bs::presets::m2::requirejs_config::{RequireJsBuildConfig, RequireJsClientConfig};
+use bs::presets::m2::seed::SeedData;
 use bs::system;
 use reqwest::Response;
 
@@ -31,9 +32,9 @@ const DEFAULT_ARGS: &'static [&'static str] = &[
 fn test_config_json() {
     api(DEFAULT_ARGS.to_vec(), "/__bs/config.json", |result| {
         let (_sys, _url, mut res) = result.expect("api returned");
-        let _c: RequireJsClientConfig =
-            serde_json::from_str(&res.text().expect("unwrap text response"))
-                .expect("serde deserialize");
+        let _c: RequireJsClientConfig = serde_json::from_str(
+            &res.text().expect("unwrap text response"),
+        ).expect("serde deserialize");
     });
 }
 
@@ -50,12 +51,49 @@ fn test_loaders_js() {
 }
 
 #[test]
+fn test_seed_json() {
+    api(DEFAULT_ARGS.to_vec(), "/__bs/seed.json", |result| {
+        let (_sys, _url, mut res) = result.expect("api returned");
+        let t = res.text().expect("unwrap text response");
+        let _c: SeedData = serde_json::from_str(&t).expect("serde deserialize");
+    });
+}
+
+#[test]
+fn test_seed_seeded_json() {
+    let mut args = DEFAULT_ARGS.to_vec().clone();
+    args.extend(vec!["--seed", "test/fixtures/seed.json"]);
+    api(args, "/__bs/seed.json", |result| {
+        let (_sys, _url, mut res) = result.expect("api returned");
+        let t = res.text().expect("unwrap text response");
+        let c: SeedData = serde_json::from_str(&t).expect("serde deserialize");
+        assert_eq!(c.req_log.len(), 339);
+    });
+}
+
+#[test]
 fn test_build_json() {
     api(DEFAULT_ARGS.to_vec(), "/__bs/build.json", |result| {
         let (_sys, _url, mut res) = result.expect("api returned");
-        let _c: RequireJsBuildConfig =
-            serde_json::from_str(&res.text().expect("unwrap text response"))
-                .expect("serde deserialize");
+        let _c: RequireJsBuildConfig = serde_json::from_str(
+            &res.text().expect("unwrap text response"),
+        ).expect("serde deserialize");
+    });
+}
+
+#[test]
+fn test_build_json_from_json_config() {
+    let args = vec![
+        "config-gen",
+        "http://example.com",
+        "--config",
+        "test/fixtures/config.json",
+    ];
+    api(args, "/__bs/build.json", |result| {
+        let (_sys, _url, mut res) = result.expect("api returned");
+        let _c: RequireJsBuildConfig = serde_json::from_str(
+            &res.text().expect("unwrap text response"),
+        ).expect("serde deserialize");
     });
 }
 

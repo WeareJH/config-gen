@@ -1,0 +1,14 @@
+{
+  "presets": [
+    {
+      "name": "m2",
+      "options": {
+        "bundle_config": "file:test/fixtures/bundle-config.json",
+        "auth_basic": {
+          "username": "acme",
+          "password": "acmepw"
+        }
+      }
+    }
+  ]
+}
