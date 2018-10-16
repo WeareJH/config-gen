@@ -34,9 +34,16 @@ pub fn forward_request_without_body(
         .send()
         .map_err(Error::from)
         .and_then(move |proxy_response: ClientResponse| {
+            debug!("Got proxy response, status={}", proxy_response.status());
+            debug!(
+                "Got proxy response headers, headers={:#?}",
+                proxy_response.headers()
+            );
+
             // If we decide to modify the response, we need to buffer the entire
             // response into memory (text content only)
             if should_rewrite_body(&req_uri, &proxy_response) {
+                debug!("attempting to rewrite body");
                 Either::A(response_from_rewrite(
                     proxy_response,
                     host,
@@ -108,6 +115,8 @@ fn response_from_rewrite(
             let mut fns: RewriteFns = vec![replace_host];
             fns.extend(rewrites);
             let next_body = Subject::new(body_content).apply(&context, fns);
+
+            debug!("creating response");
 
             Ok(create_outgoing(
                 &proxy_response.headers(),

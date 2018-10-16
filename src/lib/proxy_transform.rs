@@ -30,6 +30,11 @@ pub fn proxy_transform(
 }
 
 pub fn proxy_req_setup(original_request: &HttpRequest<AppState>) -> ClientRequestBuilder {
+    debug!(
+        "incoming proxy_req = {}",
+        original_request.uri().to_string()
+    );
+
     let original_req_headers = original_request.headers().clone();
     let next_host = original_request.uri().clone();
     let req_host = next_host.host().unwrap_or("");
@@ -52,6 +57,8 @@ pub fn proxy_req_setup(original_request: &HttpRequest<AppState>) -> ClientReques
             None => "".to_string(),
         }
     );
+
+    debug!("next_url={}", next_url);
 
     let mut outgoing = client::ClientRequest::build();
 
@@ -117,6 +124,7 @@ pub fn create_outgoing(
 ) -> dev::HttpResponseBuilder {
     let mut outgoing = HttpResponse::Ok();
     let c = clone_headers(resp_headers, target, replacer);
+    debug!("Headers for response = {:#?}", c);
     // Copy headers from backend response to main response
     for (key, value) in c.iter() {
         outgoing.header(key.clone(), value.clone());

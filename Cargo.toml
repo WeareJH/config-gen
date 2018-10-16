@@ -12,6 +12,7 @@ name = "bs"
 path = "src/lib/bs.rs"
 
 [dependencies]
+log = "0.4.0"
 env_logger = "0.5"
 futures = "0.1"
 openssl = { version="0.10" }

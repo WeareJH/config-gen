@@ -4,7 +4,6 @@ extern crate actix_web;
 extern crate base64;
 extern crate bytes;
 extern crate clap;
-extern crate env_logger;
 extern crate futures;
 extern crate http;
 extern crate mime;
@@ -14,6 +13,10 @@ extern crate regex;
 extern crate serde;
 extern crate serde_yaml;
 extern crate url;
+
+#[macro_use]
+extern crate log;
+extern crate env_logger;
 
 #[macro_use]
 extern crate serde_derive;

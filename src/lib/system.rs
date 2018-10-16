@@ -88,8 +88,7 @@ pub fn create(opts: ProgramOptions) -> Result<(actix::SystemRunner, String), Pro
     //
     s.shutdown_timeout(0).start();
 
-    Ok((
-        sys,
-        format!("{}://{}:{}", server_opts.scheme, addr.ip(), addr.port()),
-    ))
+    let output_addr = format!("{}://{}:{}", server_opts.scheme, addr.ip(), addr.port());
+
+    Ok((sys, output_addr))
 }

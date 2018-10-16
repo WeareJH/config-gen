@@ -4,7 +4,7 @@ extern crate actix_web;
 extern crate bs;
 extern crate bytes;
 extern crate clap;
-extern crate env_logger;
+
 extern crate futures;
 extern crate http;
 extern crate mime;
@@ -13,6 +13,10 @@ extern crate regex;
 extern crate serde_yaml;
 extern crate tempdir;
 extern crate url;
+
+#[macro_use]
+extern crate log;
+extern crate env_logger;
 
 use bs::options::ProgramOptions;
 use bs::system;
