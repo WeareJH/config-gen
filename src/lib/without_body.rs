@@ -19,6 +19,7 @@ use rewrites::{replace_host, RewriteContext};
 ///
 pub fn forward_request_without_body(
     incoming_request: &HttpRequest<AppState>,
+    req_target: String,
     mut outgoing: ClientRequestBuilder,
 ) -> Box<Future<Item = HttpResponse, Error = Error>> {
     let target_domain = incoming_request.state().opts.target.clone();
@@ -48,6 +49,7 @@ pub fn forward_request_without_body(
                     proxy_response,
                     host,
                     port,
+                    req_target,
                     target_domain,
                     rewrites,
                 ))
@@ -56,8 +58,7 @@ pub fn forward_request_without_body(
                 // so we just stream it back to the client
                 Either::B(pass_through_response(
                     proxy_response,
-                    host,
-                    port,
+                    req_target.clone(),
                     target_domain,
                 ))
             }
@@ -67,13 +68,11 @@ pub fn forward_request_without_body(
 /// Pass-through response
 fn pass_through_response(
     proxy_response: ClientResponse,
-    host: String,
-    port: u16,
+    req_target: String,
     target_domain: String,
 ) -> Box<Future<Item = HttpResponse, Error = Error>> {
-    let req_target = format!("{}:{}", host, port);
-
     let output = ok(create_outgoing(
+        &proxy_response.status(),
         &proxy_response.headers(),
         target_domain.to_string(),
         req_target,
@@ -92,6 +91,7 @@ fn response_from_rewrite(
     proxy_response: ClientResponse,
     req_host: String,
     req_port: u16,
+    req_target: String,
     target_domain: String,
     rewrites: RewriteFns,
 ) -> Box<Future<Item = HttpResponse, Error = Error>> {
@@ -102,7 +102,6 @@ fn response_from_rewrite(
         .and_then(move |body| {
             use std::str;
 
-            let req_target = format!("{}:{}", req_host, req_port);
             let context = RewriteContext {
                 host_to_replace: target_domain.clone(),
                 target_host: req_host,
@@ -119,6 +118,7 @@ fn response_from_rewrite(
             debug!("creating response");
 
             Ok(create_outgoing(
+                &proxy_response.status(),
                 &proxy_response.headers(),
                 target_domain.to_string(),
                 req_target,

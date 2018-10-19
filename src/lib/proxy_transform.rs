@@ -1,6 +1,7 @@
 use actix::Actor;
 use actix_web::client::ClientConnector;
 use actix_web::client::ClientRequestBuilder;
+use actix_web::http::StatusCode;
 use actix_web::http::{header, HeaderMap, Method};
 use actix_web::{client, dev, http, Error, HttpMessage, HttpRequest, HttpResponse};
 use app_state::AppState;
@@ -22,27 +23,26 @@ pub fn proxy_transform(
     original_request: &HttpRequest<AppState>,
 ) -> Box<Future<Item = HttpResponse, Error = Error>> {
     let outgoing = proxy_req_setup(original_request);
+    let bind_port = original_request.state().opts.port;
+    let scheme = &original_request.state().opts.scheme;
+    let (host, port) = get_host_port(original_request, bind_port);
+    let req_target = format!("{}://{}:{}", scheme, host, port);
 
     match *original_request.method() {
-        Method::POST => forward_request_with_body(original_request, outgoing),
-        _ => forward_request_without_body(original_request, outgoing),
+        Method::POST => forward_request_with_body(original_request, req_target, outgoing),
+        _ => forward_request_without_body(original_request, req_target, outgoing),
     }
 }
 
 pub fn proxy_req_setup(original_request: &HttpRequest<AppState>) -> ClientRequestBuilder {
     debug!(
-        "incoming proxy_req = {}",
-        original_request.uri().to_string()
+        "incoming proxy_req = {:?}",
+        original_request.connection_info().host()
     );
-
     let original_req_headers = original_request.headers().clone();
-    let next_host = original_request.uri().clone();
-    let req_host = next_host.host().unwrap_or("");
-    let req_port = next_host.port().unwrap_or(80);
-    let req_target = format!("{}:{}", req_host, req_port);
     let cloned = clone_headers(
         &original_req_headers,
-        req_target,
+        original_request.connection_info().host().to_string(),
         original_request.state().opts.target.clone(),
     );
 
@@ -118,11 +118,13 @@ pub fn proxy_req_setup(original_request: &HttpRequest<AppState>) -> ClientReques
 }
 
 pub fn create_outgoing(
+    status_code: &StatusCode,
     resp_headers: &HeaderMap,
     target: String,
     replacer: String,
 ) -> dev::HttpResponseBuilder {
     let mut outgoing = HttpResponse::Ok();
+    outgoing.status(*status_code);
     let c = clone_headers(resp_headers, target, replacer);
     debug!("Headers for response = {:#?}", c);
     // Copy headers from backend response to main response
@@ -133,13 +135,8 @@ pub fn create_outgoing(
 }
 
 pub fn get_host_port(incoming_request: &HttpRequest<AppState>, bind_port: u16) -> (String, u16) {
-    let split = match incoming_request.headers().get(header::HOST) {
-        Some(h) => {
-            let output: Vec<&str> = h.to_str().expect("host to str").split(":").collect();
-            output
-        }
-        None => vec![],
-    };
+    let info = incoming_request.connection_info();
+    let split: Vec<&str> = info.host().split(":").collect();
 
     match (split.get(0), split.get(1)) {
         (Some(h), Some(p)) => (h.to_string(), p.parse().expect("parsed port")),

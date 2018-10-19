@@ -8,7 +8,8 @@ use regex::Regex;
 /// from any set-cookies
 ///
 pub fn clone_headers(headers: &HeaderMap, target: String, replacer: String) -> HeaderMap {
-    let regex = Regex::new(target.as_str()).unwrap();
+    let matcher = format!("https?://{}", target);
+    let regex = Regex::new(&matcher).unwrap();
     let mut hm = HeaderMap::new();
     for (key, value) in headers.iter().filter(|(key, _)| key.as_str() != "cookie") {
         let strs = value.to_str().unwrap();

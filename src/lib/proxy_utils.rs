@@ -38,6 +38,7 @@ where
                     let next_body: String = String::from(body_content);
 
                     Ok(create_outgoing(
+                        &proxy_response.status(),
                         &proxy_response.headers(),
                         target_domain.to_string(),
                         req_target,

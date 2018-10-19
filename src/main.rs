@@ -14,9 +14,8 @@ extern crate serde_yaml;
 extern crate tempdir;
 extern crate url;
 
-#[macro_use]
-extern crate log;
 extern crate env_logger;
+extern crate log;
 
 use bs::options::ProgramOptions;
 use bs::system;
