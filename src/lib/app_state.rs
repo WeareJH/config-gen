@@ -14,6 +14,18 @@ pub struct AppState {
     pub rjs_client_config: Arc<Mutex<RequireJsClientConfig>>,
 }
 
+impl AppState {
+    pub fn new(host: impl Into<String>, scheme: impl Into<String>) -> AppState {
+        AppState {
+            opts: ProgramOptions::new(host, scheme),
+            program_config: ProgramConfig::default(),
+            rewrites: vec![],
+            req_log: Mutex::new(vec![]),
+            rjs_client_config: Arc::new(Mutex::new(RequireJsClientConfig::default())),
+        }
+    }
+}
+
 impl fmt::Debug for AppState {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(

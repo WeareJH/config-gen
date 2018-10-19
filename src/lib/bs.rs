@@ -39,5 +39,6 @@ pub mod rewrites;
 pub mod setup;
 pub mod ssl;
 pub mod system;
+pub mod test_utils;
 pub mod with_body;
 pub mod without_body;
