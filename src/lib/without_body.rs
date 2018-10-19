@@ -140,9 +140,12 @@ fn should_rewrite_body(uri: &Uri, resp: &ClientResponse) -> bool {
     resp.headers()
         .get(header::CONTENT_TYPE)
         .map_or(false, |header_value| {
-            match header_value.to_str().unwrap_or("") {
-                "text/html" | "text/html; charset=UTF-8" => true,
-                _ => false,
+            match header_value.to_str().and_then(|s| Ok(s.to_lowercase())) {
+                Ok(s) => match s.as_str() {
+                    "text/html" | "text/html; charset=utf-8" => true,
+                    _ => false,
+                },
+                Err(..) => false,
             }
         })
 }

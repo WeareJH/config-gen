@@ -143,7 +143,7 @@ pub fn get_host_port(incoming_request: &HttpRequest<AppState>, bind_port: u16) -
 
     match (split.get(0), split.get(1)) {
         (Some(h), Some(p)) => (h.to_string(), p.parse().expect("parsed port")),
-        (Some(h), None) => (h.to_string(), 80 as u16),
+        (Some(h), None) => (h.to_string(), bind_port),
         _ => ("127.0.0.1".to_string(), bind_port),
     }
 }

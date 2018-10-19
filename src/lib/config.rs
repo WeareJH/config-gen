@@ -12,6 +12,12 @@ pub struct ProgramConfig {
     pub presets: Vec<PresetConfig>,
 }
 
+impl Default for ProgramConfig {
+    fn default() -> ProgramConfig {
+        ProgramConfig { presets: vec![] }
+    }
+}
+
 impl FromFile for ProgramConfig {}
 
 impl ProgramConfig {
