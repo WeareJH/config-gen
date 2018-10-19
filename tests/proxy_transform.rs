@@ -7,8 +7,6 @@ extern crate log;
 extern crate env_logger;
 
 use actix_web::http::header;
-use actix_web::http::Cookie;
-use actix_web::test::TestApp;
 use actix_web::HttpMessage;
 use actix_web::HttpRequest;
 use actix_web::{test, HttpResponse};
@@ -18,7 +16,6 @@ use bs::preset::AppState;
 use bs::presets::m2::requirejs_config::RequireJsClientConfig;
 use bs::proxy_transform::proxy_transform;
 use mime::{TEXT_HTML, TEXT_HTML_UTF_8};
-use std::cell::RefCell;
 use std::str;
 use std::sync::Arc;
 use std::sync::Mutex;
@@ -44,10 +41,17 @@ fn test_str(adr: impl Into<String>) -> String {
 fn test_forwards_headers() {
     let server = test::TestServer::new(|app| {
         app.handler(|req: &HttpRequest| {
-            println!("headers received at proxy addr: {:#?}", req.headers());
-            assert_eq!(req.headers().get(header::ACCEPT).unwrap(), "text/html");
+            debug!("headers received at proxy addr: {:#?}", req.headers());
             assert_eq!(
-                req.headers().get(header::COOKIE).unwrap(),
+                req.headers()
+                    .get(header::ACCEPT)
+                    .expect("has accept header"),
+                "text/html"
+            );
+            assert_eq!(
+                req.headers()
+                    .get(header::COOKIE)
+                    .expect("has cookie header"),
                 "hello there; hello there 2"
             );
 
@@ -82,13 +86,12 @@ fn test_forwards_headers() {
         app.handler(proxy_transform);
     });
 
-    println!("PROXY={}", proxy.addr().to_string());
-    println!("TARGET={}", srv_address2.clone());
+    debug!("PROXY={}", proxy.addr().to_string());
+    debug!("TARGET={}", srv_address2.clone());
 
     let request = proxy
         .get()
-        .header(header::ACCEPT, "text/html")
-        .set_header(header::HOST, proxy.addr().to_string())
+        .header(header::ACCEPT, TEXT_HTML)
         .header("cookie", "hello there")
         .header("cookie", "hello there 2")
         .header("srv_address", srv_address2)
@@ -96,6 +99,7 @@ fn test_forwards_headers() {
             header::ORIGIN,
             format!("https://{}", proxy.addr().to_string()),
         ).uri(proxy.url("/"))
+        .set_header(header::HOST, proxy.addr().to_string())
         .finish()
         .unwrap();
 
@@ -111,5 +115,5 @@ fn test_forwards_headers() {
     let has_header = response.headers().get("shane").is_some();
 
     assert_eq!(has_header, true);
-    //    assert_eq!(response_body, expected_body);
+    assert_eq!(response_body, expected_body);
 }
