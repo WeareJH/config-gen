@@ -1,7 +1,7 @@
 use actix_web::middleware::Finished;
 use actix_web::middleware::Middleware;
 use actix_web::{HttpRequest, HttpResponse};
-use preset::AppState;
+use app_state::AppState;
 use presets::m2::module_meta_data::ModuleData;
 use serde_json;
 

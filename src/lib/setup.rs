@@ -1,8 +1,8 @@
 use actix_web::App;
+use app_state::AppState;
 use config::ProgramConfig;
 use from_file::FromFile;
 use options::ProgramOptions;
-use preset::AppState;
 use preset::Preset;
 use presets::m2::opts::M2PresetOptions;
 use presets::m2::preset_m2::M2Preset;

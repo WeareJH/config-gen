@@ -1,7 +1,7 @@
 use actix_web::client::ClientResponse;
 use actix_web::{AsyncResponder, Error, HttpMessage, HttpRequest};
+use app_state::AppState;
 use futures::Future;
-use preset::AppState;
 use presets::m2::preset_m2::FutResp;
 use proxy_transform::create_outgoing;
 use proxy_transform::get_host_port;

@@ -5,11 +5,12 @@ use actix_web::http::Method;
 use actix_web::{App, Error, HttpResponse};
 use futures::Future;
 
-use preset::{AppState, Preset, ResourceDef, RewriteFns};
+use preset::{Preset, ResourceDef, RewriteFns};
 
 use super::handlers;
 use super::opts::M2PresetOptions;
 use super::replace_cookie_domain;
+use app_state::AppState;
 use preset::AsyncResourceDef;
 
 pub type FutResp = Box<Future<Item = HttpResponse, Error = Error>>;

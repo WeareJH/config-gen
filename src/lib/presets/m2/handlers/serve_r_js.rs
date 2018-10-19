@@ -1,6 +1,6 @@
 use actix_web::HttpRequest;
 use actix_web::HttpResponse;
-use preset::AppState;
+use app_state::AppState;
 
 const INSTRUMENTED_REQUIRE_JS: &'static str = include_str!("../static/requirejs.js");
 

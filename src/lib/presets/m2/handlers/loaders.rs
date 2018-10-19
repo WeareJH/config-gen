@@ -1,6 +1,6 @@
 use actix_web::HttpRequest;
 use actix_web::HttpResponse;
-use preset::AppState;
+use app_state::AppState;
 
 use presets::m2::requirejs_config::RequireJsClientConfig;
 use presets::m2::state::gather_state;

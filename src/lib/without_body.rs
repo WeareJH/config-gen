@@ -6,7 +6,7 @@ use actix_web::{AsyncResponder, Body, Error, HttpMessage, HttpRequest, HttpRespo
 use futures::future::{ok, Either};
 use futures::{Future, Stream};
 
-use preset::AppState;
+use app_state::AppState;
 use preset::RewriteFns;
 use proxy_transform::create_outgoing;
 use proxy_transform::get_host_port;

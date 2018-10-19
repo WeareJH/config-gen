@@ -1,6 +1,6 @@
 use actix_web::HttpRequest;
+use app_state::AppState;
 use from_file::FromFile;
-use preset::AppState;
 
 use presets::m2::bundle_config::BundleConfig;
 use presets::m2::bundle_config::Module;

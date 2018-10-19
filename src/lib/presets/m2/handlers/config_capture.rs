@@ -1,5 +1,5 @@
 use actix_web::HttpRequest;
-use preset::AppState;
+use app_state::AppState;
 use presets::m2::parse::get_deps_from_str;
 use presets::m2::preset_m2::FutResp;
 use proxy_utils::apply_to_proxy_body;
