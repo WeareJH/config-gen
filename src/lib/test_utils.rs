@@ -13,7 +13,7 @@ use std::str;
 ///
 pub fn get_test_server<H>(handler: H) -> (TestServer, String)
 where
-    H: Fn(&mut TestApp) + Send + Sync + 'static,
+    H: Fn(&mut TestApp) + Send + Sync + Clone + 'static,
 {
     let target = test::TestServer::new(handler);
     let target_addr = target.addr().to_string();
@@ -25,7 +25,7 @@ where
 ///
 pub fn get_test_proxy<H>(server: &TestServer, handler: H) -> (TestServer, String)
 where
-    H: Fn(&mut TestApp<AppState>) + Send + Sync + 'static,
+    H: Fn(&mut TestApp<AppState>) + Send + Sync + Clone + 'static,
 {
     let srv_address = server.addr().to_string();
     let p = test::TestServer::build_with_state(move || {
