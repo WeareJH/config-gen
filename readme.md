@@ -92,7 +92,7 @@ bundles:
 
 ## Step 4 - Now run the program against a Magento 2 instance
 
-This will provide you with a new url, something like `http://127.0.0.1`. You should
+This will provide you with a new url, something like `http://127.0.0.1:65432`. You should
 exercise any areas of the frontend that you want to be covered by the optimizer.
 
 *Tip:* You'll want to disable the network cache, either do this by opening dev-tools and checking
