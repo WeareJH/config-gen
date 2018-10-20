@@ -7,23 +7,50 @@
 To enable easy usage, `config-gen` is packaged as a single binary (currently only osx) - just check
 the [releases](https://github.com/shakyShane/config-gen/releases) page and download the latest version.
 
-## Step 2 - create a configuration file, call it `config-gen.yml`
+To make it executable, run
 
+```sh
+chmod +x config-gen
 ```
+
+**Note**: Some easier installation methods will be released in the coming weeks. :)
+
+## Step 2 - create a configuration file (either `json` or `yaml`)
+
+You can name it anything, but for example, this would be config-gen.yml
+
+```yml
 presets:
   - name: m2
     options:
       bundle_config: file:test/fixtures/bundle-config.yml
 ```
 
-## Step 3 - create the `bundle-config.yml` file as noted above.
+<details>
+  <summary>See <code>.json</code> version</summary><p>
+
+    {
+      "presets": [
+        {
+          "name": "m2",
+          "options": {
+            "bundle_config": "file:test/fixtures/bundle-config.json"
+          }
+        }
+      ]
+    }
+
+</p>
+</details>
+
+## Step 3 - create the `bundle-config.yml` or `json` file as noted above.
 
 This is what determines the parent-child relationship. This file is 
 read from disk every time the `/build.json` or `/loaders.js` endpoint is
 requested - which means you can navigate around the site and continue
 to tweak these relationships to get the optimal result.
 
-```yaml
+```yml
 bundles:
   - name: "bundles/main"
     urls:
@@ -35,6 +62,33 @@ bundles:
           - "/index.php/juno-jacket.html"
         children: []
 ```
+
+<details>
+  <summary>See <code>.json</code> version</summary><p>
+
+    {
+      "bundles": [
+        {
+          "name": "bundles/main",
+          "urls": [
+            "/",
+            "/index.php/women/tops-women/jackets-women.html"
+          ],
+          "children": [
+            {
+              "name": "bundles/product",
+              "urls": [
+                "/index.php/juno-jacket.html"
+              ],
+              "children": []
+            }
+          ]
+        }
+      ]
+    }
+
+</p>
+</details>
 
 ## Step 4 - Now run the program against a Magento 2 instance
 
@@ -85,10 +139,8 @@ exists etc - but I'm not providing a full script here since requirements will di
 ## Loading additional bundles
 
 When you access `/__bs/loaders.json`, it will provide Javascript snippets that will allow the additional bundles
-to be loaded - exactly how you implement this part is up to you, however we will soon be providing a reference
+to be loaded when needed - exactly how you implement this part is up to you, however we will soon be providing a reference
 implementation that shows how to add/remove the additional bundles based on some admin flags.
-
-For now though, an example should how to load `bundles/default` on every page, would look like this...
 
 ```html
 <script src="http://example.com/../requirejs/require.js"></script>
