@@ -62,13 +62,15 @@ impl ProgramOptions {
                     .short("p")
                     .long("port")
                     .takes_value(true),
-            ).arg(
+            )
+            .arg(
                 Arg::with_name("config")
                     .short("c")
                     .long("config")
                     .takes_value(true)
                     .required(true),
-            ).arg(Arg::with_name("seed").long("seed").takes_value(true))
+            )
+            .arg(Arg::with_name("seed").long("seed").takes_value(true))
             .get_matches_from_safe(args);
         ProgramOptions::from_matches(matches)
     }

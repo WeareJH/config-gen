@@ -96,7 +96,8 @@ pub fn proxy_req_setup(original_request: &HttpRequest<AppState>) -> ClientReques
         .map(|hdr| {
             let s = str::from_utf8(hdr.as_bytes()).unwrap_or("");
             s.to_string()
-        }).collect::<Vec<String>>()
+        })
+        .collect::<Vec<String>>()
         .join("; ");
 
     outgoing.set_header(http::header::COOKIE, joined_cookie);

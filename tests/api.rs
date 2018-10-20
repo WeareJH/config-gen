@@ -32,9 +32,9 @@ const DEFAULT_ARGS: &'static [&'static str] = &[
 fn test_config_json() {
     api(DEFAULT_ARGS.to_vec(), "/__bs/config.json", |result| {
         let (_sys, _url, mut res) = result.expect("api returned");
-        let _c: RequireJsClientConfig =
-            serde_json::from_str(&res.text().expect("unwrap text response"))
-                .expect("serde deserialize");
+        let _c: RequireJsClientConfig = serde_json::from_str(
+            &res.text().expect("unwrap text response"),
+        ).expect("serde deserialize");
     });
 }
 
@@ -75,9 +75,9 @@ fn test_seed_seeded_json() {
 fn test_build_json() {
     api(DEFAULT_ARGS.to_vec(), "/__bs/build.json", |result| {
         let (_sys, _url, mut res) = result.expect("api returned");
-        let _c: RequireJsBuildConfig =
-            serde_json::from_str(&res.text().expect("unwrap text response"))
-                .expect("serde deserialize");
+        let _c: RequireJsBuildConfig = serde_json::from_str(
+            &res.text().expect("unwrap text response"),
+        ).expect("serde deserialize");
     });
 }
 
@@ -91,9 +91,9 @@ fn test_build_json_from_json_config() {
     ];
     api(args, "/__bs/build.json", |result| {
         let (_sys, _url, mut res) = result.expect("api returned");
-        let _c: RequireJsBuildConfig =
-            serde_json::from_str(&res.text().expect("unwrap text response"))
-                .expect("serde deserialize");
+        let _c: RequireJsBuildConfig = serde_json::from_str(
+            &res.text().expect("unwrap text response"),
+        ).expect("serde deserialize");
     });
 }
 

@@ -14,7 +14,7 @@ use bs::proxy_transform::proxy_transform;
 use bs::test_utils::get_resp;
 use bs::test_utils::get_test_proxy;
 use bs::test_utils::get_test_server;
-use mime::{TEXT_HTML, TEXT_HTML_UTF_8};
+use mime::{TEXT_HTML_UTF_8, TEXT_HTML};
 
 fn test_str(adr: impl Into<String>) -> String {
     format!(

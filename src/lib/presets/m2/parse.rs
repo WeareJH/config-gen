@@ -164,7 +164,8 @@ fn get_object_value(xs: &Vec<ObjectMember>, name: &str) -> Option<Expression> {
         .and_then(|x| match x {
             ObjectMember::Value { value, .. } => Some(value.clone()),
             _ => None,
-        }).or(None)
+        })
+        .or(None)
 }
 
 fn filter_deps(x: &ObjectMember, name: &str) -> bool {
