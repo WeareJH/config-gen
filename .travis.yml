@@ -20,7 +20,9 @@ rust:
 
 before_script:
   - export PATH=$PATH:~/.cargo/bin
+  - rustup component add rustfmt-preview
 
 script:
+  - cargo fmt --all -- --check
   - cargo build
   - cargo test
