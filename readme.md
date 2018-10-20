@@ -41,6 +41,10 @@ bundles:
 This will provide you with a new url, something like `http://127.0.0.1`. You should
 exercise any areas of the frontend that you want to be covered by the optimizer.
 
+*Tip:* You'll want to disable the network cache, either do this by opening dev-tools and checking
+the 'disable network cache' checkbox, or you can open your browser with a specific flag, eg: in chrome
+you can run `/Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome --disk-cache-size=1`
+
 ```
 ./config-gen http://example.com --config config-gen.yml
 ```
