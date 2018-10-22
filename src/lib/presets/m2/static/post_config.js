@@ -1,3 +1,4 @@
+;
 var xhr = new XMLHttpRequest();
 
 xhr.open('POST', '/__bs/post');
