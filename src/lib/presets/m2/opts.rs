@@ -1,5 +1,5 @@
 use config::ProgramConfig;
-use serde_yaml;
+use serde_json;
 
 #[derive(Deserialize, Debug)]
 pub struct M2PresetOptions {
@@ -42,28 +42,34 @@ impl Default for AuthBasic {
 
 impl M2PresetOptions {
     pub fn get_opts(prog_config: &ProgramConfig) -> Option<M2PresetOptions> {
-        serde_yaml::from_value(prog_config.get_opts("m2")?).ok()?
+        serde_json::from_value(prog_config.get_opts("m2")?).ok()?
     }
 }
 
-#[test]
-fn test_parse_preset_options_all_given() {
-    let i = r#"
-require_path: /js/require.js
-bundle_config: file:test/fixtures/bundle-config.yaml
-auth_basic:
-    username: shane
-    password: other
-    "#;
-    let y: M2PresetOptions = serde_yaml::from_str(&i).unwrap();
-    assert_eq!(y.require_path, Some("/js/require.js".to_string()));
-}
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_yaml;
 
-#[test]
-fn test_defaults() {
-    let i = r#"
-    bundle_config: "here"
-    "#;
-    let y: M2PresetOptions = serde_yaml::from_str(&i).unwrap();
-    assert_eq!(y.bundle_config, Some("here".to_string()));
+    #[test]
+    fn test_parse_preset_options_all_given() {
+        let i = r#"
+    require_path: /js/require.js
+    bundle_config: file:test/fixtures/bundle-config.yaml
+    auth_basic:
+        username: shane
+        password: other
+        "#;
+        let y: M2PresetOptions = serde_yaml::from_str(&i).unwrap();
+        assert_eq!(y.require_path, Some("/js/require.js".to_string()));
+    }
+
+    #[test]
+    fn test_defaults() {
+        let i = r#"
+        bundle_config: "here"
+        "#;
+        let y: M2PresetOptions = serde_yaml::from_str(&i).unwrap();
+        assert_eq!(y.bundle_config, Some("here".to_string()));
+    }
 }

@@ -9,7 +9,7 @@ use presets::m2::preset_m2::M2Preset;
 use presets::m2::requirejs_config::RequireJsClientConfig;
 use presets::m2::seed::SeedData;
 use proxy_transform::proxy_transform;
-use serde_yaml;
+use serde_json;
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::sync::Mutex;
@@ -58,7 +58,7 @@ pub fn state_and_presets(
         match p.name.as_str() {
             "m2" => {
                 let preset_opts: M2PresetOptions =
-                    serde_yaml::from_value(p.options.clone()).unwrap();
+                    serde_json::from_value(p.options.clone()).unwrap();
                 let preset = M2Preset::new(preset_opts);
                 presets_map.insert(index, Box::new(preset));
             }

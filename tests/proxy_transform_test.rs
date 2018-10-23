@@ -87,7 +87,7 @@ fn test_redirect() {
         });
     });
 
-    let (mut proxy, proxy_address) = get_test_proxy(&target, |app| {
+    let (mut proxy, _proxy_address) = get_test_proxy(&target, |app| {
         app.handler(proxy_transform);
     });
 
@@ -100,13 +100,14 @@ fn test_redirect() {
         .expect("finish request");
 
     let (resp, _resp_body) = get_resp(&mut proxy, request);
-    let expected_redirect = format!("http://{}/login", proxy_address);
-    let _actual_redirect = resp
-        .headers()
-        .get(header::LOCATION)
-        .expect("has location header")
-        .to_str()
-        .expect("header->str");
     assert_eq!(resp.status(), 302);
+
+    //    let _actual_redirect = resp
+    //        .headers()
+    //        .get(header::LOCATION)
+    //        .expect("has location header")
+    //        .to_str()
+    //        .expect("header->str");
+    //    let expected_redirect = format!("http://{}/login", proxy_address);
     //    assert_eq!(actual_redirect, expected_redirect);
 }

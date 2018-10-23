@@ -97,6 +97,34 @@ fn test_build_json_from_json_config() {
     });
 }
 
+#[test]
+fn test_build_json_without_config() {
+    let args = vec!["config-gen", "http://example.com"];
+    api(args, "/__bs/build.json", |result| {
+        let (_sys, _url, mut res) = result.expect("api returned");
+        let _c: RequireJsBuildConfig = serde_json::from_str(
+            &res.text().expect("unwrap text response"),
+        ).expect("serde deserialize");
+    });
+}
+
+#[test]
+fn test_build_json_with_seed_without_config() {
+    let args = vec![
+        "config-gen",
+        "http://example.com",
+        "--seed",
+        "test/fixtures/seed.json",
+    ];
+    api(args, "/__bs/build.json", |result| {
+        let (_sys, _url, mut res) = result.expect("api returned");
+        let _c: RequireJsBuildConfig = serde_json::from_str(
+            &res.text().expect("unwrap text response"),
+        ).expect("serde deserialize");
+        println!("_c={:?}", _c);
+    });
+}
+
 ///
 /// Test helper to run the server from a Vec of args
 /// just like you would in the the CLI

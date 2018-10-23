@@ -25,41 +25,41 @@ pub fn gather_state(
 
     let maybe_opts = M2PresetOptions::get_opts(&req.state().program_config)
         .expect("should clone program config");
-    let bundle_path = maybe_opts.bundle_config;
 
-    match bundle_path {
-        Some(bun_config_path) => match BundleConfig::from_file(&bun_config_path) {
-            Ok(bundle_config) => {
-                let module_blacklist = bundle_config.module_blacklist.clone().unwrap_or(vec![]);
-                let mut blacklist = vec!["js-translation".to_string()];
-                blacklist.extend(module_blacklist);
+    let bundle_config = match maybe_opts.bundle_config {
+        Some(bc_path) => BundleConfig::from_file(&bc_path),
+        None => Ok(BundleConfig::default()),
+    };
 
-                let filtered =
-                    RequireJsBuildConfig::drop_blacklisted(&modules.to_vec(), &blacklist);
-                let bundle_modules = config_gen::generate_modules(filtered, bundle_config);
-                let mut derived_build_config = RequireJsBuildConfig::default();
+    match bundle_config {
+        Err(e) => Err(e.to_string()),
+        Ok(bundle_config) => {
+            let module_blacklist = bundle_config.module_blacklist.clone().unwrap_or(vec![]);
+            let mut blacklist = vec!["js-translation".to_string()];
+            blacklist.extend(module_blacklist);
 
-                derived_build_config.deps = client_config.deps.clone();
-                derived_build_config.map = client_config.map.clone();
-                derived_build_config.config = client_config.config.clone();
+            let filtered = RequireJsBuildConfig::drop_blacklisted(&modules.to_vec(), &blacklist);
+            let bundle_modules = config_gen::generate_modules(filtered, bundle_config);
+            let mut derived_build_config = RequireJsBuildConfig::default();
 
-                let mut c = client_config.paths.clone();
-                derived_build_config.paths = RequireJsBuildConfig::strip_paths(&c);
+            derived_build_config.deps = client_config.deps.clone();
+            derived_build_config.map = client_config.map.clone();
+            derived_build_config.config = client_config.config.clone();
 
-                let mut shims = client_config.shim.clone();
+            let mut c = client_config.paths.clone();
+            derived_build_config.paths = RequireJsBuildConfig::strip_paths(&c);
 
-                {
-                    RequireJsBuildConfig::fix_shims(&mut shims);
-                }
+            let mut shims = client_config.shim.clone();
 
-                derived_build_config.shim = shims;
-
-                derived_build_config.modules = Some(bundle_modules.clone());
-
-                Ok((derived_build_config, bundle_modules))
+            {
+                RequireJsBuildConfig::fix_shims(&mut shims);
             }
-            Err(e) => Err(e.to_string()),
-        },
-        _ => Err("didnt match both".to_string()),
+
+            derived_build_config.shim = shims;
+
+            derived_build_config.modules = Some(bundle_modules.clone());
+
+            Ok((derived_build_config, bundle_modules))
+        }
     }
 }

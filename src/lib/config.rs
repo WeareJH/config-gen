@@ -1,10 +1,11 @@
+extern crate serde_json;
 extern crate serde_yaml;
 
 use clap::Error;
 use from_file::FromFile;
 use from_file::FromFileError;
 use options::ConfigError;
-use serde_yaml::Value;
+use serde_json::Value;
 use std;
 
 #[derive(Deserialize, Debug, Clone)]
@@ -21,11 +22,19 @@ impl Default for ProgramConfig {
 impl FromFile for ProgramConfig {}
 
 impl ProgramConfig {
-    pub fn get_opts(&self, name: &str) -> Option<serde_yaml::Value> {
+    pub fn get_opts(&self, name: &str) -> Option<serde_json::Value> {
         self.presets
             .iter()
             .find(|p| p.name == name)
             .map(|p| p.options.clone())
+    }
+    pub fn default_preset() -> ProgramConfig {
+        ProgramConfig {
+            presets: vec![PresetConfig {
+                name: "m2".into(),
+                options: json!({}),
+            }],
+        }
     }
 }
 
@@ -39,7 +48,7 @@ pub struct PresetConfig {
 pub enum ProgramStartError {
     ConfigFileOpen,
     ConfigFileRead,
-    ConfigParseError(serde_yaml::Error),
+    ConfigParseError(serde_json::Error),
     ConfigCliError(ConfigError),
     InvalidArgs(Error),
     FromFile(FromFileError),

@@ -17,19 +17,14 @@ pub fn create(opts: ProgramOptions) -> Result<(actix::SystemRunner, String), Pro
     let sys = actix::System::new("https-proxy");
 
     //
-    // Get program configuration, from the input above, and
-    // then eventually from a file
-    //
-    let file_path = opts
-        .config_file
-        .clone()
-        .expect("config_file cannot be missing");
-
-    //
     // Pull the ProgramConfig from a  file
     //
-    let program_config =
-        ProgramConfig::from_file(&file_path).map_err(|e| ProgramStartError::FromFile(e))?;
+    let program_config = match opts.config_file.clone() {
+        Some(cfg_path) => {
+            ProgramConfig::from_file(&cfg_path).map_err(|e| ProgramStartError::FromFile(e))?
+        }
+        None => ProgramConfig::default_preset(),
+    };
 
     //
     // Clone server opts to be used in multi threads
