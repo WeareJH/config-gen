@@ -67,8 +67,7 @@ impl ProgramOptions {
                 Arg::with_name("config")
                     .short("c")
                     .long("config")
-                    .takes_value(true)
-                    .required(true),
+                    .takes_value(true),
             )
             .arg(Arg::with_name("seed").long("seed").takes_value(true))
             .get_matches_from_safe(args);
@@ -89,14 +88,16 @@ impl ProgramOptions {
             .parse()
             .map_err(|_e| ProgramStartError::ConfigCliError(ConfigError::UrlInvalidPort))?;
 
-        let config_file = matches
-            .value_of("config")
-            .expect("config is a required field");
-
-        Ok(ProgramOptions::new(host, scheme)
+        let outgoing_opts = ProgramOptions::new(host, scheme)
             .with_port(port)
-            .with_config_file(config_file)
-            .with_seed_file(matches.value_of("seed")))
+            .with_seed_file(matches.value_of("seed"));
+
+        let outgoing_opts = match matches.value_of("config") {
+            Some(cfg_file) => outgoing_opts.with_config_file(cfg_file),
+            None => outgoing_opts,
+        };
+
+        Ok(outgoing_opts)
     }
     pub fn with_port(mut self, port: u16) -> ProgramOptions {
         self.port = port;
