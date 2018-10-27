@@ -1,9 +1,10 @@
 use from_file::FromFile;
 use presets::m2::bundle_config::Module;
 use presets::m2::module_meta_data::ModuleData;
+use presets::m2::parse::OutputError;
+use presets::m2::parse::ParsedConfig;
 use serde_json;
 use std::collections::HashMap;
-use url::Url;
 
 type ModuleId = String;
 
@@ -16,6 +17,18 @@ pub struct RequireJsClientConfig {
     pub config: serde_json::Value,
     pub shim: serde_json::Value,
     pub paths: HashMap<String, String>,
+}
+
+impl RequireJsClientConfig {
+    pub fn from_generated_string(
+        input: impl Into<String>,
+    ) -> Result<RequireJsClientConfig, OutputError> {
+        let output = ParsedConfig::from_str(input)?;
+        let as_serde = serde_json::to_value(&output).map_err(|_e| OutputError::Serialize)?;
+        let as_rjs: RequireJsClientConfig =
+            serde_json::from_value(as_serde).map_err(|_e| OutputError::Conversion)?;
+        Ok(as_rjs)
+    }
 }
 
 impl Default for RequireJsClientConfig {
@@ -327,59 +340,24 @@ require.config({
     ]
   }
 });"#;
-    //    println!("{}", list);
     assert_eq!(list, expected);
 }
 
-#[derive(Debug)]
-pub struct BaseDirs {
-    pub dir: String,
-    pub base_url: String,
-}
-
-pub fn base_to_dirs(input: &str) -> Result<BaseDirs, String> {
-    match Url::parse(input) {
-        Ok(mut url) => {
-            url.path_segments_mut()
-                .map_err(|_| "cannot be base")
-                .expect("url")
-                .pop_if_empty();
-            let mut segs = url.path_segments().map(|c| c.collect::<Vec<_>>());
-            let mut last = segs
-                .clone()
-                .unwrap()
-                .pop()
-                .expect("can take last")
-                .to_string();
-            let last_for_dir = last.clone();
-
-            let mut base_output = vec!["static"];
-            let mut dir_output = vec!["static"];
-
-            for (_, item) in segs.expect("can iter over segs").iter().enumerate().skip(2) {
-                if *item != last.as_str() {
-                    base_output.push(item);
-                    dir_output.push(item);
-                }
-            }
-
-            dir_output.push(&last_for_dir);
-            last.push_str("_src");
-            base_output.push(&last);
-
-            Ok(BaseDirs {
-                dir: dir_output.join("/"),
-                base_url: base_output.join("/"),
-            })
-        }
-        Err(err) => Err(err.to_string()),
-    }
-}
-
 #[test]
-fn test_base_to_dirs() {
-    let bd = base_to_dirs(
-        "https://127.0.0.1:8080/static/version1538053013/frontend/Graham/default/en_GB/",
+fn test_parse_e2e() {
+    let input = include_str!("../../../../test/fixtures/requirejs-config-generated.js");
+    let rjx = RequireJsClientConfig::from_generated_string(input).expect("allgood");
+    assert_eq!(
+        rjx.deps,
+        vec![
+            "jquery/jquery.mobile.custom",
+            "mage/common",
+            "mage/dataPost",
+            "mage/bootstrap",
+            "jquery/jquery-migrate",
+            "mage/translate-inline",
+            "Magento_Theme/js/responsive",
+            "Magento_Theme/js/theme",
+        ]
     );
-    println!("{:?}", bd)
 }
