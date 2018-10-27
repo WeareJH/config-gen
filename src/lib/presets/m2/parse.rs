@@ -116,43 +116,48 @@ fn process_shim(xs: &Vec<ObjectMember>, output: &mut ParsedConfig) {
                                     .or_insert(serde_json::Value::Array(as_serde));
                             }
                             Expression::Object(vs) => {
+                                let mut m = serde_json::Map::new();
                                 for v in vs {
                                     match v {
                                         ObjectMember::Value {
                                             key: ObjectKey::Literal(k),
                                             value: Expression::Literal(Value::String(v)),
                                         } => {
-                                            map_item.insert(
+                                            m.insert(
                                                 strip_literal(k),
                                                 serde_json::Value::String(
                                                     strip_literal(v).to_string(),
                                                 ),
                                             );
                                         }
-                                        ObjectMember::Value {
-                                            key: ObjectKey::Literal(k),
-                                            value: Expression::Array(items),
-                                        } => {
-                                            let as_serde: Vec<serde_json::Value> = items
-                                                .into_iter()
-                                                .filter_map(|e: Expression| {
-                                                    match e {
-                                                        Expression::Literal(Value::String(s)) => {
-                                                            Some(strip_literal(s).to_string())
-                                                        }
-                                                        _ => None
-                                                    }
-                                                })
-                                                .map(|s| serde_json::Value::String(s))
-                                                .collect();
-                                            map_item.insert(
-                                                strip_literal(k),
-                                                serde_json::Value::Array(as_serde),
-                                            );
-                                        }
+//                                        ObjectMember::Value {
+//                                            key: ObjectKey::Literal(k),
+//                                            value: Expression::Array(items),
+//                                        } => {
+//                                            let as_serde: Vec<serde_json::Value> = items
+//                                                .into_iter()
+//                                                .filter_map(|e: Expression| {
+//                                                    match e {
+//                                                        Expression::Literal(Value::String(s)) => {
+//                                                            Some(strip_literal(s).to_string())
+//                                                        }
+//                                                        _ => None
+//                                                    }
+//                                                })
+//                                                .map(|s| serde_json::Value::String(s))
+//                                                .collect();
+//                                            map_item.insert(
+//                                                strip_literal(k),
+//                                                serde_json::Value::Array(as_serde),
+//                                            );
+//                                        }
                                         _ => {}
                                     }
                                 }
+                                let mut map_item = output
+                                    .shim
+                                    .entry(strip_literal(s))
+                                    .or_insert(serde_json::Value::Object(m));
                             }
                             _ => { /* */ }
                         }
