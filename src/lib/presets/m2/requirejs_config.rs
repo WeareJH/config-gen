@@ -191,7 +191,7 @@ impl RequireJsClientConfig {
 }
 
 fn default_optimize() -> Option<String> {
-    Some("none".to_string())
+    Some("uglify".to_string())
 }
 fn default_inline_text() -> Option<bool> {
     Some(true)
