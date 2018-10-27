@@ -49,7 +49,7 @@ pub struct RequireJsBuildConfig {
     #[serde(rename = "generateSourceMaps")]
     pub generate_source_maps: Option<bool>,
 
-    #[serde(default = "default_inline_text")]
+    #[serde(default = "default_inline_text", rename = "inlineText")]
     pub inline_text: Option<bool>,
 
     #[serde(default = "default_optimize")]

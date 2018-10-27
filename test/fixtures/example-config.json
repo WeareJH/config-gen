@@ -1,7 +1,7 @@
 {
   "baseUrl": "http://example.com/static/frontend/Magento/luma/en_US",
   "generateSourceMaps": true,
-  "inline_text": true,
+  "inlineText": true,
   "optimize": "none",
   "deps": [
     "Magento_Theme/js/responsive",
