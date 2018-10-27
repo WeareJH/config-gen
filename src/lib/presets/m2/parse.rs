@@ -130,27 +130,27 @@ fn process_shim(xs: &Vec<ObjectMember>, output: &mut ParsedConfig) {
                                                 ),
                                             );
                                         }
-//                                        ObjectMember::Value {
-//                                            key: ObjectKey::Literal(k),
-//                                            value: Expression::Array(items),
-//                                        } => {
-//                                            let as_serde: Vec<serde_json::Value> = items
-//                                                .into_iter()
-//                                                .filter_map(|e: Expression| {
-//                                                    match e {
-//                                                        Expression::Literal(Value::String(s)) => {
-//                                                            Some(strip_literal(s).to_string())
-//                                                        }
-//                                                        _ => None
-//                                                    }
-//                                                })
-//                                                .map(|s| serde_json::Value::String(s))
-//                                                .collect();
-//                                            map_item.insert(
-//                                                strip_literal(k),
-//                                                serde_json::Value::Array(as_serde),
-//                                            );
-//                                        }
+                                        ObjectMember::Value {
+                                            key: ObjectKey::Literal(k),
+                                            value: Expression::Array(items),
+                                        } => {
+                                            let as_serde: Vec<serde_json::Value> = items
+                                                .into_iter()
+                                                .filter_map(|e: Expression| {
+                                                    match e {
+                                                        Expression::Literal(Value::String(s)) => {
+                                                            Some(strip_literal(s).to_string())
+                                                        }
+                                                        _ => None
+                                                    }
+                                                })
+                                                .map(|s| serde_json::Value::String(s))
+                                                .collect();
+                                            m.insert(
+                                                strip_literal(k),
+                                                serde_json::Value::Array(as_serde),
+                                            );
+                                        }
                                         _ => {}
                                     }
                                 }
@@ -461,9 +461,8 @@ mod tests {
         let expected: serde_json::Value = serde_json::from_str(&from).expect("serde from (fixture)");
         let actual = serde_json::to_value(&o).expect("Output serialized");
 
-        println!("{:#?}", actual);
-
-//        assert_eq!(actual, expected);
+//        println!("{:#?}", actual);
+        assert_eq!(actual, expected);
 
         let _as_require: RequireJsClientConfig =
             serde_json::from_value(actual).expect("from value");
