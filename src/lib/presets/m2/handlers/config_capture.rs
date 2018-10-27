@@ -15,8 +15,14 @@ pub fn handle(original_request: &HttpRequest<AppState>) -> FutResp {
     apply_to_proxy_body(&original_request, move |b| {
         let c2 = client_config_clone.clone();
         if let Ok(rjs) = RequireJsClientConfig::from_generated_string(b.to_string()) {
+            info!("parsed rjs = {:#?}", rjs);
             let mut w = c2.lock().expect("unwrapped client_config_clone");
-            *w = rjs
+            w.deps = rjs.deps.clone();
+            w.config = rjs.config.clone();
+            w.shim = rjs.shim.clone();
+            w.paths = rjs.paths.clone();
+            w.map = rjs.map.clone();
+            info!("next rjs = {:#?}", w);
         }
         b
     })

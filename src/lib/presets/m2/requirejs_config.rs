@@ -89,10 +89,15 @@ impl RequireJsBuildConfig {
                     .into_iter()
                     .filter(|(key, _)| key.as_str() == "jquery/jquery-migrate")
                 {
-                    *value.pointer_mut("/deps").unwrap() = serde_json::Value::Array(vec![
-                        serde_json::Value::String("jquery".to_string()),
-                        serde_json::Value::String("jquery/jquery.cookie".to_string()),
-                    ]);
+                    match value.pointer_mut("/deps") {
+                        Some(out) => {
+                            *out = serde_json::Value::Array(vec![
+                                serde_json::Value::String("jquery".to_string()),
+                                serde_json::Value::String("jquery/jquery.cookie".to_string()),
+                            ]);
+                        }
+                        None => { /* */ }
+                    }
                 }
             }
             _ => println!("no"),
