@@ -12,7 +12,7 @@ pub struct ParsedConfig {
     pub map: HashMap<String, HashMap<String, String>>,
     pub deps: Vec<String>,
     pub config: HashMap<String, HashMap<String, HashMap<String, serde_json::Value>>>,
-    pub shim: HashMap<String, HashMap<String, serde_json::Value>>,
+    pub shim: HashMap<String, serde_json::Value>,
 }
 
 #[derive(Debug)]
@@ -20,6 +20,16 @@ pub enum OutputError {
     ParseJs,
     Serialize,
     Conversion,
+}
+
+impl OutputError {
+    pub fn to_string(&self) -> String {
+        match self {
+            OutputError::ParseJs => "OutputError::ParseJs".into(),
+            OutputError::Serialize => "OutputError::Serialize".into(),
+            OutputError::Conversion => "OutputError::Conversion".into(),
+        }
+    }
 }
 
 impl ParsedConfig {
@@ -95,19 +105,34 @@ fn process_shim(xs: &Vec<ObjectMember>, output: &mut ParsedConfig) {
                         key: ObjectKey::Literal(s),
                         value,
                     } => {
-                        let mut map_item = output
-                            .shim
-                            .entry(strip_literal(s))
-                            .or_insert(HashMap::new());
                         match value {
+                            Expression::Array(vs) => {
+                                let as_serde: Vec<serde_json::Value> = vs
+                                    .into_iter()
+                                    .filter_map(|e: Expression| {
+                                        match e {
+                                            Expression::Literal(Value::String(s)) => {
+                                                Some(strip_literal(s).to_string())
+                                            }
+                                            _ => None
+                                        }
+                                    })
+                                    .map(|s| serde_json::Value::String(s))
+                                    .collect();
+
+                                output
+                                    .shim
+                                    .insert(strip_literal(s), serde_json::Value::Array(as_serde));
+                            }
                             Expression::Object(vs) => {
+                                let mut m = serde_json::Map::new();
                                 for v in vs {
                                     match v {
                                         ObjectMember::Value {
                                             key: ObjectKey::Literal(k),
                                             value: Expression::Literal(Value::String(v)),
                                         } => {
-                                            map_item.insert(
+                                            m.insert(
                                                 strip_literal(k),
                                                 serde_json::Value::String(
                                                     strip_literal(v).to_string(),
@@ -130,7 +155,7 @@ fn process_shim(xs: &Vec<ObjectMember>, output: &mut ParsedConfig) {
                                                 })
                                                 .map(|s| serde_json::Value::String(s))
                                                 .collect();
-                                            map_item.insert(
+                                            m.insert(
                                                 strip_literal(k),
                                                 serde_json::Value::Array(as_serde),
                                             );
@@ -138,6 +163,9 @@ fn process_shim(xs: &Vec<ObjectMember>, output: &mut ParsedConfig) {
                                         _ => {}
                                     }
                                 }
+                                output
+                                    .shim
+                                    .insert(strip_literal(s), serde_json::Value::Object(m));
                             }
                             _ => { /* */ }
                         }
@@ -158,8 +186,10 @@ fn process_config(xs: &Vec<ObjectMember>, output: &mut ParsedConfig) {
                         key: ObjectKey::Literal(s),
                         value,
                     } => {
-                        let mut map_item =
-                            output.config.entry(s.to_string()).or_insert(HashMap::new());
+                        let mut map_item = output
+                            .config
+                            .entry(strip_literal(s).to_string())
+                            .or_insert(HashMap::new());
 
                         match value {
                             Expression::Object(vs) => {
@@ -267,7 +297,10 @@ fn process_map(xs: &Vec<ObjectMember>, output: &mut ParsedConfig) {
                                             key: ObjectKey::Literal(k),
                                             value: Expression::Literal(Value::String(v)),
                                         } => {
-                                            map_item.insert(k.to_string(), strip_literal(v));
+                                            map_item.insert(
+                                                strip_literal(k).to_string(),
+                                                strip_literal(v),
+                                            );
                                         }
                                         _ => { /* */ }
                                     }
@@ -363,7 +396,8 @@ mod tests {
                     paypalInContextExpressCheckout: {
                         exports: 'paypal',
                         deps: ['jquery']
-                    }
+                    },
+                    "MutationObserver": ['es6-collections']
                 },
                 config: {
                     mixins: {
@@ -380,7 +414,7 @@ mod tests {
                 },
                 map: {
                     '*': {
-                        checkoutBalance:    'Magento_Customer/js/checkout-balance-alt',
+                        'checkoutBalance':    'Magento_Customer/js/checkout-balance-alt',
                         checkoutBalance2:    'Magento_Customer/js/checkout-balance2',
                     },
                     "other-map": {
@@ -389,6 +423,18 @@ mod tests {
                 }
             };
             require.config(config);
+        })();
+        (function() {
+            var config = {
+                shim: {
+                    "jquery/jquery-migrate": {
+                      "deps": [
+                        "jquery",
+                        'jquery/jquery.cookie'
+                      ]
+                    }
+                }
+            }
         })();
         "#;
 
@@ -410,13 +456,15 @@ mod tests {
           "shim": {
             "jquery/jquery-migrate": {
               "deps": [
-                "jquery"
+                "jquery",
+                "jquery/jquery.cookie"
               ]
             },
             "paypalInContextExpressCheckout": {
                 "exports": "paypal",
                 "deps": ["jquery"]
-            }
+            },
+            "MutationObserver": ["es6-collections"]
           },
           "paths": {
             "trackingCode": "Dotdigitalgroup_Email/js/trackingCode-alt"
@@ -436,10 +484,11 @@ mod tests {
         }
         "#;
 
-        let expected: serde_json::Value =
-            serde_json::from_str(&from).expect("serde from (fixture)");
+        let expected: serde_json::Value = serde_json::from_str(&from).expect("serde from (fixture)");
         let actual = serde_json::to_value(&o).expect("Output serialized");
+
         assert_eq!(actual, expected);
+
         let _as_require: RequireJsClientConfig =
             serde_json::from_value(actual).expect("from value");
     }
