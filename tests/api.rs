@@ -4,15 +4,16 @@ extern crate bs;
 extern crate futures;
 extern crate reqwest;
 extern crate serde_json;
+extern crate rjs;
 
 use actix::System;
 use actix_web::http;
 use bs::config::ProgramStartError;
 use bs::options::ProgramOptions;
-use bs::presets::m2::requirejs_config::{RequireJsBuildConfig, RequireJsClientConfig};
 use bs::presets::m2::seed::SeedData;
 use bs::system;
 use reqwest::Response;
+use rjs::{RequireJsClientConfig, RequireJsBuildConfig};
 
 type RunResult = Result<(actix::SystemRunner, String), ProgramStartError>;
 type ApiResult = Result<(actix::SystemRunner, String, Response), ProgramStartError>;

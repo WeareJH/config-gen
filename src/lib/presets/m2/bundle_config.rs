@@ -38,16 +38,3 @@ impl<'a> Into<BundleConfig> for &'a str {
         items
     }
 }
-
-#[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct Outgoing {
-    pub bundles: Vec<Module>,
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-pub struct Module {
-    pub name: String,
-    pub include: Vec<String>,
-    pub exclude: Vec<String>,
-    pub create: bool,
-}

@@ -1,11 +1,7 @@
-use from_file::FromFile;
-use presets::m2::bundle_config::Module;
-use presets::m2::module_meta_data::ModuleData;
-use presets::m2::parse::OutputError;
-use presets::m2::parse::ParsedConfig;
-use serde_json;
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
+use crate::parse::OutputError;
+use crate::parse::ParsedConfig;
 
 type ModuleId = String;
 
@@ -20,6 +16,14 @@ pub struct RequireJsClientConfig {
     pub paths: HashMap<String, String>,
 }
 
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+pub struct Module {
+    pub name: String,
+    pub include: Vec<String>,
+    pub exclude: Vec<String>,
+    pub create: bool,
+}
+
 impl RequireJsClientConfig {
     pub fn from_generated_string(
         input: impl Into<String>,
@@ -29,6 +33,12 @@ impl RequireJsClientConfig {
         let as_rjs: RequireJsClientConfig =
             serde_json::from_value(as_serde).map_err(|_e| OutputError::Conversion)?;
         Ok(as_rjs)
+    }
+    pub fn to_string(&self) -> Result<String, String> {
+        match serde_json::to_string_pretty(&self) {
+            Ok(s) => Ok(s),
+            Err(e) => Err(e.to_string())
+        }
     }
     pub fn update_in_place(
         input: impl Into<String>,
@@ -88,6 +98,21 @@ pub struct RequireJsBuildConfig {
 }
 
 impl RequireJsBuildConfig {
+    pub fn from_generated_string(
+        input: impl Into<String>,
+    ) -> Result<RequireJsBuildConfig, OutputError> {
+        let output = ParsedConfig::from_str(input)?;
+        let as_serde = serde_json::to_value(&output).map_err(|_e| OutputError::Serialize)?;
+        let mut as_rjs: RequireJsBuildConfig = serde_json::from_value(as_serde).map_err(|_e| OutputError::Conversion)?;
+        as_rjs.paths = RequireJsBuildConfig::strip_paths(&as_rjs.paths);
+        as_rjs.modules = Some(vec![Module {
+            name: "requirejs/require".into(),
+            include: vec![],
+            exclude: vec![],
+            create: false,
+        }]);
+        Ok(as_rjs)
+    }
     pub fn strip_paths(paths: &HashMap<String, String>) -> HashMap<String, String> {
         let mut hm: HashMap<String, String> = HashMap::new();
 
@@ -95,25 +120,20 @@ impl RequireJsBuildConfig {
             if value.starts_with("http://")
                 || value.starts_with("https://")
                 || value.starts_with("//")
-            {
-                hm.insert(key.clone(), "empty:".to_string());
-            } else {
+                {
+                    hm.insert(key.clone(), "empty:".to_string());
+                } else {
                 hm.insert(key.clone(), value.clone());
             }
         }
 
         hm
     }
-    pub fn drop_blacklisted(modules: &Vec<ModuleData>, blacklist: &Vec<String>) -> Vec<ModuleData> {
-        let mut output = vec![];
-
-        for m in modules.iter() {
-            if !blacklist.contains(&m.id) {
-                output.push(m.clone());
-            }
+    pub fn to_string(&self) -> Result<String, String> {
+        match serde_json::to_string_pretty(&self) {
+            Ok(s) => Ok(s),
+            Err(e) => Err(e.to_string())
         }
-
-        output
     }
 }
 
@@ -147,8 +167,6 @@ impl Default for RequireJsBuildConfig {
         }
     }
 }
-
-impl FromFile for RequireJsClientConfig {}
 
 impl RequireJsClientConfig {
     pub fn mixins(val: &serde_json::Value) -> Vec<String> {

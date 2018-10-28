@@ -357,7 +357,7 @@ fn filter_items(x: &ObjectMember, name: &str) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use presets::m2::requirejs_config::RequireJsClientConfig;
+    use crate::RequireJsClientConfig;
 
     #[test]
     fn test_parse_all() {

@@ -25,6 +25,8 @@ extern crate serde_derive;
 extern crate serde_json;
 extern crate tempdir;
 
+extern crate rjs;
+
 pub mod app_state;
 pub mod config;
 pub mod from_file;
