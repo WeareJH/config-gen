@@ -5,6 +5,7 @@ use presets::m2::parse::OutputError;
 use presets::m2::parse::ParsedConfig;
 use serde_json;
 use std::collections::HashMap;
+use std::sync::{Arc, Mutex};
 
 type ModuleId = String;
 
@@ -28,6 +29,27 @@ impl RequireJsClientConfig {
         let as_rjs: RequireJsClientConfig =
             serde_json::from_value(as_serde).map_err(|_e| OutputError::Conversion)?;
         Ok(as_rjs)
+    }
+    pub fn update_in_place(
+        input: impl Into<String>,
+        item: Arc<Mutex<RequireJsClientConfig>>,
+    ) -> Result<(), String> {
+        match RequireJsClientConfig::from_generated_string(input.into()) {
+            Ok(rjs) => {
+                let mut w = item
+                    .lock()
+                    .map_err(|_e| "unwrapped client_config_clone".to_string())?;
+
+                w.deps = rjs.deps.clone();
+                w.config = rjs.config.clone();
+                w.shim = rjs.shim.clone();
+                w.paths = rjs.paths.clone();
+                w.map = rjs.map.clone();
+
+                Ok(())
+            }
+            Err(e) => Err(e.to_string()),
+        }
     }
 }
 
@@ -82,29 +104,6 @@ impl RequireJsBuildConfig {
 
         hm
     }
-    pub fn fix_shims(shim: &mut serde_json::Value) -> &mut serde_json::Value {
-        match shim {
-            serde_json::Value::Object(m) => {
-                for (_, value) in m
-                    .into_iter()
-                    .filter(|(key, _)| key.as_str() == "jquery/jquery-migrate")
-                {
-                    match value.pointer_mut("/deps") {
-                        Some(out) => {
-                            *out = serde_json::Value::Array(vec![
-                                serde_json::Value::String("jquery".to_string()),
-                                serde_json::Value::String("jquery/jquery.cookie".to_string()),
-                            ]);
-                        }
-                        None => { /* */ }
-                    }
-                }
-            }
-            _ => println!("no"),
-        };
-
-        shim
-    }
     pub fn drop_blacklisted(modules: &Vec<ModuleData>, blacklist: &Vec<String>) -> Vec<ModuleData> {
         let mut output = vec![];
 
@@ -143,7 +142,7 @@ impl Default for RequireJsBuildConfig {
             paths: HashMap::new(),
             generate_source_maps: Some(true),
             inline_text: Some(true),
-            optimize: Some("none".into()),
+            optimize: Some("uglify".into()),
             modules: Some(vec![]),
         }
     }
@@ -205,131 +204,72 @@ fn default_modules() -> Option<Vec<Module>> {
     Some(vec![])
 }
 
-#[test]
-fn test_default_require_js_config() {
-    let r = RequireJsClientConfig::default();
-    let as_string = serde_json::to_string_pretty(&r).unwrap();
-    assert_eq!(
-        as_string,
-        r#"{
-  "baseUrl": "",
-  "deps": [],
-  "map": {},
-  "config": {},
-  "shim": {},
-  "paths": {}
-}"#
-    );
-}
+#[cfg(test)]
+mod tests {
+    use super::*;
 
-#[test]
-fn test_parse_incoming_from_browser() {
-    let input = include_bytes!("../../../../test/fixtures/example-post.json");
-    let s: RequireJsClientConfig = serde_json::from_slice(input).unwrap();
-    assert_eq!(
-        s.deps,
-        vec!["Magento_Theme/js/responsive", "Magento_Theme/js/theme"]
-    );
-    assert_eq!(
-        s.base_url,
-        Some(
-            "http://127.0.0.1:9090/static/version1517228438/frontend/Magento/luma/en_US/"
-                .to_string()
-        )
-    );
-    assert_eq!(
-        s.paths.get("jquery/ui"),
-        Some(&"jquery/jquery-ui".to_string())
-    );
-}
-
-#[test]
-fn test_filter_mixins() {
-    let input = include_bytes!("../../../../test/fixtures/example-post.json");
-    let s: RequireJsClientConfig = serde_json::from_slice(input).unwrap();
-    assert_eq!(
-        RequireJsClientConfig::mixins(&s.config),
-        vec![
-            "Magento_Checkout/js/action/place-order",
-            "Magento_Checkout/js/action/set-payment-information",
-            "jquery/jstree/jquery.jstree",
-        ]
-    );
-}
-
-#[test]
-fn test_require_build_shim() {
-    let input = r#"
-    {
-        "shim": {
-            "jquery/jquery-migrate": {
-                "deps": [
-                  "jquery"
-                ]
-            }
-        },
-        "deps": [],
-        "map": {},
-        "config": {},
-        "paths": {}
+    #[test]
+    fn test_default_require_js_config() {
+        let input = r#"{
+            "baseUrl": "",
+            "deps": [],
+            "map": {},
+            "config": {},
+            "shim": {},
+            "paths": {}
+        }"#;
+        let r = RequireJsClientConfig::default();
+        let actual = serde_json::to_value(&r).unwrap();
+        let expected: serde_json::Value = serde_json::from_str(&input).unwrap();
+        assert_eq!(actual, expected);
     }
-    "#;
-    let expected = r#"
-    {
-        "shim": {
-            "jquery/jquery-migrate": {
-                "deps": [
-                  "jquery",
-                  "jquery/jquery.cookie"
-                ]
-            }
-        },
-        "deps": [],
-        "map": {},
-        "config": {},
-        "paths": {}
-    }
-    "#;
-    let mut s: RequireJsClientConfig = serde_json::from_str(input).unwrap();
-    let expected: RequireJsClientConfig = serde_json::from_str(expected).unwrap();
-    {
-        RequireJsBuildConfig::fix_shims(&mut s.shim);
-    }
-    assert_eq!(s, expected);
-}
 
-#[test]
-fn test_hydrate() {
-    let input = include_bytes!("../../../../test/fixtures/example-config.json");
-    let _s: RequireJsClientConfig = serde_json::from_slice(input).unwrap();
-}
+    #[test]
+    fn test_filter_mixins() {
+        let input = include_str!("../../../../test/fixtures/requirejs-config-generated.js");
+        let s = RequireJsClientConfig::from_generated_string(input).expect("fixture unwrap");
+        assert_eq!(
+            RequireJsClientConfig::mixins(&s.config),
+            vec![
+                "Magento_Checkout/js/action/place-order",
+                "Magento_Checkout/js/action/set-payment-information",
+                "jquery/jstree/jquery.jstree",
+            ]
+        );
+    }
 
-#[test]
-fn test_module_list() {
-    let list = RequireJsClientConfig::bundle_loaders(
-        vec!["js/shane".to_string()],
-        vec![
-            Module {
-                name: String::from("requirejs/require"),
-                include: vec![],
-                exclude: vec![],
-                create: false,
-            },
-            Module {
-                name: String::from("bundle/base"),
-                include: vec!["js/shane".to_string(), "js/kittie".to_string()],
-                exclude: vec![],
-                create: true,
-            },
-            Module {
-                name: String::from("bundle/product"),
-                include: vec!["js/gallery".to_string(), "js/zoomer".to_string()],
-                exclude: vec![],
-                create: true,
-            },
-        ],
-    );
-    let expected = r#"require.config({
+    #[test]
+    fn test_hydrate() {
+        let input = include_bytes!("../../../../test/fixtures/example-config.json");
+        let _s: RequireJsClientConfig = serde_json::from_slice(input).unwrap();
+    }
+
+    #[test]
+    fn test_module_list() {
+        let list = RequireJsClientConfig::bundle_loaders(
+            vec!["js/shane".to_string()],
+            vec![
+                Module {
+                    name: String::from("requirejs/require"),
+                    include: vec![],
+                    exclude: vec![],
+                    create: false,
+                },
+                Module {
+                    name: String::from("bundle/base"),
+                    include: vec!["js/shane".to_string(), "js/kittie".to_string()],
+                    exclude: vec![],
+                    create: true,
+                },
+                Module {
+                    name: String::from("bundle/product"),
+                    include: vec!["js/gallery".to_string(), "js/zoomer".to_string()],
+                    exclude: vec![],
+                    create: true,
+                },
+            ],
+        );
+        let expected = r#"require.config({
   bundles: {
     "bundle/base": [
          // mixin trigger: "js/shane",
@@ -345,24 +285,25 @@ require.config({
     ]
   }
 });"#;
-    assert_eq!(list, expected);
-}
+        assert_eq!(list, expected);
+    }
 
-#[test]
-fn test_parse_e2e() {
-    let input = include_str!("../../../../test/fixtures/requirejs-config-generated.js");
-    let rjx = RequireJsClientConfig::from_generated_string(input).expect("allgood");
-    assert_eq!(
-        rjx.deps,
-        vec![
-            "jquery/jquery.mobile.custom",
-            "mage/common",
-            "mage/dataPost",
-            "mage/bootstrap",
-            "jquery/jquery-migrate",
-            "mage/translate-inline",
-            "Magento_Theme/js/responsive",
-            "Magento_Theme/js/theme",
-        ]
-    );
+    #[test]
+    fn test_parse_e2e2() {
+        let input = include_str!("../../../../test/fixtures/requirejs-config-generated.js");
+        let rjx = RequireJsClientConfig::from_generated_string(input).expect("allgood");
+        assert_eq!(
+            rjx.deps,
+            vec![
+                "jquery/jquery.mobile.custom",
+                "mage/common",
+                "mage/dataPost",
+                "mage/bootstrap",
+                "jquery/jquery-migrate",
+                "mage/translate-inline",
+                "Magento_Theme/js/responsive",
+                "Magento_Theme/js/theme",
+            ]
+        );
+    }
 }

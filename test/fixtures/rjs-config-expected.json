@@ -1,6 +1,7 @@
 {
-  "waitSeconds": 0,
-  "baseUrl": "http://ce.demo.wearejh.com/static/version1517228438/frontend/Magento/luma/en_US/",
+  "inlineText": true,
+  "generateSourceMaps": true,
+  "optimize": "uglify",
   "paths": {
     "jquery/ui": "jquery/jquery-ui",
     "jquery/validate": "jquery/jquery.validate",
@@ -13,7 +14,7 @@
     "domReady": "requirejs/domReady",
     "tinymce": "tiny_mce/tiny_mce_src",
     "ui/template": "Magento_Ui/templates",
-    "paypalInContextExpressCheckout": "https://www.paypalobjects.com/api/checkout",
+    "paypalInContextExpressCheckout": "empty:",
     "trackingCode": "Dotdigitalgroup_Email/js/trackingCode",
     "temandoCheckoutFieldsDefinition": "Temando_Shipping/js/model/fields-definition",
     "temandoCustomerAddressRateProcessor": "Temando_Shipping/js/model/shipping-rate-processor/customer-address",
@@ -21,86 +22,70 @@
     "temandoShippingRatesValidator": "Temando_Shipping/js/model/shipping-rates-validator/temando",
     "temandoShippingRatesValidationRules": "Temando_Shipping/js/model/shipping-rates-validation-rules/temando"
   },
-  "bundles": {},
-  "pkgs": {},
+  "modules": [
+    {
+      "name": "requirejs/require",
+      "create": false,
+      "include": [],
+      "exclude": []
+    }
+  ],
   "shim": {
-    "jquery/jquery-migrate": {
-      "deps": [
-        "jquery"
-      ]
-    },
-    "jquery/jquery.hashchange": {
-      "deps": [
-        "jquery",
-        "jquery/jquery-migrate"
-      ]
-    },
-    "jquery/jstree/jquery.hotkeys": {
-      "deps": [
-        "jquery"
-      ]
-    },
-    "jquery/hover-intent": {
-      "deps": [
-        "jquery"
-      ]
-    },
-    "mage/adminhtml/backup": {
-      "deps": [
-        "prototype"
-      ]
-    },
-    "mage/captcha": {
-      "deps": [
-        "prototype"
-      ]
-    },
-    "mage/common": {
-      "deps": [
-        "jquery"
-      ]
-    },
-    "mage/new-gallery": {
-      "deps": [
-        "jquery"
-      ]
-    },
-    "mage/webapi": {
-      "deps": [
-        "jquery"
-      ]
-    },
-    "jquery/ui": {
-      "deps": [
-        "jquery"
-      ]
-    },
-    "MutationObserver": {
-      "deps": [
-        "es6-collections"
-      ]
-    },
-    "tinymce": {
-      "exports": "tinymce"
-    },
-    "moment": {
-      "exports": "moment"
-    },
-    "matchMedia": {
-      "exports": "mediaCheck"
-    },
+    "MutationObserver": [
+      "es6-collections"
+    ],
+    "jquery/hover-intent": [
+      "jquery"
+    ],
+    "jquery/jquery-migrate": [
+      "jquery"
+    ],
     "jquery/jquery-storageapi": {
       "deps": [
         "jquery/jquery.cookie"
       ]
     },
-    "vimeoAPI": {},
+    "jquery/jquery.hashchange": [
+      "jquery",
+      "jquery/jquery-migrate"
+    ],
+    "jquery/jstree/jquery.hotkeys": [
+      "jquery"
+    ],
+    "jquery/ui": [
+      "jquery"
+    ],
+    "mage/adminhtml/backup": [
+      "prototype"
+    ],
+    "mage/captcha": [
+      "prototype"
+    ],
+    "mage/common": [
+      "jquery"
+    ],
+    "mage/new-gallery": [
+      "jquery"
+    ],
+    "mage/webapi": [
+      "jquery"
+    ],
+    "matchMedia": {
+      "exports": "mediaCheck"
+    },
+    "moment": {
+      "exports": "moment"
+    },
     "paypalInContextExpressCheckout": {
       "exports": "paypal"
     },
+    "tinymce": {
+      "exports": "tinymce"
+    },
     "trackingCode": {
       "exports": "_dmTrack"
-    }
+    },
+    "vimeoAPI": {}
   },
   "config": {
     "mixins": {

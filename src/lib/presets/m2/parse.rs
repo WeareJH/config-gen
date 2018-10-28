@@ -22,6 +22,16 @@ pub enum OutputError {
     Conversion,
 }
 
+impl OutputError {
+    pub fn to_string(&self) -> String {
+        match self {
+            OutputError::ParseJs => "OutputError::ParseJs".into(),
+            OutputError::Serialize => "OutputError::Serialize".into(),
+            OutputError::Conversion => "OutputError::Conversion".into(),
+        }
+    }
+}
+
 impl ParsedConfig {
     ///
     /// Parse a Magento 2 generated requirejs-config.js file pulling out
@@ -110,10 +120,9 @@ fn process_shim(xs: &Vec<ObjectMember>, output: &mut ParsedConfig) {
                                     .map(|s| serde_json::Value::String(s))
                                     .collect();
 
-                                let mut map_item = output
+                                output
                                     .shim
-                                    .entry(strip_literal(s))
-                                    .or_insert(serde_json::Value::Array(as_serde));
+                                    .insert(strip_literal(s), serde_json::Value::Array(as_serde));
                             }
                             Expression::Object(vs) => {
                                 let mut m = serde_json::Map::new();
@@ -154,10 +163,9 @@ fn process_shim(xs: &Vec<ObjectMember>, output: &mut ParsedConfig) {
                                         _ => {}
                                     }
                                 }
-                                let mut map_item = output
+                                output
                                     .shim
-                                    .entry(strip_literal(s))
-                                    .or_insert(serde_json::Value::Object(m));
+                                    .insert(strip_literal(s), serde_json::Value::Object(m));
                             }
                             _ => { /* */ }
                         }
@@ -178,8 +186,10 @@ fn process_config(xs: &Vec<ObjectMember>, output: &mut ParsedConfig) {
                         key: ObjectKey::Literal(s),
                         value,
                     } => {
-                        let mut map_item =
-                            output.config.entry(strip_literal(s).to_string()).or_insert(HashMap::new());
+                        let mut map_item = output
+                            .config
+                            .entry(strip_literal(s).to_string())
+                            .or_insert(HashMap::new());
 
                         match value {
                             Expression::Object(vs) => {
@@ -287,7 +297,10 @@ fn process_map(xs: &Vec<ObjectMember>, output: &mut ParsedConfig) {
                                             key: ObjectKey::Literal(k),
                                             value: Expression::Literal(Value::String(v)),
                                         } => {
-                                            map_item.insert(strip_literal(k).to_string(), strip_literal(v));
+                                            map_item.insert(
+                                                strip_literal(k).to_string(),
+                                                strip_literal(v),
+                                            );
                                         }
                                         _ => { /* */ }
                                     }
@@ -411,6 +424,18 @@ mod tests {
             };
             require.config(config);
         })();
+        (function() {
+            var config = {
+                shim: {
+                    "jquery/jquery-migrate": {
+                      "deps": [
+                        "jquery",
+                        'jquery/jquery.cookie'
+                      ]
+                    }
+                }
+            }
+        })();
         "#;
 
         let o = ParsedConfig::from_str(input).expect("parses fixture");
@@ -431,7 +456,8 @@ mod tests {
           "shim": {
             "jquery/jquery-migrate": {
               "deps": [
-                "jquery"
+                "jquery",
+                "jquery/jquery.cookie"
               ]
             },
             "paypalInContextExpressCheckout": {
@@ -461,7 +487,6 @@ mod tests {
         let expected: serde_json::Value = serde_json::from_str(&from).expect("serde from (fixture)");
         let actual = serde_json::to_value(&o).expect("Output serialized");
 
-//        println!("{:#?}", actual);
         assert_eq!(actual, expected);
 
         let _as_require: RequireJsClientConfig =
