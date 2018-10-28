@@ -15,11 +15,12 @@ pub fn handle(original_request: &HttpRequest<AppState>) -> FutResp {
     apply_to_proxy_body(&original_request, move |b| {
         let c2 = client_config_clone.clone();
         match RequireJsClientConfig::update_in_place(b.to_string(), c2) {
-            Ok(..) => {
-                /* no op */
-            }
+            Ok(..) => { /* no op */ }
             Err(e) => {
-                eprintln!("Could not update `RequireJsClientConfig` in place, e = {}", e);
+                eprintln!(
+                    "Could not update `RequireJsClientConfig` in place, e = {}",
+                    e
+                );
             }
         };
         b
