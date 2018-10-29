@@ -7,9 +7,11 @@ extern crate serde_derive;
 #[macro_use]
 extern crate serde_json;
 
+pub mod build_config;
+pub mod client_config;
 pub mod parse;
-pub mod config;
 
-pub use config::RequireJsClientConfig;
-pub use config::RequireJsBuildConfig;
-pub use config::Module;
+pub use client_config::Module;
+pub use client_config::RequireJsClientConfig;
+
+pub use build_config::RequireJsBuildConfig;

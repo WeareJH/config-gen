@@ -3,7 +3,7 @@ use actix_web::HttpResponse;
 use app_state::AppState;
 
 use presets::m2::state::gather_state;
-use rjs::RequireJsClientConfig;
+use rjs::RequireJsBuildConfig;
 
 ///
 /// This handler will serve a plain text string (should be JS?)
@@ -13,8 +13,8 @@ use rjs::RequireJsClientConfig;
 pub fn handle(req: &HttpRequest<AppState>) -> HttpResponse {
     let output = match gather_state(req) {
         Ok((merged_config, modules)) => {
-            let module_list = RequireJsClientConfig::bundle_loaders(
-                RequireJsClientConfig::mixins(&merged_config.config),
+            let module_list = RequireJsBuildConfig::bundle_loaders(
+                RequireJsBuildConfig::mixins(&merged_config.config),
                 modules,
             );
             Ok(module_list)

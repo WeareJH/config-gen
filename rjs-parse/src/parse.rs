@@ -126,15 +126,15 @@ fn process_shim(xs: &Vec<ObjectMember>, output: &mut ParsedConfig) {
                     } => {
                         match value {
                             Expression::Array(vs) => {
-                                let as_serde: Vec<serde_json::Value> = vs
+                                let as_serde: Vec<
+                                    serde_json::Value,
+                                > = vs
                                     .into_iter()
-                                    .filter_map(|e: Expression| {
-                                        match e {
-                                            Expression::Literal(Value::String(s)) => {
-                                                Some(strip_literal(s).to_string())
-                                            }
-                                            _ => None
+                                    .filter_map(|e: Expression| match e {
+                                        Expression::Literal(Value::String(s)) => {
+                                            Some(strip_literal(s).to_string())
                                         }
+                                        _ => None,
                                     })
                                     .map(|s| serde_json::Value::String(s))
                                     .collect();
@@ -380,14 +380,16 @@ mod tests {
 
     #[test]
     fn test_js_errors() {
-        let o = ParsedConfig::from_str(r#"
+        let o = ParsedConfig::from_str(
+            r#"
         var config();
-        "#);
+        "#,
+        );
         match o {
             Err(e) => {
                 println!("{}", e);
             }
-            _ => {/**/}
+            _ => { /**/ }
         }
     }
 
@@ -516,7 +518,8 @@ mod tests {
         }
         "#;
 
-        let expected: serde_json::Value = serde_json::from_str(&from).expect("serde from (fixture)");
+        let expected: serde_json::Value =
+            serde_json::from_str(&from).expect("serde from (fixture)");
         let actual = serde_json::to_value(&o).expect("Output serialized");
 
         assert_eq!(actual, expected);
