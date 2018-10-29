@@ -4,13 +4,13 @@ use from_file::FromFile;
 
 use presets::m2::bundle_config::BundleConfig;
 use presets::m2::config_gen;
-use presets::m2::opts::M2PresetOptions;
 use presets::m2::module_meta_data::ModuleData;
-use rjs::{RequireJsBuildConfig, Module};
+use presets::m2::opts::M2PresetOptions;
+use rjs::{BuildModule, RequireJsBuildConfig};
 
 pub fn gather_state(
     req: &HttpRequest<AppState>,
-) -> Result<(RequireJsBuildConfig, Vec<Module>), String> {
+) -> Result<(RequireJsBuildConfig, Vec<BuildModule>), String> {
     let modules = &req
         .state()
         .req_log

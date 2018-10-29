@@ -1,9 +1,8 @@
-use client_config::ModuleId;
+use client_config::BuildModuleId;
 use parse::ConfigParseError;
-use parse::ParsedConfig;
 use serde_json;
 use std::collections::HashMap;
-use Module;
+use BuildModule;
 use RequireJsClientConfig;
 
 ///
@@ -25,14 +24,14 @@ pub struct RequireJsBuildConfig {
     //
     // These fields come from `RequireJsClientConfig`
     //
-    pub deps: Vec<ModuleId>,
+    pub deps: Vec<BuildModuleId>,
     pub map: serde_json::Value,
     pub config: serde_json::Value,
     pub shim: serde_json::Value,
     pub paths: HashMap<String, String>,
 
     #[serde(default = "default_modules")]
-    pub modules: Option<Vec<Module>>,
+    pub modules: Option<Vec<BuildModule>>,
 }
 
 impl RequireJsBuildConfig {
@@ -40,8 +39,33 @@ impl RequireJsBuildConfig {
     /// This is the top-level api - it accepts any Javascript
     /// input, and if the structure matches that seen
     /// in the magento-generated file, then it's parsed
-    /// and converted into a `RequireJsBuildConfig` that
+    /// and converted into a [RequireJsBuildConfig]  that
     /// is valid to be used with the optimizer
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// # use rjs::*;
+    /// let input = r#"
+    ///     (function () {
+    ///         var config = {
+    ///             paths: {
+    ///                 paypal: "http://example.com/paypal"
+    ///             },
+    ///             deps: ["one", "two"]
+    ///         };
+    ///         require.config(config);
+    ///     })();
+    ///     (function () {
+    ///         var config = {
+    ///             deps: ["three"]
+    ///         };
+    ///         require.config(config);
+    ///     })();
+    /// "#;
+    /// let rjs_cfg = RequireJsBuildConfig::from_generated_string(input).expect("should parse");
+    /// assert_eq!(rjs_cfg.paths.get("paypal").expect("unwrap"), "empty:");
+    /// ```
     ///
     pub fn from_generated_string(
         input: impl Into<String>,
@@ -50,13 +74,13 @@ impl RequireJsBuildConfig {
         let mut output = RequireJsBuildConfig::default();
         output.paths = RequireJsBuildConfig::strip_paths(&client.paths);
         output.shim = client.shim;
-        output.paths = client.paths;
         output.config = client.config;
         output.map = client.map;
+        output.deps = client.deps;
         Ok(output)
     }
     ///
-    /// Just a passthrough for `from_generated_string`
+    /// Just a passthrough for `from_generated_string` above
     ///
     pub fn from_str(input: impl Into<String>) -> Result<RequireJsBuildConfig, ConfigParseError> {
         RequireJsBuildConfig::from_generated_string(input)
@@ -74,19 +98,22 @@ impl RequireJsBuildConfig {
     /// For the build process to work, any 'paths' within the config
     /// must be replaced with `empty:`
     ///
-    /// before:
-    ///  {
-    ///     paths: {
-    ///        "paypal": "example.com/paypay.js"
-    ///     }
-    ///  }
+    /// # Examples
     ///
-    /// after:
-    ///  {
-    ///     paths: {
-    ///        "paypal": "empty:"
-    ///     }
-    ///  }
+    /// ```
+    /// # use rjs::*;
+    /// # use std::collections::HashMap;
+    /// let mut paths: HashMap<String, String> = HashMap::new();
+    /// paths.insert("one".into(), "one/one".into());
+    /// paths.insert("two".into(), "http://two.com/two".into());
+    ///
+    /// let mut expected: HashMap<String, String> = HashMap::new();
+    /// expected.insert("one".into(), "one/one".into());
+    /// expected.insert("two".into(), "empty:".into());
+    ///
+    /// let actual = RequireJsBuildConfig::strip_paths(&paths);
+    /// assert_eq!(actual, expected);
+    /// ```
     ///
     pub fn strip_paths(paths: &HashMap<String, String>) -> HashMap<String, String> {
         let mut hm: HashMap<String, String> = HashMap::new();
@@ -113,7 +140,54 @@ impl RequireJsBuildConfig {
     /// would cause a bug at run time since the module in question
     /// would not trigger the custom `mixins` code added by Magento at run time.
     ///
-    pub fn bundle_loaders(mixins: Vec<String>, modules: Vec<Module>) -> String {
+    /// # Examples
+    ///
+    /// ```
+    /// use rjs::{RequireJsBuildConfig, BuildModule};
+    /// # use std::collections::HashMap;
+    /// let list = RequireJsBuildConfig::bundle_loaders(
+    ///     vec!["js/shane".to_string()],
+    ///     vec![
+    ///         BuildModule {
+    ///             name: String::from("requirejs/require"),
+    ///             include: vec![],
+    ///             exclude: vec![],
+    ///             create: false,
+    ///         },
+    ///         BuildModule {
+    ///             name: String::from("bundle/base"),
+    ///             include: vec!["js/shane".to_string(), "js/kittie".to_string()],
+    ///             exclude: vec![],
+    ///             create: true,
+    ///         },
+    ///         BuildModule {
+    ///             name: String::from("bundle/product"),
+    ///             include: vec!["js/gallery".to_string(), "js/zoomer".to_string()],
+    ///             exclude: vec![],
+    ///             create: true,
+    ///         },
+    ///     ],
+    /// );
+    /// let expected = r#"require.config({
+    ///   bundles: {
+    ///     "bundle/base": [
+    ///          // mixin trigger: "js/shane",
+    ///         "js/kittie",
+    ///     ]
+    ///   }
+    /// });
+    /// require.config({
+    ///   bundles: {
+    ///     "bundle/product": [
+    ///         "js/gallery",
+    ///         "js/zoomer",
+    ///     ]
+    ///   }
+    /// });"#;
+    /// assert_eq!(list, expected);
+    /// ```
+    ///
+    pub fn bundle_loaders(mixins: Vec<String>, modules: Vec<BuildModule>) -> String {
         let items: Vec<String> = modules
             .iter()
             .filter(|m| m.name.as_str() != "requirejs/require")
@@ -142,7 +216,23 @@ impl RequireJsBuildConfig {
     ///
     /// Walk the mixins fields and flatten to a simple Vec<String>
     ///
-    pub fn mixins(val: &serde_json::Value) -> Vec<String> {
+    /// # Examples
+    ///
+    /// ```
+    /// use rjs::{RequireJsBuildConfig};
+    /// let input = include_str!("../test/fixtures/requirejs-config-generated.js");
+    /// let s = RequireJsBuildConfig::from_generated_string(input).expect("fixture unwrap");
+    /// assert_eq!(
+    ///     RequireJsBuildConfig::collect_mixins(&s.config),
+    ///     vec![
+    ///         "Magento_Checkout/js/action/place-order",
+    ///         "Magento_Checkout/js/action/set-payment-information",
+    ///         "jquery/jstree/jquery.jstree",
+    ///     ]
+    /// );
+    /// ```
+    ///
+    pub fn collect_mixins(val: &serde_json::Value) -> Vec<String> {
         match *val {
             serde_json::Value::Object(ref v) => match v.get("mixins") {
                 Some(f) => match f {
@@ -181,84 +271,6 @@ fn default_optimize() -> Option<String> {
 fn default_inline_text() -> Option<bool> {
     Some(true)
 }
-fn default_modules() -> Option<Vec<Module>> {
+fn default_modules() -> Option<Vec<BuildModule>> {
     Some(vec![])
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_filter_mixins() {
-        let input = include_str!("../test/fixtures/requirejs-config-generated.js");
-        let s = RequireJsBuildConfig::from_generated_string(input).expect("fixture unwrap");
-        assert_eq!(
-            RequireJsBuildConfig::mixins(&s.config),
-            vec![
-                "Magento_Checkout/js/action/place-order",
-                "Magento_Checkout/js/action/set-payment-information",
-                "jquery/jstree/jquery.jstree",
-            ]
-        );
-    }
-
-    #[test]
-    fn test_module_list() {
-        let list = RequireJsBuildConfig::bundle_loaders(
-            vec!["js/shane".to_string()],
-            vec![
-                Module {
-                    name: String::from("requirejs/require"),
-                    include: vec![],
-                    exclude: vec![],
-                    create: false,
-                },
-                Module {
-                    name: String::from("bundle/base"),
-                    include: vec!["js/shane".to_string(), "js/kittie".to_string()],
-                    exclude: vec![],
-                    create: true,
-                },
-                Module {
-                    name: String::from("bundle/product"),
-                    include: vec!["js/gallery".to_string(), "js/zoomer".to_string()],
-                    exclude: vec![],
-                    create: true,
-                },
-            ],
-        );
-        let expected = r#"require.config({
-  bundles: {
-    "bundle/base": [
-         // mixin trigger: "js/shane",
-        "js/kittie",
-    ]
-  }
-});
-require.config({
-  bundles: {
-    "bundle/product": [
-        "js/gallery",
-        "js/zoomer",
-    ]
-  }
-});"#;
-        assert_eq!(list, expected);
-    }
-
-    #[test]
-    fn test_strip_paths() {
-        let mut ps: HashMap<String, String> = HashMap::new();
-        ps.insert("one".into(), "one/one".into());
-        ps.insert("two".into(), "http://two.com/two".into());
-
-        let mut expected: HashMap<String, String> = HashMap::new();
-        expected.insert("one".into(), "one/one".into());
-        expected.insert("two".into(), "empty:".into());
-
-        let actual = RequireJsBuildConfig::strip_paths(&ps);
-
-        assert_eq!(actual, expected);
-    }
 }

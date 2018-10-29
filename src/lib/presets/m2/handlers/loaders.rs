@@ -14,7 +14,7 @@ pub fn handle(req: &HttpRequest<AppState>) -> HttpResponse {
     let output = match gather_state(req) {
         Ok((merged_config, modules)) => {
             let module_list = RequireJsBuildConfig::bundle_loaders(
-                RequireJsBuildConfig::mixins(&merged_config.config),
+                RequireJsBuildConfig::collect_mixins(&merged_config.config),
                 modules,
             );
             Ok(module_list)

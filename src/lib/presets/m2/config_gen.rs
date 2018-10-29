@@ -6,21 +6,21 @@ extern crate serde_json;
 use from_file::FromFile;
 use presets::m2::bundle_config::{BundleConfig, ConfigItem};
 use presets::m2::module_meta_data::ModuleData;
+use rjs::BuildModule;
 use serde_json::Error;
 use std::collections::HashMap;
 use std::path::PathBuf;
 use std::str::FromStr;
-use rjs::Module;
 
 pub type Items = Vec<ModuleData>;
 
 pub fn collect_items(
-    mut target: Vec<Module>,
+    mut target: Vec<BuildModule>,
     conf_items: &Vec<ConfigItem>,
     items: &Items,
     prev: &mut Vec<String>,
     exclude: &mut Vec<String>,
-) -> Vec<Module> {
+) -> Vec<BuildModule> {
     for conf_item in conf_items {
         let mut outgoing: Vec<String> = vec![];
         for item in items {
@@ -36,7 +36,7 @@ pub fn collect_items(
         }
         outgoing.sort();
         outgoing.dedup();
-        let module = Module {
+        let module = BuildModule {
             name: conf_item.name.to_string(),
             include: outgoing.clone(),
             exclude: exclude.clone(),
@@ -52,8 +52,8 @@ pub fn collect_items(
     target
 }
 
-pub fn generate_modules(items: Items, config: impl Into<BundleConfig>) -> Vec<Module> {
-    let h: Vec<Module> = vec![Module {
+pub fn generate_modules(items: Items, config: impl Into<BundleConfig>) -> Vec<BuildModule> {
+    let h: Vec<BuildModule> = vec![BuildModule {
         name: "requirejs/require".into(),
         include: vec![],
         exclude: vec![],
@@ -155,7 +155,7 @@ fn test_create_modules() {
     let out = generate_modules(reqs, c);
     assert_eq!(
         out[0],
-        Module {
+        BuildModule {
             include: vec![],
             exclude: vec![],
             name: "requirejs/require".to_string(),

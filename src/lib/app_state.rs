@@ -2,9 +2,9 @@ use config::ProgramConfig;
 use options::ProgramOptions;
 use preset::RewriteFns;
 use presets::m2::module_meta_data::ModuleData;
+use rjs::RequireJsClientConfig;
 use std::fmt;
 use std::sync::{Arc, Mutex};
-use rjs::RequireJsClientConfig;
 
 pub struct AppState {
     pub program_config: ProgramConfig,

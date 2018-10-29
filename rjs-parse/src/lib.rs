@@ -11,7 +11,7 @@ pub mod build_config;
 pub mod client_config;
 pub mod parse;
 
-pub use client_config::Module;
+pub use client_config::BuildModule;
 pub use client_config::RequireJsClientConfig;
 
 pub use build_config::RequireJsBuildConfig;

@@ -61,8 +61,7 @@ pub fn replace_host(bytes: &str, context: &RewriteContext) -> String {
         .unwrap()
         .replace_all(bytes, |item: &Captures| {
             modify_url(item, &context).unwrap_or(String::from(""))
-        })
-        .to_string()
+        }).to_string()
 }
 
 ///
