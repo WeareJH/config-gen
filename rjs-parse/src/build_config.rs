@@ -10,6 +10,42 @@ use RequireJsClientConfig;
 /// with some added fields to enable the RequireJS optimizer
 /// to run
 ///
+/// # Examples
+///
+/// ```rust
+/// extern crate serde_json;
+/// extern crate rjs;
+///
+/// use serde_json;
+/// use rjs::RequireJsBuildConfig;
+///
+/// let rjs = RequireJsBuildConfig::default();
+/// let actual = serde_json::to_value(&rjs).unwrap();
+///
+/// let expected = r#"{
+///    "generateSourceMaps": true,
+///    "inlineText": true,
+///    "optimize": "uglify",
+///    "deps": [],
+///    "map": {},
+///    "config": {},
+///    "shim": {},
+///    "paths": {},
+///    "modules": [
+///      {
+///        "name": "requirejs/require",
+///        "include": [],
+///        "exclude": [],
+///        "create": false
+///      }
+///    ]
+/// }"#;
+///
+/// let expected: serde_json::Value = serde_json::from_str(&expected).unwrap();
+///
+/// assert_eq!(actual, expected);
+/// ```
+///
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct RequireJsBuildConfig {
     #[serde(rename = "generateSourceMaps")]
@@ -260,7 +296,14 @@ impl Default for RequireJsBuildConfig {
             generate_source_maps: Some(true),
             inline_text: Some(true),
             optimize: Some("uglify".into()),
-            modules: Some(vec![]),
+            modules: Some(vec![
+                BuildModule {
+                    name: String::from("requirejs/require"),
+                    include: Vec::new(),
+                    exclude: Vec::new(),
+                    create: false
+                }
+            ]),
         }
     }
 }
