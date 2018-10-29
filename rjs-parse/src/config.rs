@@ -1,7 +1,8 @@
+use serde_json;
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
-use crate::parse::OutputError;
-use crate::parse::ParsedConfig;
+use parse::ConfigParseError;
+use parse::ParsedConfig;
 
 type ModuleId = String;
 
@@ -27,11 +28,11 @@ pub struct Module {
 impl RequireJsClientConfig {
     pub fn from_generated_string(
         input: impl Into<String>,
-    ) -> Result<RequireJsClientConfig, OutputError> {
+    ) -> Result<RequireJsClientConfig, ConfigParseError> {
         let output = ParsedConfig::from_str(input)?;
-        let as_serde = serde_json::to_value(&output).map_err(|_e| OutputError::Serialize)?;
+        let as_serde = serde_json::to_value(&output).map_err(|_e| ConfigParseError::Serialize)?;
         let as_rjs: RequireJsClientConfig =
-            serde_json::from_value(as_serde).map_err(|_e| OutputError::Conversion)?;
+            serde_json::from_value(as_serde).map_err(|_e| ConfigParseError::Conversion)?;
         Ok(as_rjs)
     }
     pub fn to_string(&self) -> Result<String, String> {
@@ -100,10 +101,10 @@ pub struct RequireJsBuildConfig {
 impl RequireJsBuildConfig {
     pub fn from_generated_string(
         input: impl Into<String>,
-    ) -> Result<RequireJsBuildConfig, OutputError> {
+    ) -> Result<RequireJsBuildConfig, ConfigParseError> {
         let output = ParsedConfig::from_str(input)?;
-        let as_serde = serde_json::to_value(&output).map_err(|_e| OutputError::Serialize)?;
-        let mut as_rjs: RequireJsBuildConfig = serde_json::from_value(as_serde).map_err(|_e| OutputError::Conversion)?;
+        let as_serde = serde_json::to_value(&output).map_err(|_e| ConfigParseError::Serialize)?;
+        let mut as_rjs: RequireJsBuildConfig = serde_json::from_value(as_serde).map_err(|_e| ConfigParseError::Conversion)?;
         as_rjs.paths = RequireJsBuildConfig::strip_paths(&as_rjs.paths);
         as_rjs.modules = Some(vec![Module {
             name: "requirejs/require".into(),
@@ -244,7 +245,7 @@ mod tests {
 
     #[test]
     fn test_filter_mixins() {
-        let input = include_str!("../../../../test/fixtures/requirejs-config-generated.js");
+        let input = include_str!("../test/fixtures/requirejs-config-generated.js");
         let s = RequireJsClientConfig::from_generated_string(input).expect("fixture unwrap");
         assert_eq!(
             RequireJsClientConfig::mixins(&s.config),
@@ -254,12 +255,6 @@ mod tests {
                 "jquery/jstree/jquery.jstree",
             ]
         );
-    }
-
-    #[test]
-    fn test_hydrate() {
-        let input = include_bytes!("../../../../test/fixtures/example-config.json");
-        let _s: RequireJsClientConfig = serde_json::from_slice(input).unwrap();
     }
 
     #[test]
@@ -308,7 +303,7 @@ require.config({
 
     #[test]
     fn test_parse_e2e2() {
-        let input = include_str!("../../../../test/fixtures/requirejs-config-generated.js");
+        let input = include_str!("../test/fixtures/requirejs-config-generated.js");
         let rjx = RequireJsClientConfig::from_generated_string(input).expect("allgood");
         assert_eq!(
             rjx.deps,

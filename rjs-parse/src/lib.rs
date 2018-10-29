@@ -10,6 +10,6 @@ extern crate serde_json;
 pub mod parse;
 pub mod config;
 
-pub use crate::config::RequireJsClientConfig;
-pub use crate::config::RequireJsBuildConfig;
-pub use crate::config::Module;
+pub use config::RequireJsClientConfig;
+pub use config::RequireJsBuildConfig;
+pub use config::Module;
