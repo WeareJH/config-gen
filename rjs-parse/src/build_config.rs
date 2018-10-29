@@ -4,7 +4,13 @@ use parse::ParsedConfig;
 use serde_json;
 use std::collections::HashMap;
 use Module;
+use RequireJsClientConfig;
 
+///
+/// This struct is a combination of RequireJsClientConfig
+/// with some added fields to enable the RequireJS optimizer
+/// to run
+///
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct RequireJsBuildConfig {
     #[serde(rename = "generateSourceMaps")]
@@ -16,6 +22,9 @@ pub struct RequireJsBuildConfig {
     #[serde(default = "default_optimize")]
     pub optimize: Option<String>,
 
+    //
+    // These fields come from `RequireJsClientConfig`
+    //
     pub deps: Vec<ModuleId>,
     pub map: serde_json::Value,
     pub config: serde_json::Value,
@@ -27,28 +36,58 @@ pub struct RequireJsBuildConfig {
 }
 
 impl RequireJsBuildConfig {
+    ///
+    /// This is the top-level api - it accepts any Javascript
+    /// input, and if the structure matches that seen
+    /// in the magento-generated file, then it's parsed
+    /// and converted into a `RequireJsBuildConfig` that
+    /// is valid to be used with the optimizer
+    ///
     pub fn from_generated_string(
         input: impl Into<String>,
     ) -> Result<RequireJsBuildConfig, ConfigParseError> {
-        let output = ParsedConfig::from_str(input)?;
-        let as_serde = serde_json::to_value(&output).map_err(|_e| ConfigParseError::Serialize)?;
-        let mut as_rjs: RequireJsBuildConfig =
-            serde_json::from_value(as_serde).map_err(|_e| ConfigParseError::Conversion)?;
-        as_rjs.paths = RequireJsBuildConfig::strip_paths(&as_rjs.paths);
-        as_rjs.modules = Some(vec![Module {
-            name: "requirejs/require".into(),
-            include: vec![],
-            exclude: vec![],
-            create: false,
-        }]);
-        Ok(as_rjs)
+        let client = RequireJsClientConfig::from_generated_string(input)?;
+        let mut output = RequireJsBuildConfig::default();
+        output.paths = RequireJsBuildConfig::strip_paths(&client.paths);
+        output.shim = client.shim;
+        output.paths = client.paths;
+        output.config = client.config;
+        output.map = client.map;
+        Ok(output)
     }
+    ///
+    /// Just a passthrough for `from_generated_string`
+    ///
+    pub fn from_str(input: impl Into<String>) -> Result<RequireJsBuildConfig, ConfigParseError> {
+        RequireJsBuildConfig::from_generated_string(input)
+    }
+    ///
+    /// Helper to always give a string output, even for errors
+    ///
     pub fn to_string(&self) -> Result<String, String> {
         match serde_json::to_string_pretty(&self) {
             Ok(s) => Ok(s),
             Err(e) => Err(e.to_string()),
         }
     }
+    ///
+    /// For the build process to work, any 'paths' within the config
+    /// must be replaced with `empty:`
+    ///
+    /// before:
+    ///  {
+    ///     paths: {
+    ///        "paypal": "example.com/paypay.js"
+    ///     }
+    ///  }
+    ///
+    /// after:
+    ///  {
+    ///     paths: {
+    ///        "paypal": "empty:"
+    ///     }
+    ///  }
+    ///
     pub fn strip_paths(paths: &HashMap<String, String>) -> HashMap<String, String> {
         let mut hm: HashMap<String, String> = HashMap::new();
 
@@ -65,6 +104,15 @@ impl RequireJsBuildConfig {
 
         hm
     }
+    ///
+    /// Convert a module list into the bundle-loader code that's
+    /// needed to load 'additional' bundles.
+    ///
+    /// Note: there's special logic here to *not* include
+    /// any modules that have mixins declared against them, as this
+    /// would cause a bug at run time since the module in question
+    /// would not trigger the custom `mixins` code added by Magento at run time.
+    ///
     pub fn bundle_loaders(mixins: Vec<String>, modules: Vec<Module>) -> String {
         let items: Vec<String> = modules
             .iter()
@@ -91,6 +139,9 @@ impl RequireJsBuildConfig {
             .collect();
         items.join("\n")
     }
+    ///
+    /// Walk the mixins fields and flatten to a simple Vec<String>
+    ///
     pub fn mixins(val: &serde_json::Value) -> Vec<String> {
         match *val {
             serde_json::Value::Object(ref v) => match v.get("mixins") {
