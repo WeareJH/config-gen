@@ -144,6 +144,13 @@ fn test_create_modules() {
                     ]
                   }
                 ]
+              },
+              {
+                "name": "bundles/basket-other",
+                "urls": [
+                  "/index.php/checkout/cart-other/"
+                ],
+                "children": []
               }
             ]
           }
@@ -163,4 +170,13 @@ fn test_create_modules() {
         }
     );
     assert_eq!(out[1].create, true);
+    let out_names: Vec<String> = out.into_iter().map(|item| item.name).collect();
+    assert_eq!(out_names, vec![
+        "requirejs/require",
+        "bundles/main",
+        "bundles/basket",
+        "bundles/checkout",
+        "bundles/checkout-success",
+        "bundles/basket-other",
+    ].iter().map(|x| x.to_string()).collect::<Vec<String>>());
 }
