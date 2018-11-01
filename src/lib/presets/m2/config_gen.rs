@@ -160,6 +160,7 @@ fn test_create_modules() {
     let reqs: Vec<ModuleData> =
         serde_json::from_str(include_str!("../../../../test/fixtures/example-reqs.json")).unwrap();
     let out = generate_modules(reqs, c);
+
     assert_eq!(
         out[0],
         BuildModule {
@@ -169,8 +170,10 @@ fn test_create_modules() {
             create: false,
         }
     );
+
     assert_eq!(out[1].create, true);
-    let out_names: Vec<String> = out.into_iter().map(|item| item.name).collect();
+    let out_names: Vec<String> = out.iter().map(|item| item.name.to_string()).collect();
+
     assert_eq!(out_names, vec![
         "requirejs/require",
         "bundles/main",
@@ -179,4 +182,9 @@ fn test_create_modules() {
         "bundles/checkout-success",
         "bundles/basket-other",
     ].iter().map(|x| x.to_string()).collect::<Vec<String>>());
+
+    assert_eq!(out[5].exclude, vec![
+        "requirejs/require",
+        "bundles/main",
+    ]);
 }
