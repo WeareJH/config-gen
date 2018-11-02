@@ -14,58 +14,50 @@ use std::str::FromStr;
 
 pub type Items = Vec<ModuleData>;
 
-pub fn collect_items(
-    mut target: Vec<BuildModule>,
-    conf_items: &Vec<ConfigItem>,
-    items: &Items,
-    prev: &mut Vec<String>,
+pub fn collect(
+    prev: &mut Vec<BuildModule>,
+    items: &Vec<ModuleData>,
+    children: &Vec<ConfigItem>,
     exclude: &mut Vec<String>,
 ) -> Vec<BuildModule> {
-    for conf_item in conf_items {
-        let mut outgoing: Vec<String> = vec![];
-        for item in items {
-            match conf_item.urls.iter().find(|x| **x == item.referrer) {
-                Some(t) => {
-                    let next_id = create_entry_point(&item);
-                    if let None = prev.iter().find(|x| **x == next_id) {
-                        outgoing.push(next_id);
-                    }
+    children.into_iter().fold(
+        prev.to_vec(),
+        |mut acc: Vec<BuildModule>, conf_item: &ConfigItem| {
+            let mut include: Vec<String> = vec![];
+            for item in items {
+                if let Some(t) = conf_item.urls.iter().find(|x| **x == item.referrer) {
+                    include.push(create_entry_point(&item));
                 }
-                None => {}
             }
-        }
-        outgoing.sort();
-        outgoing.dedup();
-        let module = BuildModule {
-            name: conf_item.name.to_string(),
-            include: outgoing.clone(),
-            exclude: exclude.clone(),
-            create: true,
-        };
-        target.push(module);
-        if conf_item.children.len() > 0 {
-            prev.extend(outgoing);
+            include.sort();
+            include.dedup();
+            let this_item = BuildModule {
+                name: conf_item.name.to_string(),
+                include: include.to_vec(),
+                exclude: exclude.to_vec(),
+                create: true,
+            };
+            acc.push(this_item);
+            let mut exclude = exclude.clone();
             exclude.push(conf_item.name.to_string());
-            return collect_items(target, &conf_item.children, items, prev, exclude);
-        }
-    }
-    target
+            collect(&mut acc, items, &conf_item.children, &mut exclude)
+        },
+    )
 }
 
 pub fn generate_modules(items: Items, config: impl Into<BundleConfig>) -> Vec<BuildModule> {
-    let h: Vec<BuildModule> = vec![BuildModule {
+    let mut initial: Vec<BuildModule> = vec![BuildModule {
         name: "requirejs/require".into(),
         include: vec![],
         exclude: vec![],
         create: false,
     }];
     let conf = config.into();
-    collect_items(
-        h,
-        &conf.bundles,
+    collect(
+        &mut initial,
         &items,
-        &mut vec![],
-        &mut vec!["requirejs/require".to_string()],
+        &conf.bundles,
+        &mut vec!["requirejs/require".into()],
     )
 }
 
@@ -174,17 +166,19 @@ fn test_create_modules() {
     assert_eq!(out[1].create, true);
     let out_names: Vec<String> = out.iter().map(|item| item.name.to_string()).collect();
 
-    assert_eq!(out_names, vec![
-        "requirejs/require",
-        "bundles/main",
-        "bundles/basket",
-        "bundles/checkout",
-        "bundles/checkout-success",
-        "bundles/basket-other",
-    ].iter().map(|x| x.to_string()).collect::<Vec<String>>());
+    assert_eq!(
+        out_names,
+        vec![
+            "requirejs/require",
+            "bundles/main",
+            "bundles/basket",
+            "bundles/checkout",
+            "bundles/checkout-success",
+            "bundles/basket-other",
+        ].iter()
+            .map(|x| x.to_string())
+            .collect::<Vec<String>>()
+    );
 
-    assert_eq!(out[5].exclude, vec![
-        "requirejs/require",
-        "bundles/main",
-    ]);
+    assert_eq!(out[5].exclude, vec!["requirejs/require", "bundles/main"]);
 }
