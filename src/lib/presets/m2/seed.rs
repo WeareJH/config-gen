@@ -1,6 +1,6 @@
 use from_file::FromFile;
 use presets::m2::module_meta_data::ModuleData;
-use presets::m2::requirejs_config::RequireJsClientConfig;
+use rjs::RequireJsClientConfig;
 
 #[derive(Serialize, Deserialize, Default)]
 pub struct SeedData {

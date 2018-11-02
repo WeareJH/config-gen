@@ -1,8 +1,8 @@
 use actix_web::HttpRequest;
 use app_state::AppState;
 use presets::m2::preset_m2::FutResp;
-use presets::m2::requirejs_config::RequireJsClientConfig;
 use proxy_utils::apply_to_proxy_body;
+use rjs::RequireJsClientConfig;
 
 ///
 /// This handler will record the incoming string from the Magento-generated

@@ -1,3 +1,4 @@
+use ratel;
 use ratel::grammar::Expression;
 use ratel::grammar::*;
 use ratel::grammar::{ObjectKey, ObjectMember, Value};
@@ -5,7 +6,14 @@ use ratel::owned_slice::OwnedSlice;
 use ratel::parser::parse;
 use serde_json;
 use std::collections::HashMap;
+use std::fmt;
+use std::fmt::Formatter;
 
+///
+/// This struct represents the fields that should
+/// be extracted from the generated requirejs-config.js file
+/// that Magento generates at run time.
+///
 #[derive(Serialize, Deserialize, Debug, Default, PartialEq)]
 pub struct ParsedConfig {
     pub paths: HashMap<String, String>,
@@ -13,23 +21,6 @@ pub struct ParsedConfig {
     pub deps: Vec<String>,
     pub config: HashMap<String, HashMap<String, HashMap<String, serde_json::Value>>>,
     pub shim: HashMap<String, serde_json::Value>,
-}
-
-#[derive(Debug)]
-pub enum OutputError {
-    ParseJs,
-    Serialize,
-    Conversion,
-}
-
-impl OutputError {
-    pub fn to_string(&self) -> String {
-        match self {
-            OutputError::ParseJs => "OutputError::ParseJs".into(),
-            OutputError::Serialize => "OutputError::Serialize".into(),
-            OutputError::Conversion => "OutputError::Conversion".into(),
-        }
-    }
 }
 
 impl ParsedConfig {
@@ -40,7 +31,7 @@ impl ParsedConfig {
     /// # Examples
     ///
     /// ```
-    /// # use bs::presets::m2::parse::*;
+    /// # use rjs::parse::*;
     /// let input = r#"
     ///   (function() {
     ///        var config = {
@@ -48,18 +39,46 @@ impl ParsedConfig {
     ///        };
     ///        require.config(config);
     ///    })();
+    ///    require(["jquery"], function($) {
+    ///        $.noConflict();
+    ///    });
     /// "#;
     /// let rjs_cfg = ParsedConfig::from_str(input).expect("should parse");
-    /// assert_eq!(rjs_cfg.deps, vec!["one".to_string(), "two".to_string()]);
+    /// assert_eq!(rjs_cfg.deps,
+    ///     vec!["one".to_string(), "two".to_string()]
+    /// );
     /// ```
     ///
-    pub fn from_str(input: impl Into<String>) -> Result<ParsedConfig, OutputError> {
+    pub fn from_str(input: impl Into<String>) -> Result<ParsedConfig, ConfigParseError> {
         let mut o = ParsedConfig {
             ..ParsedConfig::default()
         };
-        let parsed = parse(input.into()).map_err(|_e| OutputError::ParseJs)?;
+        let parsed = parse(input.into()).map_err(|e| ConfigParseError::ParseJs(e))?;
         parse_body(parsed.body, &mut o);
         Ok(o)
+    }
+}
+
+#[derive(Debug)]
+pub enum ConfigParseError {
+    ParseJs(ratel::error::ParseError),
+    Serialize,
+    Conversion,
+}
+
+impl ConfigParseError {
+    pub fn to_string(&self) -> String {
+        match self {
+            ConfigParseError::ParseJs(e) => format!("{}", e),
+            ConfigParseError::Serialize => "OutputError::Serialize".into(),
+            ConfigParseError::Conversion => "OutputError::Conversion".into(),
+        }
+    }
+}
+
+impl fmt::Display for ConfigParseError {
+    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+        write!(f, "{}", self.to_string())
     }
 }
 
@@ -107,15 +126,15 @@ fn process_shim(xs: &Vec<ObjectMember>, output: &mut ParsedConfig) {
                     } => {
                         match value {
                             Expression::Array(vs) => {
-                                let as_serde: Vec<serde_json::Value> = vs
+                                let as_serde: Vec<
+                                    serde_json::Value,
+                                > = vs
                                     .into_iter()
-                                    .filter_map(|e: Expression| {
-                                        match e {
-                                            Expression::Literal(Value::String(s)) => {
-                                                Some(strip_literal(s).to_string())
-                                            }
-                                            _ => None
+                                    .filter_map(|e: Expression| match e {
+                                        Expression::Literal(Value::String(s)) => {
+                                            Some(strip_literal(s).to_string())
                                         }
+                                        _ => None,
                                     })
                                     .map(|s| serde_json::Value::String(s))
                                     .collect();
@@ -357,7 +376,22 @@ fn filter_items(x: &ObjectMember, name: &str) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use presets::m2::requirejs_config::RequireJsClientConfig;
+    use RequireJsClientConfig;
+
+    #[test]
+    fn test_js_errors() {
+        let o = ParsedConfig::from_str(
+            r#"
+        var config();
+        "#,
+        );
+        match o {
+            Err(e) => {
+                println!("{}", e);
+            }
+            _ => { /**/ }
+        }
+    }
 
     #[test]
     fn test_parse_all() {
@@ -484,7 +518,8 @@ mod tests {
         }
         "#;
 
-        let expected: serde_json::Value = serde_json::from_str(&from).expect("serde from (fixture)");
+        let expected: serde_json::Value =
+            serde_json::from_str(&from).expect("serde from (fixture)");
         let actual = serde_json::to_value(&o).expect("Output serialized");
 
         assert_eq!(actual, expected);

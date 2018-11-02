@@ -4,8 +4,9 @@
 extern crate serde_json;
 
 use from_file::FromFile;
-use presets::m2::bundle_config::{BundleConfig, ConfigItem, Module};
+use presets::m2::bundle_config::{BundleConfig, ConfigItem};
 use presets::m2::module_meta_data::ModuleData;
+use rjs::BuildModule;
 use serde_json::Error;
 use std::collections::HashMap;
 use std::path::PathBuf;
@@ -13,58 +14,50 @@ use std::str::FromStr;
 
 pub type Items = Vec<ModuleData>;
 
-pub fn collect_items(
-    mut target: Vec<Module>,
-    conf_items: &Vec<ConfigItem>,
-    items: &Items,
-    prev: &mut Vec<String>,
+pub fn collect(
+    prev: &mut Vec<BuildModule>,
+    items: &Vec<ModuleData>,
+    children: &Vec<ConfigItem>,
     exclude: &mut Vec<String>,
-) -> Vec<Module> {
-    for conf_item in conf_items {
-        let mut outgoing: Vec<String> = vec![];
-        for item in items {
-            match conf_item.urls.iter().find(|x| **x == item.referrer) {
-                Some(t) => {
-                    let next_id = create_entry_point(&item);
-                    if let None = prev.iter().find(|x| **x == next_id) {
-                        outgoing.push(next_id);
-                    }
+) -> Vec<BuildModule> {
+    children.into_iter().fold(
+        prev.to_vec(),
+        |mut acc: Vec<BuildModule>, conf_item: &ConfigItem| {
+            let mut include: Vec<String> = vec![];
+            for item in items {
+                if let Some(t) = conf_item.urls.iter().find(|x| **x == item.referrer) {
+                    include.push(create_entry_point(&item));
                 }
-                None => {}
             }
-        }
-        outgoing.sort();
-        outgoing.dedup();
-        let module = Module {
-            name: conf_item.name.to_string(),
-            include: outgoing.clone(),
-            exclude: exclude.clone(),
-            create: true,
-        };
-        target.push(module);
-        if conf_item.children.len() > 0 {
-            prev.extend(outgoing);
+            include.sort();
+            include.dedup();
+            let this_item = BuildModule {
+                name: conf_item.name.to_string(),
+                include: include.to_vec(),
+                exclude: exclude.to_vec(),
+                create: true,
+            };
+            acc.push(this_item);
+            let mut exclude = exclude.clone();
             exclude.push(conf_item.name.to_string());
-            return collect_items(target, &conf_item.children, items, prev, exclude);
-        }
-    }
-    target
+            collect(&mut acc, items, &conf_item.children, &mut exclude)
+        },
+    )
 }
 
-pub fn generate_modules(items: Items, config: impl Into<BundleConfig>) -> Vec<Module> {
-    let h: Vec<Module> = vec![Module {
+pub fn generate_modules(items: Items, config: impl Into<BundleConfig>) -> Vec<BuildModule> {
+    let mut initial: Vec<BuildModule> = vec![BuildModule {
         name: "requirejs/require".into(),
         include: vec![],
         exclude: vec![],
         create: false,
     }];
     let conf = config.into();
-    collect_items(
-        h,
-        &conf.bundles,
+    collect(
+        &mut initial,
         &items,
-        &mut vec![],
-        &mut vec!["requirejs/require".to_string()],
+        &conf.bundles,
+        &mut vec!["requirejs/require".into()],
     )
 }
 
@@ -143,6 +136,13 @@ fn test_create_modules() {
                     ]
                   }
                 ]
+              },
+              {
+                "name": "bundles/basket-other",
+                "urls": [
+                  "/index.php/checkout/cart-other/"
+                ],
+                "children": []
               }
             ]
           }
@@ -152,14 +152,33 @@ fn test_create_modules() {
     let reqs: Vec<ModuleData> =
         serde_json::from_str(include_str!("../../../../test/fixtures/example-reqs.json")).unwrap();
     let out = generate_modules(reqs, c);
+
     assert_eq!(
         out[0],
-        Module {
+        BuildModule {
             include: vec![],
             exclude: vec![],
             name: "requirejs/require".to_string(),
             create: false,
         }
     );
+
     assert_eq!(out[1].create, true);
+    let out_names: Vec<String> = out.iter().map(|item| item.name.to_string()).collect();
+
+    assert_eq!(
+        out_names,
+        vec![
+            "requirejs/require",
+            "bundles/main",
+            "bundles/basket",
+            "bundles/checkout",
+            "bundles/checkout-success",
+            "bundles/basket-other",
+        ].iter()
+            .map(|x| x.to_string())
+            .collect::<Vec<String>>()
+    );
+
+    assert_eq!(out[5].exclude, vec!["requirejs/require", "bundles/main"]);
 }

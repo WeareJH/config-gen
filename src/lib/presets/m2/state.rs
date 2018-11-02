@@ -3,14 +3,14 @@ use app_state::AppState;
 use from_file::FromFile;
 
 use presets::m2::bundle_config::BundleConfig;
-use presets::m2::bundle_config::Module;
 use presets::m2::config_gen;
+use presets::m2::module_meta_data::ModuleData;
 use presets::m2::opts::M2PresetOptions;
-use presets::m2::requirejs_config::RequireJsBuildConfig;
+use rjs::{BuildModule, RequireJsBuildConfig};
 
 pub fn gather_state(
     req: &HttpRequest<AppState>,
-) -> Result<(RequireJsBuildConfig, Vec<Module>), String> {
+) -> Result<(RequireJsBuildConfig, Vec<BuildModule>), String> {
     let modules = &req
         .state()
         .req_log
@@ -38,7 +38,7 @@ pub fn gather_state(
             let mut blacklist = vec!["js-translation".to_string()];
             blacklist.extend(module_blacklist);
 
-            let filtered = RequireJsBuildConfig::drop_blacklisted(&modules.to_vec(), &blacklist);
+            let filtered = drop_blacklisted(&modules.to_vec(), &blacklist);
             let bundle_modules = config_gen::generate_modules(filtered, bundle_config);
             let mut derived_build_config = RequireJsBuildConfig::default();
 
@@ -55,4 +55,16 @@ pub fn gather_state(
             Ok((derived_build_config, bundle_modules))
         }
     }
+}
+
+fn drop_blacklisted(modules: &Vec<ModuleData>, blacklist: &Vec<String>) -> Vec<ModuleData> {
+    let mut output = vec![];
+
+    for m in modules.iter() {
+        if !blacklist.contains(&m.id) {
+            output.push(m.clone());
+        }
+    }
+
+    output
 }

@@ -13,7 +13,24 @@
             "/index.php/juno-jacket.html"
           ],
           "children": [
+            {
+              "name": "bundles/basket2",
+              "urls": [
+                "/index.php/checkout/cart2/",
+                "/index.php/checkout/cart2"
+              ],
+              "children": [
+                {
+                  "name": "bundles/checkout2",
+                  "urls": [
+                    "/index.php/checkout2/"
+                  ],
+                  "children": [
 
+                  ]
+                }
+              ]
+            }
           ]
         },
         {

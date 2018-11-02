@@ -62,8 +62,7 @@ pub fn forward_request_without_body(
                     target_domain,
                 ))
             }
-        })
-        .responder()
+        }).responder()
 }
 
 /// Pass-through response

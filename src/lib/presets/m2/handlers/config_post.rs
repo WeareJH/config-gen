@@ -3,7 +3,7 @@ use actix_web::{HttpRequest, HttpResponse};
 use app_state::AppState;
 use futures::{Future, Stream};
 use presets::m2::preset_m2::FutResp;
-use presets::m2::requirejs_config::RequireJsClientConfig;
+use rjs::RequireJsClientConfig;
 use std;
 
 ///
