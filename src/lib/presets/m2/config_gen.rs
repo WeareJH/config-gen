@@ -14,21 +14,20 @@ use std::str::FromStr;
 
 pub type Items = Vec<ModuleData>;
 
-pub fn collect(
-    prev: &mut Vec<BuildModule>,
+pub fn collect<'a>(
+    prev: &'a mut Vec<BuildModule>,
     items: &Vec<ModuleData>,
     children: &Vec<ConfigItem>,
-    exclude: &mut Vec<String>,
-) -> Vec<BuildModule> {
-    children.into_iter().fold(
-        prev.to_vec(),
-        |mut acc: Vec<BuildModule>, conf_item: &ConfigItem| {
+    exclude: Vec<String>,
+) {
+    children.iter().for_each(
+        |conf_item| {
             let mut include: Vec<String> = vec![];
-            for item in items {
-                if let Some(t) = conf_item.urls.iter().find(|x| **x == item.referrer) {
+            items.iter().for_each(|item| {
+                if let Some(..) = conf_item.urls.iter().find(|x| **x == item.referrer) {
                     include.push(create_entry_point(&item));
                 }
-            }
+            });
             include.sort();
             include.dedup();
             let this_item = BuildModule {
@@ -37,12 +36,12 @@ pub fn collect(
                 exclude: exclude.to_vec(),
                 create: true,
             };
-            acc.push(this_item);
+            prev.push(this_item);
             let mut exclude = exclude.clone();
             exclude.push(conf_item.name.to_string());
-            collect(&mut acc, items, &conf_item.children, &mut exclude)
+            collect(prev, items, &conf_item.children, exclude);
         },
-    )
+    );
 }
 
 pub fn generate_modules(items: Items, config: impl Into<BundleConfig>) -> Vec<BuildModule> {
@@ -57,8 +56,9 @@ pub fn generate_modules(items: Items, config: impl Into<BundleConfig>) -> Vec<Bu
         &mut initial,
         &items,
         &conf.bundles,
-        &mut vec!["requirejs/require".into()],
-    )
+        vec!["requirejs/require".into()],
+    );
+    initial.to_vec()
 }
 
 #[test]
