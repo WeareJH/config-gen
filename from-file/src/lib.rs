@@ -1,8 +1,9 @@
+#[macro_use]
+extern crate serde_derive;
 extern crate serde_json;
 extern crate serde_yaml;
 
 use serde::Deserialize;
-use std;
 use std::fs::File;
 use std::io::prelude::*;
 use std::path::PathBuf;
@@ -147,7 +148,8 @@ impl std::fmt::Display for FromFileError {
 
 #[cfg(test)]
 mod tests {
-    use from_file::FromFile;
+    use super::FromFile;
+
     #[test]
     fn test_from_file() {
         #[derive(Deserialize, Debug, PartialEq)]

@@ -1,7 +1,7 @@
 use config::ProgramConfig;
 use options::ProgramOptions;
 use preset::RewriteFns;
-use presets::m2::module_meta_data::ModuleData;
+use rjs::modules::ModuleData;
 use rjs::RequireJsClientConfig;
 use std::fmt;
 use std::sync::{Arc, Mutex};

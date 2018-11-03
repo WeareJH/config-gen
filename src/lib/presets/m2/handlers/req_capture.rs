@@ -2,7 +2,7 @@ use actix_web::middleware::Finished;
 use actix_web::middleware::Middleware;
 use actix_web::{HttpRequest, HttpResponse};
 use app_state::AppState;
-use presets::m2::module_meta_data::ModuleData;
+use rjs::modules::ModuleData;
 use serde_json;
 
 pub struct ReqCapture {}
@@ -55,8 +55,10 @@ impl Middleware<AppState> for ReqCapture {
 /// # Examples
 ///
 /// ```
+/// # extern crate rjs;
+/// # extern crate bs;
 /// # use bs::presets::m2::handlers::req_capture::*;
-/// # use bs::presets::m2::module_meta_data::*;
+/// # use rjs::modules::ModuleData;
 ///
 /// let data = r#"{
 ///   "url": "https://127.0.0.1:8080/static/version1536567404/frontend/Acme/default/en_GB/Magento_Ui/js/form/form.js",

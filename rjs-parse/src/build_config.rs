@@ -1,4 +1,4 @@
-use client_config::BuildModuleId;
+use modules::BuildModuleId;
 use parse::ConfigParseError;
 use serde_json;
 use std::collections::HashMap;
@@ -237,16 +237,14 @@ impl RequireJsBuildConfig {
                             true => format!("         // mixin trigger: \"{}\",", name),
                             false => format!("        \"{}\",", name),
                         }
-                    })
-                    .collect();
+                    }).collect();
 
                 format!(
                     "require.config({{\n  bundles: {{\n    \"{}\": [\n{}\n    ]\n  }}\n}});",
                     module.name,
                     module_list.join("\n")
                 )
-            })
-            .collect();
+            }).collect();
         items.join("\n")
     }
     ///
@@ -296,14 +294,12 @@ impl Default for RequireJsBuildConfig {
             generate_source_maps: Some(true),
             inline_text: Some(true),
             optimize: Some("uglify".into()),
-            modules: Some(vec![
-                BuildModule {
-                    name: String::from("requirejs/require"),
-                    include: Vec::new(),
-                    exclude: Vec::new(),
-                    create: false
-                }
-            ]),
+            modules: Some(vec![BuildModule {
+                name: String::from("requirejs/require"),
+                include: Vec::new(),
+                exclude: Vec::new(),
+                create: false,
+            }]),
         }
     }
 }

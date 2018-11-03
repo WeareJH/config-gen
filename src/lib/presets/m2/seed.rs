@@ -1,5 +1,5 @@
 use from_file::FromFile;
-use presets::m2::module_meta_data::ModuleData;
+use rjs::modules::ModuleData;
 use rjs::RequireJsClientConfig;
 
 #[derive(Serialize, Deserialize, Default)]

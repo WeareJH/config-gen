@@ -1,16 +1,16 @@
 [package]
-name = "rjs"
+name = "from_file"
 version = "0.1.0"
 authors = ["Shane Osbourne <shane.osbourne8@gmail.com>"]
+edition = "2018"
 
 [dependencies]
 serde = "1.0"
+serde_yaml = "0.8"
+
 serde_derive = "1.0"
 serde_json = "1.0"
-serde_yaml = "0.8"
-ratel = "0.7.0"
-from_file = { path = "../from-file" }
 
 [lib]
-name = "rjs"
+name = "from_file"
 path = "src/lib.rs"

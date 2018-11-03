@@ -4,6 +4,7 @@ extern crate actix_web;
 extern crate base64;
 extern crate bytes;
 extern crate clap;
+extern crate from_file;
 extern crate futures;
 extern crate http;
 extern crate mime;
@@ -29,7 +30,6 @@ extern crate rjs;
 
 pub mod app_state;
 pub mod config;
-pub mod from_file;
 pub mod headers;
 pub mod options;
 pub mod preset;

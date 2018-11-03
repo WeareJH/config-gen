@@ -2,10 +2,9 @@ use actix_web::HttpRequest;
 use app_state::AppState;
 use from_file::FromFile;
 
-use presets::m2::bundle_config::BundleConfig;
-use presets::m2::config_gen;
-use presets::m2::module_meta_data::ModuleData;
 use presets::m2::opts::M2PresetOptions;
+use rjs::bundle_config::BundleConfig;
+use rjs::modules::{generate_modules, ModuleData};
 use rjs::{BuildModule, RequireJsBuildConfig};
 
 pub fn gather_state(
@@ -39,7 +38,7 @@ pub fn gather_state(
             blacklist.extend(module_blacklist);
 
             let filtered = drop_blacklisted(&modules.to_vec(), &blacklist);
-            let bundle_modules = config_gen::generate_modules(filtered, bundle_config);
+            let bundle_modules = generate_modules(filtered, bundle_config);
             let mut derived_build_config = RequireJsBuildConfig::default();
 
             derived_build_config.deps = client_config.deps.clone();

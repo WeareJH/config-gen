@@ -1,3 +1,4 @@
+use modules::BuildModuleId;
 use parse::ConfigParseError;
 use parse::ParsedConfig;
 use serde_json;
@@ -161,13 +162,3 @@ impl Default for RequireJsClientConfig {
         }
     }
 }
-
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-pub struct BuildModule {
-    pub name: String,
-    pub include: Vec<String>,
-    pub exclude: Vec<String>,
-    pub create: bool,
-}
-
-pub type BuildModuleId = String;
