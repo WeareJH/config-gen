@@ -9,7 +9,7 @@ use rjs::{BuildModule, RequireJsBuildConfig};
 
 pub fn gather_state(
     req: &HttpRequest<AppState>,
-) -> Result<(RequireJsBuildConfig, Vec<BuildModule>), String> {
+) -> Result<RequireJsBuildConfig, String> {
     let modules = &req
         .state()
         .req_log
@@ -38,7 +38,6 @@ pub fn gather_state(
             blacklist.extend(module_blacklist);
 
             let filtered = drop_blacklisted(&modules.to_vec(), &blacklist);
-            let bundle_modules = generate_modules(filtered, bundle_config);
             let mut derived_build_config = RequireJsBuildConfig::default();
 
             derived_build_config.deps = client_config.deps.clone();
@@ -49,9 +48,9 @@ pub fn gather_state(
             let mut c = client_config.paths.clone();
             derived_build_config.paths = RequireJsBuildConfig::strip_paths(&c);
 
-            derived_build_config.modules = Some(bundle_modules.clone());
+            let derived_build_config = derived_build_config.with_bundle_config(bundle_config, &filtered);
 
-            Ok((derived_build_config, bundle_modules))
+            Ok(derived_build_config)
         }
     }
 }

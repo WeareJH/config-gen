@@ -135,7 +135,8 @@ fn process_shim(xs: &Vec<ObjectMember>, output: &mut ParsedConfig) {
                                             Some(strip_literal(s).to_string())
                                         }
                                         _ => None,
-                                    }).map(|s| serde_json::Value::String(s))
+                                    })
+                                    .map(|s| serde_json::Value::String(s))
                                     .collect();
 
                                 output
@@ -352,7 +353,8 @@ fn get_object_value(xs: &Vec<ObjectMember>, name: &str) -> Option<Expression> {
         .and_then(|x| match x {
             ObjectMember::Value { value, .. } => Some(value.clone()),
             _ => None,
-        }).or(None)
+        })
+        .or(None)
 }
 
 fn filter_items(x: &ObjectMember, name: &str) -> bool {

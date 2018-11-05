@@ -1,5 +1,6 @@
 #[macro_use]
 extern crate serde_derive;
+extern crate serde;
 extern crate serde_json;
 extern crate serde_yaml;
 
@@ -18,7 +19,7 @@ pub enum FromFileError {
 }
 
 ///
-/// Implement this trait to enable your Struct's to deserialized
+/// Implement this trait to enable your Struct's to be deserialized
 /// from a file-path like
 ///
 /// - conf/app.yaml

@@ -39,7 +39,7 @@ pub struct ModuleData {
 /// It requires just 2 things - the request log & the bundle_config provided by the user
 ///
 pub fn generate_modules(
-    items: Vec<ModuleData>,
+    req_log: &Vec<ModuleData>,
     config: impl Into<BundleConfig>,
 ) -> Vec<BuildModule> {
     let mut modules: Vec<BuildModule> = vec![BuildModule {
@@ -51,7 +51,7 @@ pub fn generate_modules(
     let conf = config.into();
     collect(
         &mut modules,
-        &items,
+        req_log,
         &conf.bundles,
         vec!["requirejs/require".into()],
     );
@@ -63,13 +63,13 @@ pub fn generate_modules(
 ///
 pub fn collect<'a>(
     modules: &'a mut Vec<BuildModule>,
-    items: &Vec<ModuleData>,
+    req_log: &Vec<ModuleData>,
     children: &Vec<ConfigItem>,
     exclude: Vec<String>,
 ) {
     children.iter().for_each(|conf_item| {
         let mut include: Vec<String> = vec![];
-        items.iter().for_each(|item| {
+        req_log.iter().for_each(|item| {
             if let Some(..) = conf_item.urls.iter().find(|x| **x == item.referrer) {
                 include.push(create_entry_point(&item));
             }
@@ -85,7 +85,7 @@ pub fn collect<'a>(
         modules.push(this_item);
         let mut exclude = exclude.clone();
         exclude.push(conf_item.name.to_string());
-        collect(modules, items, &conf_item.children, exclude);
+        collect(modules, req_log, &conf_item.children, exclude);
     });
 }
 
@@ -167,8 +167,8 @@ fn test_create_modules() {
     }
     "#.into();
     let reqs: Vec<ModuleData> =
-        serde_json::from_str(include_str!("../../../../test/fixtures/example-reqs.json")).unwrap();
-    let out = generate_modules(reqs, c);
+        serde_json::from_str(include_str!("../test/fixtures/example-reqs.json")).unwrap();
+    let out = generate_modules(&reqs, c);
 
     assert_eq!(
         out[0],
@@ -193,8 +193,8 @@ fn test_create_modules() {
             "bundles/checkout-success",
             "bundles/basket-other",
         ].iter()
-        .map(|x| x.to_string())
-        .collect::<Vec<String>>()
+            .map(|x| x.to_string())
+            .collect::<Vec<String>>()
     );
 
     assert_eq!(out[5].exclude, vec!["requirejs/require", "bundles/main"]);

@@ -12,10 +12,10 @@ use rjs::RequireJsBuildConfig;
 ///
 pub fn handle(req: &HttpRequest<AppState>) -> HttpResponse {
     let output = match gather_state(req) {
-        Ok((merged_config, modules)) => {
+        Ok(merged_config) => {
             let module_list = RequireJsBuildConfig::bundle_loaders(
                 RequireJsBuildConfig::collect_mixins(&merged_config.config),
-                modules,
+                merged_config.modules.expect("modules always exist"),
             );
             Ok(module_list)
         }

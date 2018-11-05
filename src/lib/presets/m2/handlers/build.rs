@@ -16,7 +16,7 @@ use serde_json;
 ///
 pub fn handle(req: &HttpRequest<AppState>) -> HttpResponse {
     let output = match gather_state(req) {
-        Ok((merged_config, _)) => match serde_json::to_string_pretty(&merged_config) {
+        Ok(merged_config) => match serde_json::to_string_pretty(&merged_config) {
             Ok(t) => Ok(t),
             Err(e) => Err(e.to_string()),
         },

@@ -1,9 +1,12 @@
+use bundle_config::BundleConfig;
+use modules;
 use modules::BuildModuleId;
 use parse::ConfigParseError;
 use serde_json;
 use std::collections::HashMap;
 use BuildModule;
 use RequireJsClientConfig;
+use modules::ModuleData;
 
 ///
 /// This struct is a combination of RequireJsClientConfig
@@ -115,6 +118,52 @@ impl RequireJsBuildConfig {
         output.deps = client.deps;
         Ok(output)
     }
+    ///
+    /// Add a bundle_config data structure - this will popuplate
+    /// the `modules` field on [RequireJsBuildConfig]
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use rjs::*;
+    /// use rjs::bundle_config::*;
+    ///
+    /// let input = include_str!("../test/fixtures/requirejs-config-generated.js");
+    /// let rjx = RequireJsBuildConfig::from_generated_string(input).expect("parsed");
+    /// let bundle_config_str = r#"
+    /// bundles:
+    ///     - name: bundles/main
+    ///       children: []
+    ///       urls: ["/"]
+    /// "#;
+    /// let rjx2 = rjx.with_bundle_config(bundle_config_str.into(), &vec![]);
+    /// assert_eq!(rjx2.modules.expect("has modules"), vec![
+    ///     BuildModule {
+    ///         name: "requirejs/require".to_string(),
+    ///         include: vec![],
+    ///         exclude: vec![],
+    ///         create: false
+    ///     },
+    ///     BuildModule {
+    ///         name: "bundles/main".to_string(),
+    ///         include: vec![],
+    ///         exclude: vec![
+    ///             "requirejs/require".to_string()
+    ///         ],
+    ///         create: true
+    ///     }
+    /// ]);
+    /// ```
+    ///
+    pub fn with_bundle_config(
+        mut self,
+        bundle_config: BundleConfig,
+        req_log: &Vec<ModuleData>
+    ) -> RequireJsBuildConfig {
+        self.modules = Some(modules::generate_modules(req_log, bundle_config));
+        self
+    }
+
     ///
     /// Just a passthrough for `from_generated_string` above
     ///
@@ -237,14 +286,16 @@ impl RequireJsBuildConfig {
                             true => format!("         // mixin trigger: \"{}\",", name),
                             false => format!("        \"{}\",", name),
                         }
-                    }).collect();
+                    })
+                    .collect();
 
                 format!(
                     "require.config({{\n  bundles: {{\n    \"{}\": [\n{}\n    ]\n  }}\n}});",
                     module.name,
                     module_list.join("\n")
                 )
-            }).collect();
+            })
+            .collect();
         items.join("\n")
     }
     ///

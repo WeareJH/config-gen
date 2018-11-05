@@ -1,3 +1,5 @@
+use bundle_config::BundleConfig;
+use modules;
 use modules::BuildModuleId;
 use parse::ConfigParseError;
 use parse::ParsedConfig;
