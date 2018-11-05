@@ -136,7 +136,7 @@ impl RequireJsBuildConfig {
     ///       children: []
     ///       urls: ["/"]
     /// "#;
-    /// let rjx2 = rjx.with_bundle_config(bundle_config_str.into(), &vec![]);
+    /// let rjx2 = rjx.create_modules(&bundle_config_str.into(), &vec![]);
     /// assert_eq!(rjx2.modules.expect("has modules"), vec![
     ///     BuildModule {
     ///         name: "requirejs/require".to_string(),
@@ -155,9 +155,9 @@ impl RequireJsBuildConfig {
     /// ]);
     /// ```
     ///
-    pub fn with_bundle_config(
+    pub fn create_modules(
         mut self,
-        bundle_config: BundleConfig,
+        bundle_config: &BundleConfig,
         req_log: &Vec<ModuleData>
     ) -> RequireJsBuildConfig {
         self.modules = Some(modules::generate_modules(req_log, bundle_config));

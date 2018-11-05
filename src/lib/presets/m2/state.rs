@@ -48,7 +48,7 @@ pub fn gather_state(
             let mut c = client_config.paths.clone();
             derived_build_config.paths = RequireJsBuildConfig::strip_paths(&c);
 
-            let derived_build_config = derived_build_config.with_bundle_config(bundle_config, &filtered);
+            let derived_build_config = derived_build_config.create_modules(&bundle_config, &filtered);
 
             Ok(derived_build_config)
         }

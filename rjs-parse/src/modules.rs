@@ -40,7 +40,7 @@ pub struct ModuleData {
 ///
 pub fn generate_modules(
     req_log: &Vec<ModuleData>,
-    config: impl Into<BundleConfig>,
+    config: &BundleConfig,
 ) -> Vec<BuildModule> {
     let mut modules: Vec<BuildModule> = vec![BuildModule {
         name: "requirejs/require".into(),
@@ -48,11 +48,10 @@ pub fn generate_modules(
         exclude: vec![],
         create: false,
     }];
-    let conf = config.into();
     collect(
         &mut modules,
         req_log,
-        &conf.bundles,
+        &config.bundles,
         vec!["requirejs/require".into()],
     );
     modules.to_vec()
@@ -168,7 +167,7 @@ fn test_create_modules() {
     "#.into();
     let reqs: Vec<ModuleData> =
         serde_json::from_str(include_str!("../test/fixtures/example-reqs.json")).unwrap();
-    let out = generate_modules(&reqs, c);
+    let out = generate_modules(&reqs, &c);
 
     assert_eq!(
         out[0],
