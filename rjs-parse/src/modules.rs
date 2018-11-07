@@ -52,6 +52,7 @@ pub fn generate_modules(
         &mut modules,
         req_log,
         &config.bundles,
+        &mut vec![],
         vec!["requirejs/require".into()],
     );
     modules.to_vec()
@@ -64,13 +65,17 @@ pub fn collect<'a>(
     modules: &'a mut Vec<BuildModule>,
     req_log: &Vec<ModuleData>,
     children: &Vec<ConfigItem>,
+    prev: &mut Vec<String>,
     exclude: Vec<String>,
 ) {
     children.iter().for_each(|conf_item| {
         let mut include: Vec<String> = vec![];
         req_log.iter().for_each(|item| {
             if let Some(..) = conf_item.urls.iter().find(|x| **x == item.referrer) {
-                include.push(create_entry_point(&item));
+                let next_id = create_entry_point(&item);
+                if let None = prev.iter().find(|x| **x == next_id) {
+                    include.push(next_id);
+                }
             }
         });
         include.sort();
@@ -84,7 +89,8 @@ pub fn collect<'a>(
         modules.push(this_item);
         let mut exclude = exclude.clone();
         exclude.push(conf_item.name.to_string());
-        collect(modules, req_log, &conf_item.children, exclude);
+        prev.extend(include);
+        collect(modules, req_log, &conf_item.children, prev, exclude);
     });
 }
 
