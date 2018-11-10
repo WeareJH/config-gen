@@ -11,6 +11,12 @@ https://laughing-darwin-eb1b63.netlify.com/
 
 You can also look at the following 10 commits to see exactly how I reached a score 83 on Lighthouse https://github.com/shakyShane/m2-static/commits/master
 
+## Web-based UI
+
+This is just here to help you understand the process of taking inputs and producing the build.json
+
+https://config-gen-web.netlify.com/
+
 ---
 
 ## Step 1 - Download the binary
