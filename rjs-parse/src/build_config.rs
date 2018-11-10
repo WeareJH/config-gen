@@ -64,13 +64,14 @@ pub struct RequireJsBuildConfig {
     // These fields come from `RequireJsClientConfig`
     //
     pub deps: Vec<BuildModuleId>,
+
+    #[serde(default = "default_modules")]
+    pub modules: Option<Vec<BuildModule>>,
+
     pub map: serde_json::Value,
     pub config: serde_json::Value,
     pub shim: serde_json::Value,
     pub paths: HashMap<String, String>,
-
-    #[serde(default = "default_modules")]
-    pub modules: Option<Vec<BuildModule>>,
 }
 
 impl RequireJsBuildConfig {

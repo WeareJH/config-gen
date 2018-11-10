@@ -34,6 +34,26 @@ pub struct ModuleData {
     pub referrer: String,
 }
 
+#[derive(Debug)]
+pub enum ModuleDataError {
+    SerdeError(serde_json::Error)
+}
+
+impl ModuleDataError {
+    pub fn to_string(&self) -> String {
+        match self {
+            ModuleDataError::SerdeError(e) => format!("{}", e.to_string()),
+        }
+    }
+}
+
+impl ModuleData {
+    ///
+    pub fn from_json_string(input: impl Into<String>) -> Result<Vec<ModuleData>, ModuleDataError> {
+        serde_json::from_str(&input.into()).map_err(|e| ModuleDataError::SerdeError(e))
+    }
+}
+
 ///
 /// generate just the 'modules' part of the RequireJS Optimizer configuration.
 /// It requires just 2 things - the request log & the bundle_config provided by the user

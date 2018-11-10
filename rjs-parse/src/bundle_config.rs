@@ -15,6 +15,15 @@ pub enum BundleConfigError {
     SerdeYamlError(serde_yaml::Error),
 }
 
+impl BundleConfigError {
+    pub fn to_string(&self) -> String {
+        match self {
+            BundleConfigError::SerdeJsonError(e) => format!("{}", e.to_string()),
+            BundleConfigError::SerdeYamlError(e) => format!("{}", e.to_string())
+        }
+    }
+}
+
 impl BundleConfig {
     ///
     /// # Examples

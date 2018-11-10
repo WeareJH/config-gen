@@ -18,3 +18,5 @@ pub use client_config::RequireJsClientConfig;
 pub use modules::BuildModule;
 
 pub use build_config::RequireJsBuildConfig;
+pub use modules::ModuleData;
+pub use bundle_config::BundleConfig;

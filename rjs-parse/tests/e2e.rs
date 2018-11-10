@@ -2,7 +2,7 @@ extern crate rjs;
 extern crate from_file;
 extern crate serde_json;
 
-use rjs::{RequireJsBuildConfig, bundle_config};
+use rjs::{RequireJsBuildConfig, ModuleData, bundle_config};
 
 #[test]
 fn test_all_strings() {
@@ -116,7 +116,7 @@ fn test_all_strings() {
 
     let rjs_build = RequireJsBuildConfig::from_generated_string(rjs_config).expect("sup");
     let config = bundle_config::BundleConfig::from_json_string(bundle_config).expect("bundle config parse");
-    let req_log: Vec<rjs::modules::ModuleData> = serde_json::from_str(req_log).expect("serde");
+    let req_log = ModuleData::from_json_string(req_log).expect("serde");
 
     let next_build = rjs_build.create_modules(&config, &req_log);
     let as_string = next_build.to_string().expect("must serialize");
