@@ -2,6 +2,23 @@
 
 > Generate RequireJS Optimizer configuration for Magento 2 website based on real-world usage.
 
+## Live Demo
+
+**Note**: The following is just a **static** representation of a Magento 2 homepage. It's there just to illustrate
+the performance benefits that are possible when using the RequireJS Optimizer
+
+https://laughing-darwin-eb1b63.netlify.com/
+
+You can also look at the following 10 commits to see exactly how I reached a score 83 on Lighthouse https://github.com/shakyShane/m2-static/commits/master
+
+## Web-based UI
+
+This is just here to help you understand the process of taking inputs and producing the build.json
+
+https://config-gen-web.netlify.com/
+
+---
+
 ## Step 1 - Download the binary
 
 To enable easy usage, `config-gen` is packaged as a single binary (currently only osx) - just check
