@@ -2,6 +2,7 @@
 
 > Generate RequireJS Optimizer configuration for Magento 2 website based on real-world usage.
 
+## Live Demo
 
 **Note**: The following is just a **static** representation of a Magento 2 homepage. It's there just to illustrate
 the performance benefits that are possible when using the RequireJS Optimizer
