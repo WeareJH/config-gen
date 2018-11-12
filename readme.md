@@ -62,7 +62,7 @@ presets:
 
 ## Step 3 - create the `bundle-config.yml` or `json` file as noted above.
 
-This is what determines the parent-child relationship. This file is 
+This is what determines the parent-child relationship. This file is
 read from disk every time the `/build.json` or `/loaders.js` endpoint is
 requested - which means you can navigate around the site and continue
 to tweak these relationships to get the optimal result.
@@ -126,7 +126,7 @@ At any point, you can access the following endpoints to retrieve the generated j
 
 |Path|Purpose|
 |---|---|
-|`/__bs/build.json`|Generates the configuration needed for the Optimzer|
+|`/__bs/build.json`|Generates the configuration needed for the Optimizer|
 |`/__bs/loaders.js`|Generates the JavaScript needed to load additional bundles|
 |`/__bs/seed.json`|Generates a dump of the current state so that you can pick up where you left off|
 
@@ -134,8 +134,8 @@ At any point, you can access the following endpoints to retrieve the generated j
 
 ## Using `build.json`
 
-You'll first need to run `static-content:deploy` to ensure all assets are accessible to the optimizer - 
-once you've done that, you'll need to `mv` the entire locale folder and then run the r_js tool using the 
+You'll first need to run `static-content:deploy` to ensure all assets are accessible to the optimizer -
+once you've done that, you'll need to `mv` the entire locale folder and then run the r_js tool using the
 build.json
 
 ```
