@@ -31,12 +31,6 @@ impl M2Preset {
     }
 }
 
-const PATH_REQUIRE_JS: &'static str =
-    "/static/{version}/frontend/{vendor}/{theme}/{locale}/requirejs/require.js";
-const PATH_REQUIRE_CNF: &'static str =
-    "/static/{version}/frontend/{vendor}/{theme}/{locale}/requirejs-config.js";
-const PATH_CONF_POST: &'static str = "/__bs/post";
-
 ///
 /// The M2Preset adds some middleware, resources and
 /// rewrites
@@ -52,12 +46,12 @@ impl Preset<AppState> for M2Preset {
         // which is suitable for most routes.
         //
         let http_responders: Vec<ResourceDef> = vec![
-            (PATH_REQUIRE_JS, Method::GET, handlers::serve_r_js::handle),
-            ("/__bs/reqs.json", Method::GET, handlers::requests::handle),
-            ("/__bs/config.json", Method::GET, handlers::config::handle),
-            ("/__bs/build.json", Method::GET, handlers::build::handle),
-            ("/__bs/loaders.js", Method::GET, handlers::loaders::handle),
-            ("/__bs/seed.json", Method::GET, handlers::seed::handle),
+            handlers::serve_r_js::register(self.options.require_path.clone()),
+            ("/__bs/reqs.json".to_string(), Method::GET, handlers::requests::handle),
+            ("/__bs/config.json".to_string(), Method::GET, handlers::config::handle),
+            ("/__bs/build.json".to_string(), Method::GET, handlers::build::handle),
+            ("/__bs/loaders.js".to_string(), Method::GET, handlers::loaders::handle),
+            ("/__bs/seed.json".to_string(), Method::GET, handlers::seed::handle),
         ];
 
         //
@@ -65,12 +59,7 @@ impl Preset<AppState> for M2Preset {
         // work to be done in a handler.
         //
         let http_async_responders: Vec<AsyncResourceDef> = vec![
-            (PATH_CONF_POST, Method::POST, handlers::config_post::handle),
-            (
-                PATH_REQUIRE_CNF,
-                Method::GET,
-                handlers::config_capture::handle,
-            ),
+            handlers::config_capture::register(self.options.require_conf_path.clone())
         ];
 
         let app = http_responders

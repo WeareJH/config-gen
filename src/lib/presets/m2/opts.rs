@@ -3,8 +3,13 @@ use serde_json;
 
 #[derive(Deserialize, Debug)]
 pub struct M2PresetOptions {
+
     #[serde(default = "default_require_path")]
     pub require_path: Option<String>,
+
+    #[serde(default = "default_require_conf_path")]
+    pub require_conf_path: Option<String>,
+
     pub bundle_config: Option<String>,
     pub auth_basic: Option<AuthBasic>,
     pub module_blacklist: Option<Vec<String>>,
@@ -14,10 +19,15 @@ fn default_require_path() -> Option<String> {
     Some("/static/{version}/frontend/{vendor}/{theme}/{locale}/requirejs/require.js".into())
 }
 
+fn default_require_conf_path() -> Option<String> {
+    Some("/static/{version}/frontend/{vendor}/{theme}/{locale}/requirejs-config.js".into())
+}
+
 impl Default for M2PresetOptions {
     fn default() -> Self {
         M2PresetOptions {
             require_path: None,
+            require_conf_path: None,
             bundle_config: None,
             auth_basic: None,
             module_blacklist: None,

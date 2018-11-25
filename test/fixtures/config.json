@@ -4,6 +4,7 @@
       "name": "m2",
       "options": {
         "bundle_config": "file:test/fixtures/bundle-config.json",
+        "require_path": "/static/{version}/frontend/{vendor}/{theme}/{locale}/requirejs/require.js",
         "auth_basic": {
           "username": "acme",
           "password": "acmepw"

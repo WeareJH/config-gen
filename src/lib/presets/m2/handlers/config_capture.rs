@@ -3,6 +3,9 @@ use app_state::AppState;
 use presets::m2::preset_m2::FutResp;
 use proxy_utils::apply_to_proxy_body;
 use rjs::RequireJsClientConfig;
+use actix_web::http::Method;
+use preset::ResourceDef;
+use preset::AsyncResourceDef;
 
 ///
 /// This handler will record the incoming string from the Magento-generated
@@ -25,4 +28,9 @@ pub fn handle(original_request: &HttpRequest<AppState>) -> FutResp {
         };
         b
     })
+}
+
+pub fn register(path: Option<String>) -> AsyncResourceDef {
+    let p = path.unwrap();
+    (p.clone(), Method::GET, handle)
 }

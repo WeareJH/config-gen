@@ -21,5 +21,5 @@ pub trait Preset<T> {
 /// The following are just aliases
 ///
 pub type RewriteFns = Vec<fn(&str, &RewriteContext) -> String>;
-pub type ResourceDef<'a> = (&'a str, Method, fn(&HttpRequest<AppState>) -> HttpResponse);
-pub type AsyncResourceDef<'a> = (&'a str, Method, fn(&HttpRequest<AppState>) -> FutResp);
+pub type ResourceDef = (String, Method, fn(&HttpRequest<AppState>) -> HttpResponse);
+pub type AsyncResourceDef = (String, Method, fn(&HttpRequest<AppState>) -> FutResp);
