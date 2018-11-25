@@ -13,6 +13,7 @@ use serde_json;
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::sync::Mutex;
+use config::ProgramStartError;
 
 pub type PresetsMap = HashMap<usize, Box<Preset<AppState>>>;
 
@@ -34,6 +35,41 @@ pub fn apply_presets(
     }
 
     app.default_resource(|r| r.f(proxy_transform))
+}
+
+pub fn validate_presets(presets: Vec<&str>, program_config: &ProgramConfig) -> Result<(), ProgramStartError> {
+    let mut errors = vec![];
+    program_config.presets.iter().enumerate().for_each(|(i, preset)| {
+        match preset.name.as_str() {
+            "m2" => {
+                let preset_opts: Result<M2PresetOptions, serde_json::Error>
+                    = serde_json::from_value(preset.options.clone());
+
+                match preset_opts {
+                    Err(e) => {
+                        errors.push(ProgramStartError::PresetOptions {
+                            error: e.to_string(),
+                            name: "m2".to_string()
+                        })
+                    },
+                    _ => {}
+                }
+            }
+            _ => {
+                errors.push(
+                    ProgramStartError::PresetNotSupported {
+                        name: "m2".to_string()
+                    }
+                );
+            },
+        }
+    });
+
+    if errors.len() > 0 {
+        Err(ProgramStartError::Presets(errors))
+    } else {
+        Ok(())
+    }
 }
 
 pub fn state_and_presets(
