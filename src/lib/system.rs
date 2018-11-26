@@ -6,6 +6,7 @@ use options::ProgramOptions;
 use options::ProxyScheme;
 use setup::apply_presets;
 use setup::state_and_presets;
+use setup::validate_presets;
 use ssl;
 use std::net::SocketAddr;
 use std::net::SocketAddrV4;
@@ -40,6 +41,11 @@ pub fn create(opts: ProgramOptions) -> Result<(actix::SystemRunner, String), Pro
     // Did the user provide a seed?
     //
     let maybe_seed = server_opts.seed_file.clone();
+
+    //
+    // Exit early if any presets fail validation
+    //
+    let _validated_presets = validate_presets(&program_config)?;
 
     //
     // Now start the server

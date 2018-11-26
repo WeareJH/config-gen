@@ -1,10 +1,12 @@
 use actix_web::App;
 use app_state::AppState;
 use config::ProgramConfig;
+use config::ProgramStartError;
 use from_file::FromFile;
 use options::ProgramOptions;
 use preset::Preset;
-use presets::m2::opts::M2PresetOptions;
+use preset::PresetOptions;
+use presets::m2::preset_m2_opts::M2PresetOptions;
 use presets::m2::preset_m2::M2Preset;
 use presets::m2::seed::SeedData;
 use proxy_transform::proxy_transform;
@@ -36,6 +38,56 @@ pub fn apply_presets(
     app.default_resource(|r| r.f(proxy_transform))
 }
 
+///
+/// Validate given preset options. This is dynamic in nature since
+/// we cannot use serde to validate all nested presets by itself.
+///
+/// Instead we partially validate (json/yaml) the data structure,
+///
+pub fn validate_presets(program_config: &ProgramConfig) -> Result<(), ProgramStartError> {
+
+    //
+    // A map of all possible validators
+    //
+    let preset_validators: HashMap<_, _> = vec![
+        ("m2", M2PresetOptions::validate)
+    ].into_iter().collect();
+
+    //
+    // collect any errors that occur from parsing all the options
+    // for each preset
+    //
+    let errors: Vec<ProgramStartError> = program_config
+        .presets
+        .iter()
+        .filter_map(|preset| {
+            let name = preset.name.as_str();
+
+            let not_supported = || Some(ProgramStartError::PresetNotSupported {
+                name: name.to_string(),
+            });
+
+            preset_validators
+                .get(name)
+                .map_or_else(not_supported, |validate_fn| {
+                    match validate_fn(preset.options.clone()) {
+                        Err(e) => Some(ProgramStartError::PresetOptions {
+                            error: e.to_string(),
+                            name: name.to_string(),
+                        }),
+                        Ok(..) => None
+                    }
+                })
+        })
+        .collect();
+
+    if errors.len() > 0 {
+        Err(ProgramStartError::Presets(errors))
+    } else {
+        Ok(())
+    }
+}
+
 pub fn state_and_presets(
     opts: &ProgramOptions,
     program_config: &ProgramConfig,
@@ -47,6 +99,10 @@ pub fn state_and_presets(
     //
     let mut presets_map: PresetsMap = HashMap::new();
 
+    let preset_factories: HashMap<_, _> = vec![
+        ("m2", M2Preset::from_value)
+    ].into_iter().collect();
+
     //
     // Loop through any presets and create an instance
     // that's stored in the hashmap based on it's index
@@ -54,15 +110,16 @@ pub fn state_and_presets(
     // This is done so that we can use the index later
     // to lookup this item in order
     //
-    for (index, p) in program_config.presets.iter().enumerate() {
-        match p.name.as_str() {
-            "m2" => {
-                let preset_opts: M2PresetOptions =
-                    serde_json::from_value(p.options.clone()).unwrap();
-                let preset = M2Preset::new(preset_opts);
-                presets_map.insert(index, Box::new(preset));
+    for (index, preset) in program_config.presets.iter().enumerate() {
+        let name = preset.name.as_str();
+        match preset_factories.get(name) {
+            Some(cb) => {
+                let out = cb(preset.options.clone());
+                presets_map.insert(index, Box::new(out));
             }
-            _ => println!("unsupported"),
+            _ => {
+                unreachable!();
+            },
         }
     }
 

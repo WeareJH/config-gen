@@ -10,7 +10,7 @@ use futures::Future;
 use headers::clone_headers;
 use openssl::ssl::SslConnector;
 use openssl::ssl::{SslMethod, SslVerifyMode};
-use presets::m2::opts::{AuthBasic, M2PresetOptions};
+use presets::m2::preset_m2_opts::{AuthBasic, M2PresetOptions};
 use std::str;
 use with_body::forward_request_with_body;
 use without_body::forward_request_without_body;

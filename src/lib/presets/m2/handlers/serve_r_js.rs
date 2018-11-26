@@ -1,6 +1,9 @@
+use actix_web::http::Method;
 use actix_web::HttpRequest;
 use actix_web::HttpResponse;
 use app_state::AppState;
+use preset::ResourceDef;
+use presets::m2::preset_m2_opts::M2PresetOptions;
 
 const INSTRUMENTED_REQUIRE_JS: &'static str = include_str!("../static/requirejs.js");
 
@@ -12,4 +15,9 @@ pub fn handle(_req: &HttpRequest<AppState>) -> HttpResponse {
     HttpResponse::Ok()
         .content_type("application/javascript")
         .body(INSTRUMENTED_REQUIRE_JS)
+}
+
+pub fn register(path: Option<String>) -> ResourceDef {
+    let p = path.unwrap();
+    (p.clone(), Method::GET, handle)
 }

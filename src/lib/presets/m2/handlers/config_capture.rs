@@ -1,5 +1,8 @@
+use actix_web::http::Method;
 use actix_web::HttpRequest;
 use app_state::AppState;
+use preset::AsyncResourceDef;
+use preset::ResourceDef;
 use presets::m2::preset_m2::FutResp;
 use proxy_utils::apply_to_proxy_body;
 use rjs::RequireJsClientConfig;
@@ -25,4 +28,9 @@ pub fn handle(original_request: &HttpRequest<AppState>) -> FutResp {
         };
         b
     })
+}
+
+pub fn register(path: Option<String>) -> AsyncResourceDef {
+    let p = path.unwrap();
+    (p.clone(), Method::GET, handle)
 }

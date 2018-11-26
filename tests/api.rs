@@ -110,40 +110,6 @@ fn test_build_json_without_config() {
 }
 
 #[test]
-fn test_capture_requirejs() {
-    let args = vec!["config-gen", "http://example.com"];
-    let path = "/__bs/post";
-    let get = "/__bs/build.json";
-    run_with_args(args, move |result: RunResult| {
-        let (_sys, url) = result.expect("system started");
-        let api1 = format!("{}{}", url, path);
-        let client = reqwest::Client::new();
-
-        client
-            .post(&api1)
-            .body(include_str!(
-                "../test/fixtures/requirejs-config-generated.js"
-            )).send()
-            .expect("POST sent");
-
-        let api2 = format!("{}{}", url, get);
-        let mut res2 = reqwest::get(api2.as_str()).expect("call build.json api endpoint");
-        let actual: RequireJsBuildConfig =
-            serde_json::from_str(&res2.text().expect("res.text")).expect("serde_unwrap");
-        let expected: RequireJsBuildConfig =
-            serde_json::from_str(include_str!("../test/fixtures/rjs-config-expected.json"))
-                .expect("serde expected");
-
-        assert_eq!(actual.deps, expected.deps);
-        assert_eq!(actual.paths, expected.paths);
-        assert_eq!(actual.map, expected.map);
-        assert_eq!(actual.modules, expected.modules);
-        assert_eq!(actual.optimize, expected.optimize);
-        assert_eq!(actual.shim, expected.shim);
-    });
-}
-
-#[test]
 fn test_build_json_with_seed_without_config() {
     let args = vec![
         "config-gen",
@@ -157,6 +123,42 @@ fn test_build_json_with_seed_without_config() {
             serde_json::from_str(&res.text().expect("unwrap text response"))
                 .expect("serde deserialize");
     });
+}
+
+#[test]
+fn test_validate_preset_options() {
+    let args = vec![
+        "config-gen",
+        "http://example.com",
+        "--config",
+        "test/fixtures/config-error.json",
+    ];
+    match ProgramOptions::from_args(args).and_then(system::create) {
+        Ok(..) => {
+            unreachable!();
+        }
+        Err(_e) => {
+            assert!(true)
+        }
+    }
+}
+
+#[test]
+fn test_exit_on_unsupported_preset() {
+    let args = vec![
+        "config-gen",
+        "http://example.com",
+        "--config",
+        "test/fixtures/config-unsupported-preset.json",
+    ];
+    match ProgramOptions::from_args(args).and_then(system::create) {
+        Ok(..) => {
+            unreachable!();
+        }
+        Err(_e) => {
+            assert!(true)
+        }
+    }
 }
 
 ///

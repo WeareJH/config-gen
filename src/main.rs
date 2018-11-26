@@ -35,7 +35,9 @@ fn main() {
             let _ = sys.run();
         }
         Err(e) => {
-            eprintln!("{}", e);
+            eprintln!("Sorry there was a problem starting config-gen");
+            eprintln!("Please see the error below:\n");
+            eprintln!("Error: {}", e);
             std::process::exit(1);
         }
     }

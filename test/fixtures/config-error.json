@@ -1,0 +1,14 @@
+{
+  "presets": [
+    {
+      "name": "m2",
+      "options": {
+        "require_path": 0,
+        "authbasic": {
+          "username": "acme",
+          "password": "acmepw"
+        }
+      }
+    }
+  ]
+}
