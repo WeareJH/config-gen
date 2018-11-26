@@ -137,7 +137,25 @@ fn test_validate_preset_options() {
         Ok(..) => {
             unreachable!();
         }
-        Err(e) => {
+        Err(_e) => {
+            assert!(true)
+        }
+    }
+}
+
+#[test]
+fn test_exit_on_unsupported_preset() {
+    let args = vec![
+        "config-gen",
+        "http://example.com",
+        "--config",
+        "test/fixtures/config-unsupported-preset.json",
+    ];
+    match ProgramOptions::from_args(args).and_then(system::create) {
+        Ok(..) => {
+            unreachable!();
+        }
+        Err(_e) => {
             assert!(true)
         }
     }
