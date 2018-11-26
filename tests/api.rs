@@ -125,6 +125,24 @@ fn test_build_json_with_seed_without_config() {
     });
 }
 
+#[test]
+fn test_validate_preset_options() {
+    let args = vec![
+        "config-gen",
+        "http://example.com",
+        "--config",
+        "test/fixtures/config-error.json",
+    ];
+    match ProgramOptions::from_args(args).and_then(system::create) {
+        Ok(..) => {
+            unreachable!();
+        }
+        Err(e) => {
+            assert!(true)
+        }
+    }
+}
+
 ///
 /// Test helper to run the server from a Vec of args
 /// just like you would in the the CLI
