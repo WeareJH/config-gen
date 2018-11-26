@@ -6,6 +6,7 @@ use actix_web::{AsyncResponder, Body, Error, HttpMessage, HttpRequest, HttpRespo
 use futures::future::{ok, Either};
 use futures::{Future, Stream};
 
+use std::time::Duration;
 use app_state::AppState;
 use preset::RewriteFns;
 use proxy_transform::create_outgoing;
@@ -33,6 +34,7 @@ pub fn forward_request_without_body(
         .finish()
         .unwrap()
         .send()
+        .timeout(Duration::from_secs(5))
         .map_err(Error::from)
         .and_then(move |proxy_response: ClientResponse| {
             debug!("Got proxy response, status={}", proxy_response.status());
