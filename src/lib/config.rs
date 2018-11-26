@@ -105,12 +105,12 @@ impl std::fmt::Display for ProgramStartError {
                 name,
                 error
             } => {
-                write!(f, "preset {} could not be parsed\nerror: {}", name, error)
+                write!(f, "preset `{}` could not be parsed\nerror: {}", name, error)
             }
             ProgramStartError::PresetNotSupported {
                 name,
             } => {
-                write!(f, "preset {} is not currently supported", name)
+                write!(f, "preset `{}` is not currently supported", name)
             }
             ProgramStartError::Presets(errors) => {
                 let res = errors

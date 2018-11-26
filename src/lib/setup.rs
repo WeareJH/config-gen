@@ -44,11 +44,7 @@ pub fn apply_presets(
 ///
 /// Instead we partially validate (json/yaml) the data structure,
 ///
-pub fn validate_presets(
-    presets: Vec<&str>,
-    program_config: &ProgramConfig,
-) -> Result<(), ProgramStartError> {
-    let mut errors = vec![];
+pub fn validate_presets(program_config: &ProgramConfig) -> Result<(), ProgramStartError> {
 
     //
     // A map of all possible validators
@@ -57,31 +53,33 @@ pub fn validate_presets(
         ("m2", M2PresetOptions::validate)
     ].into_iter().collect();
 
-    program_config
+    //
+    // collect any errors that occur from parsing all the options
+    // for each preset
+    //
+    let errors: Vec<ProgramStartError> = program_config
         .presets
         .iter()
-        .enumerate()
-        .for_each(|(i, preset)| {
+        .filter_map(|preset| {
             let name = preset.name.as_str();
-            let preset_validate = preset_validators.get(name);
 
-            match preset_validate {
-                Some(validator) => match validator(preset.options.clone()) {
-                    Err(e) => {
-                        errors.push(ProgramStartError::PresetOptions {
+            let not_supported = || Some(ProgramStartError::PresetNotSupported {
+                name: name.to_string(),
+            });
+
+            preset_validators
+                .get(name)
+                .map_or_else(not_supported, |validate_fn| {
+                    match validate_fn(preset.options.clone()) {
+                        Err(e) => Some(ProgramStartError::PresetOptions {
                             error: e.to_string(),
                             name: name.to_string(),
-                        });
+                        }),
+                        Ok(..) => None
                     }
-                    _ => {
-                        // nothing!
-                    }
-                },
-                None => errors.push(ProgramStartError::PresetNotSupported {
-                    name: name.to_string(),
-                }),
-            }
-        });
+                })
+        })
+        .collect();
 
     if errors.len() > 0 {
         Err(ProgramStartError::Presets(errors))

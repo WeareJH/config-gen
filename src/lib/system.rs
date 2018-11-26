@@ -45,7 +45,7 @@ pub fn create(opts: ProgramOptions) -> Result<(actix::SystemRunner, String), Pro
     //
     // Exit early if any presets fail validation
     //
-    let _validated_presets = validate_presets(vec!["m2"], &program_config)?;
+    let _validated_presets = validate_presets(&program_config)?;
 
     //
     // Now start the server
