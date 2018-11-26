@@ -6,7 +6,7 @@ use from_file::FromFile;
 use options::ProgramOptions;
 use preset::Preset;
 use preset::PresetOptions;
-use presets::m2::opts::M2PresetOptions;
+use presets::m2::preset_m2_opts::M2PresetOptions;
 use presets::m2::preset_m2::M2Preset;
 use presets::m2::seed::SeedData;
 use proxy_transform::proxy_transform;

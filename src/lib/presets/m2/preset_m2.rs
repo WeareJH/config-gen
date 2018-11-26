@@ -8,7 +8,7 @@ use futures::Future;
 use preset::{Preset, ResourceDef, RewriteFns};
 
 use super::handlers;
-use super::opts::M2PresetOptions;
+use super::preset_m2_opts::M2PresetOptions;
 use super::replace_cookie_domain;
 use app_state::AppState;
 use preset::AsyncResourceDef;

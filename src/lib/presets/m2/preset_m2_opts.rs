@@ -59,7 +59,7 @@ impl M2PresetOptions {
     pub fn new(options: serde_json::Value) -> M2PresetOptions {
         match serde_json::from_value::<M2PresetOptions>(options) {
             Ok(options) => options,
-            Err(e) => M2PresetOptions::default(),
+            Err(_e) => M2PresetOptions::default(),
         }
     }
     pub fn get_opts(prog_config: &ProgramConfig) -> Option<M2PresetOptions> {

@@ -2,7 +2,7 @@ use actix_web::HttpRequest;
 use app_state::AppState;
 use from_file::FromFile;
 
-use presets::m2::opts::M2PresetOptions;
+use presets::m2::preset_m2_opts::M2PresetOptions;
 use rjs::bundle_config::BundleConfig;
 use rjs::modules::{generate_modules, ModuleData};
 use rjs::{BuildModule, RequireJsBuildConfig};
