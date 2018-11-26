@@ -4,8 +4,8 @@ use from_file::FromFile;
 
 use presets::m2::preset_m2_opts::M2PresetOptions;
 use rjs::bundle_config::BundleConfig;
-use rjs::modules::{generate_modules, ModuleData};
-use rjs::{BuildModule, RequireJsBuildConfig};
+use rjs::modules::{ModuleData};
+use rjs::{RequireJsBuildConfig};
 
 pub fn gather_state(
     req: &HttpRequest<AppState>,

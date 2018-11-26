@@ -23,10 +23,11 @@ pub fn forward_request_without_body(
     req_target: String,
     mut outgoing: ClientRequestBuilder,
 ) -> Box<Future<Item = HttpResponse, Error = Error>> {
-    let target_domain = incoming_request.state().opts.target.clone();
-    let bind_port = incoming_request.state().opts.port;
+    let state = incoming_request.state();
+    let target_domain = state.opts.target.clone();
+    let bind_port = state.opts.port;
     let req_uri = incoming_request.uri().clone();
-    let rewrites = incoming_request.state().rewrites.clone();
+    let rewrites = state.rewrites.clone();
 
     let (host, port) = get_host_port(incoming_request, bind_port);
 
@@ -34,7 +35,7 @@ pub fn forward_request_without_body(
         .finish()
         .unwrap()
         .send()
-        .timeout(Duration::from_secs(5))
+        .timeout(Duration::from_secs(state.opts.proxy_timeout_secs.into()))
         .map_err(Error::from)
         .and_then(move |proxy_response: ClientResponse| {
             debug!("Got proxy response, status={}", proxy_response.status());
