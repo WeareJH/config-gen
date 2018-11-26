@@ -29,6 +29,15 @@ impl M2Preset {
     pub fn new(options: M2PresetOptions) -> M2Preset {
         M2Preset { options }
     }
+    ///
+    /// Allow this preset to be constructed from a deserilized
+    /// json/yaml structure
+    ///
+    pub fn from_value(options: serde_json::Value) -> M2Preset {
+        let preset_opts = M2PresetOptions::new(options);
+        let preset = M2Preset::new(preset_opts);
+        preset
+    }
 }
 
 ///

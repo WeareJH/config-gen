@@ -52,6 +52,16 @@ impl Default for AuthBasic {
 }
 
 impl M2PresetOptions {
+    ///
+    /// M2PresetOptions::new should never fail since it will have been validated
+    /// before it ever gets here
+    ///
+    pub fn new(options: serde_json::Value) -> M2PresetOptions {
+        match serde_json::from_value::<M2PresetOptions>(options) {
+            Ok(options) => options,
+            Err(e) => M2PresetOptions::default(),
+        }
+    }
     pub fn get_opts(prog_config: &ProgramConfig) -> Option<M2PresetOptions> {
         serde_json::from_value(prog_config.get_opts("m2")?).ok()?
     }

@@ -49,9 +49,13 @@ pub fn validate_presets(
     program_config: &ProgramConfig,
 ) -> Result<(), ProgramStartError> {
     let mut errors = vec![];
-    let mut maps = HashMap::new();
 
-    maps.insert("m2", |o: serde_json::Value| M2PresetOptions::validate(o));
+    //
+    // A map of all possible validators
+    //
+    let preset_validators: HashMap<_, _> = vec![
+        ("m2", M2PresetOptions::validate)
+    ].into_iter().collect();
 
     program_config
         .presets
@@ -59,7 +63,7 @@ pub fn validate_presets(
         .enumerate()
         .for_each(|(i, preset)| {
             let name = preset.name.as_str();
-            let preset_validate = maps.get(name);
+            let preset_validate = preset_validators.get(name);
 
             match preset_validate {
                 Some(validator) => match validator(preset.options.clone()) {
@@ -97,6 +101,10 @@ pub fn state_and_presets(
     //
     let mut presets_map: PresetsMap = HashMap::new();
 
+    let preset_factories: HashMap<_, _> = vec![
+        ("m2", M2Preset::from_value)
+    ].into_iter().collect();
+
     //
     // Loop through any presets and create an instance
     // that's stored in the hashmap based on it's index
@@ -104,15 +112,16 @@ pub fn state_and_presets(
     // This is done so that we can use the index later
     // to lookup this item in order
     //
-    for (index, p) in program_config.presets.iter().enumerate() {
-        match p.name.as_str() {
-            "m2" => {
-                let preset_opts: M2PresetOptions =
-                    serde_json::from_value(p.options.clone()).unwrap();
-                let preset = M2Preset::new(preset_opts);
-                presets_map.insert(index, Box::new(preset));
+    for (index, preset) in program_config.presets.iter().enumerate() {
+        let name = preset.name.as_str();
+        match preset_factories.get(name) {
+            Some(cb) => {
+                let out = cb(preset.options.clone());
+                presets_map.insert(index, Box::new(out));
             }
-            _ => println!("unsupported"),
+            _ => {
+                unreachable!();
+            },
         }
     }
 
