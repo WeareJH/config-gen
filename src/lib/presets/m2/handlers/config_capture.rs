@@ -1,11 +1,11 @@
+use actix_web::http::Method;
 use actix_web::HttpRequest;
 use app_state::AppState;
+use preset::AsyncResourceDef;
+use preset::ResourceDef;
 use presets::m2::preset_m2::FutResp;
 use proxy_utils::apply_to_proxy_body;
 use rjs::RequireJsClientConfig;
-use actix_web::http::Method;
-use preset::ResourceDef;
-use preset::AsyncResourceDef;
 
 ///
 /// This handler will record the incoming string from the Magento-generated

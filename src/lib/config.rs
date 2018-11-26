@@ -113,7 +113,8 @@ impl std::fmt::Display for ProgramStartError {
                 write!(f, "preset {} is not currently supported", name)
             }
             ProgramStartError::Presets(errors) => {
-                let res = errors.iter()
+                let res = errors
+                    .iter()
                     .map(|x| x.to_string())
                     .collect::<Vec<String>>()
                     .join("\n");

@@ -6,10 +6,10 @@ use options::ProgramOptions;
 use options::ProxyScheme;
 use setup::apply_presets;
 use setup::state_and_presets;
+use setup::validate_presets;
 use ssl;
 use std::net::SocketAddr;
 use std::net::SocketAddrV4;
-use setup::validate_presets;
 
 pub fn create(opts: ProgramOptions) -> Result<(actix::SystemRunner, String), ProgramStartError> {
     //

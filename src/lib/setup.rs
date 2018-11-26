@@ -1,9 +1,11 @@
 use actix_web::App;
 use app_state::AppState;
 use config::ProgramConfig;
+use config::ProgramStartError;
 use from_file::FromFile;
 use options::ProgramOptions;
 use preset::Preset;
+use preset::PresetOptions;
 use presets::m2::opts::M2PresetOptions;
 use presets::m2::preset_m2::M2Preset;
 use presets::m2::seed::SeedData;
@@ -13,7 +15,6 @@ use serde_json;
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::sync::Mutex;
-use config::ProgramStartError;
 
 pub type PresetsMap = HashMap<usize, Box<Preset<AppState>>>;
 
@@ -37,33 +38,46 @@ pub fn apply_presets(
     app.default_resource(|r| r.f(proxy_transform))
 }
 
-pub fn validate_presets(presets: Vec<&str>, program_config: &ProgramConfig) -> Result<(), ProgramStartError> {
+///
+/// Validate given preset options. This is dynamic in nature since
+/// we cannot use serde to validate all nested presets by itself.
+///
+/// Instead we partially validate (json/yaml) the data structure,
+///
+pub fn validate_presets(
+    presets: Vec<&str>,
+    program_config: &ProgramConfig,
+) -> Result<(), ProgramStartError> {
     let mut errors = vec![];
-    program_config.presets.iter().enumerate().for_each(|(i, preset)| {
-        match preset.name.as_str() {
-            "m2" => {
-                let preset_opts: Result<M2PresetOptions, serde_json::Error>
-                    = serde_json::from_value(preset.options.clone());
+    let mut maps = HashMap::new();
 
-                match preset_opts {
+    maps.insert("m2", |o: serde_json::Value| M2PresetOptions::validate(o));
+
+    program_config
+        .presets
+        .iter()
+        .enumerate()
+        .for_each(|(i, preset)| {
+            let name = preset.name.as_str();
+            let preset_validate = maps.get(name);
+
+            match preset_validate {
+                Some(validator) => match validator(preset.options.clone()) {
                     Err(e) => {
                         errors.push(ProgramStartError::PresetOptions {
                             error: e.to_string(),
-                            name: "m2".to_string()
-                        })
-                    },
-                    _ => {}
-                }
-            }
-            _ => {
-                errors.push(
-                    ProgramStartError::PresetNotSupported {
-                        name: "m2".to_string()
+                            name: name.to_string(),
+                        });
                     }
-                );
-            },
-        }
-    });
+                    _ => {
+                        // nothing!
+                    }
+                },
+                None => errors.push(ProgramStartError::PresetNotSupported {
+                    name: name.to_string(),
+                }),
+            }
+        });
 
     if errors.len() > 0 {
         Err(ProgramStartError::Presets(errors))

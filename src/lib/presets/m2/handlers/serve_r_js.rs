@@ -1,9 +1,9 @@
+use actix_web::http::Method;
 use actix_web::HttpRequest;
 use actix_web::HttpResponse;
 use app_state::AppState;
-use presets::m2::opts::M2PresetOptions;
-use actix_web::http::Method;
 use preset::ResourceDef;
+use presets::m2::opts::M2PresetOptions;
 
 const INSTRUMENTED_REQUIRE_JS: &'static str = include_str!("../static/requirejs.js");
 

@@ -1,9 +1,10 @@
 use config::ProgramConfig;
+use preset::PresetError;
+use preset::PresetOptions;
 use serde_json;
 
 #[derive(Deserialize, Debug)]
 pub struct M2PresetOptions {
-
     #[serde(default = "default_require_path")]
     pub require_path: Option<String>,
 
@@ -53,6 +54,14 @@ impl Default for AuthBasic {
 impl M2PresetOptions {
     pub fn get_opts(prog_config: &ProgramConfig) -> Option<M2PresetOptions> {
         serde_json::from_value(prog_config.get_opts("m2")?).ok()?
+    }
+}
+
+impl PresetOptions for M2PresetOptions {
+    fn validate(options: serde_json::Value) -> Result<(), PresetError> {
+        serde_json::from_value::<M2PresetOptions>(options)
+            .map_err(|e| PresetError::ValidationFailed(e.to_string()))
+            .map(|_o| ())
     }
 }
 
