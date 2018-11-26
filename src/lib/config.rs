@@ -84,6 +84,9 @@ impl std::fmt::Display for ProgramStartError {
             ProgramStartError::ConfigCliError(ConfigError::UrlInvalidPort) => {
                 write!(f, "{}", ConfigError::UrlInvalidPort)
             }
+            ProgramStartError::ConfigCliError(ConfigError::TimeoutInvalid) => {
+                write!(f, "{}", ConfigError::TimeoutInvalid)
+            }
             ProgramStartError::ConfigFileOpen => write!(f, "config file not found"),
             ProgramStartError::ConfigFileRead => write!(f, "config file content could not be read"),
             ProgramStartError::FromFile(e) => write!(f, "{}", e),

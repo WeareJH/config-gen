@@ -31,6 +31,7 @@ pub struct ProgramOptions {
     pub port: u16,
     pub config_file: Option<String>,
     pub seed_file: Option<String>,
+    pub proxy_timeout_secs: u16,
 }
 
 impl ProgramOptions {
@@ -57,6 +58,12 @@ impl ProgramOptions {
     {
         let matches = ClapApp::new("bs-rust")
             .arg(Arg::with_name("url").required(true))
+            .arg(
+                Arg::with_name("proxy_timeout_secs")
+                    .short("t")
+                    .long("proxy_timeout_secs")
+                    .takes_value(true),
+            )
             .arg(
                 Arg::with_name("port")
                     .short("p")
@@ -86,9 +93,16 @@ impl ProgramOptions {
             .parse()
             .map_err(|_e| ProgramStartError::ConfigCliError(ConfigError::UrlInvalidPort))?;
 
+        let proxy_timeout_secs: u16 = matches
+            .value_of("proxy_timeout_secs")
+            .unwrap_or("5")
+            .parse()
+            .map_err(|_e| ProgramStartError::ConfigCliError(ConfigError::TimeoutInvalid))?;
+
         let outgoing_opts = ProgramOptions::new(host, scheme)
             .with_port(port)
-            .with_seed_file(matches.value_of("seed"));
+            .with_seed_file(matches.value_of("seed"))
+            .with_proxy_timeout_secs(proxy_timeout_secs);
 
         let outgoing_opts = match matches.value_of("config") {
             Some(cfg_file) => outgoing_opts.with_config_file(cfg_file),
@@ -111,6 +125,10 @@ impl ProgramOptions {
         });
         self
     }
+    pub fn with_proxy_timeout_secs(mut self, timeout: u16) -> ProgramOptions {
+        self.proxy_timeout_secs = timeout;
+        self
+    }
 }
 
 impl Default for ProgramOptions {
@@ -121,6 +139,7 @@ impl Default for ProgramOptions {
             port: 0,
             config_file: None,
             seed_file: None,
+            proxy_timeout_secs: 5
         }
     }
 }
@@ -131,6 +150,7 @@ pub enum ConfigError {
     UrlInvalidHost,
     UrlInvalidPort,
     UrlInvalidScheme,
+    TimeoutInvalid,
 }
 
 impl fmt::Display for ConfigError {
@@ -144,6 +164,9 @@ impl fmt::Display for ConfigError {
             ),
             ConfigError::UrlInvalidScheme => {
                 write!(f, "Could not retrieve the scheme from the URL")
+            },
+            ConfigError::TimeoutInvalid => {
+                write!(f, "Invalid format for timeout. Please provide a number of seconds, eg: 3")
             }
         }
     }
@@ -180,6 +203,33 @@ mod tests {
                 port: 9000,
                 config_file: Some("test/fixtures/config.yml".into()),
                 seed_file: None,
+                proxy_timeout_secs: 5
+            }
+        );
+    }
+
+    #[test]
+    fn test_from_vec_with_timeout() {
+        let args = vec![
+            "/bin/fake-program",
+            "https://example.com",
+            "--port",
+            "9000",
+            "--config",
+            "test/fixtures/config.yml",
+            "--proxy_timeout_secs",
+            "2",
+        ];
+        let p = ProgramOptions::from_args(args).unwrap();
+        assert_eq!(
+            p,
+            ProgramOptions {
+                target: "example.com".to_string(),
+                scheme: ProxyScheme::Https,
+                port: 9000,
+                config_file: Some("test/fixtures/config.yml".into()),
+                seed_file: None,
+                proxy_timeout_secs: 2
             }
         );
     }
