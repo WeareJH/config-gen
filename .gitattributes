@@ -1,3 +1,4 @@
 src/lib/presets/m2/static/* linguist-vendored
 test/test-app/* linguist-vendored
 test/fixtures/* linguist-vendored
+rjs-parse/test/fixtures/* linguist-vendored
