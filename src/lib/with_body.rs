@@ -3,6 +3,7 @@ use actix_web::{Error, HttpMessage, HttpRequest, HttpResponse};
 use app_state::AppState;
 use futures::Future;
 use proxy_transform::create_outgoing;
+use std::time::Duration;
 
 ///
 /// This case handles incoming POST requests
@@ -11,16 +12,19 @@ use proxy_transform::create_outgoing;
 /// Note: This is not tested in any way with large uploads
 ///
 pub fn forward_request_with_body(
-    _req: &HttpRequest<AppState>,
+    incoming_request: &HttpRequest<AppState>,
     req_target: String,
     mut outgoing: ClientRequestBuilder,
 ) -> Box<Future<Item = HttpResponse, Error = Error>> {
-    let next_target = _req.state().opts.target.clone();
-    let output = _req.body().from_err().and_then(move |incoming_body| {
+    let state = incoming_request.state();
+    let timeout: u64 = state.opts.proxy_timeout_secs.into();
+    let next_target = incoming_request.state().opts.target.clone();
+    let output = incoming_request.body().from_err().and_then(move |incoming_body| {
         outgoing
             .body(incoming_body)
             .unwrap()
             .send()
+            .timeout(Duration::from_secs(timeout))
             .map_err(Error::from)
             .and_then(move |proxy_response| {
                 proxy_response
