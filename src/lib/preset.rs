@@ -3,6 +3,8 @@ use actix_web::{App, HttpRequest, HttpResponse};
 use app_state::AppState;
 use presets::m2::preset_m2::FutResp;
 use rewrites::RewriteContext;
+use std::fmt;
+use serde_json;
 
 pub trait Preset<T> {
     fn enhance(&self, app: App<T>) -> App<T>;
@@ -37,8 +39,8 @@ pub enum PresetError {
     ValidationFailed(String),
 }
 
-impl std::fmt::Display for PresetError {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+impl fmt::Display for PresetError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
             PresetError::ValidationFailed(s) => write!(f, "{}", s),
         }
