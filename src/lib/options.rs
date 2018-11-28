@@ -69,12 +69,14 @@ impl ProgramOptions {
                     .short("p")
                     .long("port")
                     .takes_value(true),
-            ).arg(
+            )
+            .arg(
                 Arg::with_name("config")
                     .short("c")
                     .long("config")
                     .takes_value(true),
-            ).arg(Arg::with_name("seed").long("seed").takes_value(true))
+            )
+            .arg(Arg::with_name("seed").long("seed").takes_value(true))
             .get_matches_from_safe(args);
         ProgramOptions::from_matches(matches)
     }
@@ -139,7 +141,7 @@ impl Default for ProgramOptions {
             port: 0,
             config_file: None,
             seed_file: None,
-            proxy_timeout_secs: 5
+            proxy_timeout_secs: 5,
         }
     }
 }
@@ -164,10 +166,11 @@ impl fmt::Display for ConfigError {
             ),
             ConfigError::UrlInvalidScheme => {
                 write!(f, "Could not retrieve the scheme from the URL")
-            },
-            ConfigError::TimeoutInvalid => {
-                write!(f, "Invalid format for timeout. Please provide a number of seconds, eg: 3")
             }
+            ConfigError::TimeoutInvalid => write!(
+                f,
+                "Invalid format for timeout. Please provide a number of seconds, eg: 3"
+            ),
         }
     }
 }

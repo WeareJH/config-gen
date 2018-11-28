@@ -3,8 +3,8 @@ use actix_web::{App, HttpRequest, HttpResponse};
 use app_state::AppState;
 use presets::m2::preset_m2::FutResp;
 use rewrites::RewriteContext;
-use std::fmt;
 use serde_json;
+use std::fmt;
 
 pub trait Preset<T> {
     fn enhance(&self, app: App<T>) -> App<T>;

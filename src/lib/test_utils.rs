@@ -32,7 +32,8 @@ where
         let addr = srv_address.clone();
         let s = AppState::new(addr.clone(), "http");
         s
-    }).start(handler);
+    })
+    .start(handler);
 
     let p_addr = p.addr().to_string();
     (p, p_addr)

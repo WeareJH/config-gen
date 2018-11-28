@@ -6,13 +6,13 @@ use actix_web::{AsyncResponder, Body, Error, HttpMessage, HttpRequest, HttpRespo
 use futures::future::{ok, Either};
 use futures::{Future, Stream};
 
-use std::time::Duration;
 use app_state::AppState;
 use preset::RewriteFns;
 use proxy_transform::create_outgoing;
 use proxy_transform::get_host_port;
 use replacer::{Replacer, Subject};
 use rewrites::{replace_host, RewriteContext};
+use std::time::Duration;
 
 ///
 /// Process regular GET requests where we don't need to consider
@@ -65,7 +65,8 @@ pub fn forward_request_without_body(
                     target_domain,
                 ))
             }
-        }).responder()
+        })
+        .responder()
 }
 
 /// Pass-through response
@@ -79,7 +80,8 @@ fn pass_through_response(
         &proxy_response.headers(),
         target_domain.to_string(),
         req_target,
-    ).body(Body::Streaming(Box::new(
+    )
+    .body(Body::Streaming(Box::new(
         proxy_response.payload().from_err(),
     ))));
 
@@ -125,7 +127,8 @@ fn response_from_rewrite(
                 &proxy_response.headers(),
                 target_domain.to_string(),
                 req_target,
-            ).body(next_body))
+            )
+            .body(next_body))
         });
 
     Box::new(output)

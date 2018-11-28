@@ -29,8 +29,14 @@ fn main() {
     match ProgramOptions::from_args(&mut std::env::args_os()).and_then(system::create) {
         Ok((sys, url)) => {
             println!("{}", url);
-            println!("{}/__bs/build.json\t(Generates the configuration needed for the Optimizer)", url);
-            println!("{}/__bs/loaders.js\t(Generates the JavaScript needed to load additional bundles)", url);
+            println!(
+                "{}/__bs/build.json\t(Generates the configuration needed for the Optimizer)",
+                url
+            );
+            println!(
+                "{}/__bs/loaders.js\t(Generates the JavaScript needed to load additional bundles)",
+                url
+            );
             println!("{}/__bs/seed.json\t(Generates a dump of the current state so that you can pick up where you left off)", url);
             let _ = sys.run();
         }

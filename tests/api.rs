@@ -137,9 +137,7 @@ fn test_validate_preset_options() {
         Ok(..) => {
             unreachable!();
         }
-        Err(_e) => {
-            assert!(true)
-        }
+        Err(_e) => assert!(true),
     }
 }
 
@@ -155,9 +153,7 @@ fn test_exit_on_unsupported_preset() {
         Ok(..) => {
             unreachable!();
         }
-        Err(_e) => {
-            assert!(true)
-        }
+        Err(_e) => assert!(true),
     }
 }
 

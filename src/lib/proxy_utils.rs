@@ -42,7 +42,9 @@ where
                         &proxy_response.headers(),
                         target_domain.to_string(),
                         req_target,
-                    ).body(f(next_body)))
+                    )
+                    .body(f(next_body)))
                 })
-        }).responder()
+        })
+        .responder()
 }

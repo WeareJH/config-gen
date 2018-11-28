@@ -56,20 +56,41 @@ impl Preset<AppState> for M2Preset {
         //
         let http_responders: Vec<ResourceDef> = vec![
             handlers::serve_r_js::register(self.options.require_path.clone()),
-            ("/__bs/reqs.json".to_string(), Method::GET, handlers::requests::handle),
-            ("/__bs/config.json".to_string(), Method::GET, handlers::config::handle),
-            ("/__bs/build.json".to_string(), Method::GET, handlers::build::handle),
-            ("/__bs/loaders.js".to_string(), Method::GET, handlers::loaders::handle),
-            ("/__bs/seed.json".to_string(), Method::GET, handlers::seed::handle),
+            (
+                "/__bs/reqs.json".to_string(),
+                Method::GET,
+                handlers::requests::handle,
+            ),
+            (
+                "/__bs/config.json".to_string(),
+                Method::GET,
+                handlers::config::handle,
+            ),
+            (
+                "/__bs/build.json".to_string(),
+                Method::GET,
+                handlers::build::handle,
+            ),
+            (
+                "/__bs/loaders.js".to_string(),
+                Method::GET,
+                handlers::loaders::handle,
+            ),
+            (
+                "/__bs/seed.json".to_string(),
+                Method::GET,
+                handlers::seed::handle,
+            ),
         ];
 
         //
         // Async Responders are needed when there's additional
         // work to be done in a handler.
         //
-        let http_async_responders: Vec<AsyncResourceDef> = vec![
-            handlers::config_capture::register(self.options.require_conf_path.clone())
-        ];
+        let http_async_responders: Vec<AsyncResourceDef> =
+            vec![handlers::config_capture::register(
+                self.options.require_conf_path.clone(),
+            )];
 
         let app = http_responders
             .into_iter()

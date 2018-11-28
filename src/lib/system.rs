@@ -54,7 +54,8 @@ pub fn create(opts: ProgramOptions) -> Result<(actix::SystemRunner, String), Pro
         let (app_state, presets_map) = state_and_presets(&opts, &program_config, &maybe_seed);
         let app = App::with_state(app_state);
         apply_presets(app, &program_config, &presets_map)
-    }).workers(1);
+    })
+    .workers(1);
 
     //
     // Bind on either http or https depending on the

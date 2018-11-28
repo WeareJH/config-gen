@@ -6,8 +6,8 @@ use from_file::FromFile;
 use options::ProgramOptions;
 use preset::Preset;
 use preset::PresetOptions;
-use presets::m2::preset_m2_opts::M2PresetOptions;
 use presets::m2::preset_m2::M2Preset;
+use presets::m2::preset_m2_opts::M2PresetOptions;
 use presets::m2::seed::SeedData;
 use proxy_transform::proxy_transform;
 use rjs::RequireJsClientConfig;
@@ -44,13 +44,12 @@ pub fn apply_presets(
 /// Instead we partially validate (json/yaml) the data structure,
 ///
 pub fn validate_presets(program_config: &ProgramConfig) -> Result<(), ProgramStartError> {
-
     //
     // A map of all possible validators
     //
-    let preset_validators: HashMap<_, _> = vec![
-        ("m2", M2PresetOptions::validate)
-    ].into_iter().collect();
+    let preset_validators: HashMap<_, _> = vec![("m2", M2PresetOptions::validate)]
+        .into_iter()
+        .collect();
 
     //
     // collect any errors that occur from parsing all the options
@@ -62,9 +61,11 @@ pub fn validate_presets(program_config: &ProgramConfig) -> Result<(), ProgramSta
         .filter_map(|preset| {
             let name = preset.name.as_str();
 
-            let not_supported = || Some(ProgramStartError::PresetNotSupported {
-                name: name.to_string(),
-            });
+            let not_supported = || {
+                Some(ProgramStartError::PresetNotSupported {
+                    name: name.to_string(),
+                })
+            };
 
             preset_validators
                 .get(name)
@@ -74,7 +75,7 @@ pub fn validate_presets(program_config: &ProgramConfig) -> Result<(), ProgramSta
                             error: e.to_string(),
                             name: name.to_string(),
                         }),
-                        Ok(..) => None
+                        Ok(..) => None,
                     }
                 })
         })
@@ -98,9 +99,7 @@ pub fn state_and_presets(
     //
     let mut presets_map: PresetsMap = HashMap::new();
 
-    let preset_factories: HashMap<_, _> = vec![
-        ("m2", M2Preset::from_value)
-    ].into_iter().collect();
+    let preset_factories: HashMap<_, _> = vec![("m2", M2Preset::from_value)].into_iter().collect();
 
     //
     // Loop through any presets and create an instance
@@ -118,7 +117,7 @@ pub fn state_and_presets(
             }
             _ => {
                 unreachable!();
-            },
+            }
         }
     }
 

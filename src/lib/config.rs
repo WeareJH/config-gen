@@ -52,13 +52,8 @@ pub enum ProgramStartError {
     ConfigCliError(ConfigError),
     InvalidArgs(Error),
     FromFile(FromFileError),
-    PresetOptions {
-        name: String,
-        error: String
-    },
-    PresetNotSupported {
-        name: String,
-    },
+    PresetOptions { name: String, error: String },
+    PresetNotSupported { name: String },
     Presets(Vec<ProgramStartError>),
     Ip,
     BindHttp(std::io::Error),
@@ -104,15 +99,10 @@ impl std::fmt::Display for ProgramStartError {
             ProgramStartError::Ip => {
                 write!(f, "could not retrieve the address for the config-server")
             }
-            ProgramStartError::PresetOptions {
-                name,
-                error
-            } => {
+            ProgramStartError::PresetOptions { name, error } => {
                 write!(f, "preset `{}` could not be parsed\nerror: {}", name, error)
             }
-            ProgramStartError::PresetNotSupported {
-                name,
-            } => {
+            ProgramStartError::PresetNotSupported { name } => {
                 write!(f, "preset `{}` is not currently supported", name)
             }
             ProgramStartError::Presets(errors) => {

@@ -4,12 +4,10 @@ use from_file::FromFile;
 
 use presets::m2::preset_m2_opts::M2PresetOptions;
 use rjs::bundle_config::BundleConfig;
-use rjs::modules::{ModuleData};
-use rjs::{RequireJsBuildConfig};
+use rjs::modules::ModuleData;
+use rjs::RequireJsBuildConfig;
 
-pub fn gather_state(
-    req: &HttpRequest<AppState>,
-) -> Result<RequireJsBuildConfig, String> {
+pub fn gather_state(req: &HttpRequest<AppState>) -> Result<RequireJsBuildConfig, String> {
     let modules = &req
         .state()
         .req_log
@@ -48,7 +46,8 @@ pub fn gather_state(
             let mut c = client_config.paths.clone();
             derived_build_config.paths = RequireJsBuildConfig::strip_paths(&c);
 
-            let derived_build_config = derived_build_config.create_modules(&bundle_config, &filtered);
+            let derived_build_config =
+                derived_build_config.create_modules(&bundle_config, &filtered);
 
             Ok(derived_build_config)
         }
