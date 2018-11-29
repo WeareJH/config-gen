@@ -297,7 +297,12 @@ impl RequireJsBuildConfig {
                 )
             })
             .collect();
-        items.join("\n")
+
+        if items.len() > 0 {
+            items.join("\n")
+        } else {
+            include_str!("./js/no-loaders.js").to_string()
+        }
     }
     ///
     /// Walk the mixins fields and flatten to a simple Vec<String>

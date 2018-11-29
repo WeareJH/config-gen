@@ -41,13 +41,19 @@ fn test_config_json() {
 
 #[test]
 fn test_loaders_js() {
-    api_get(DEFAULT_ARGS.to_vec(), "/__bs/loaders.js", |result| {
-        let (_sys, _url, res) = result.expect("api returned");
+    let args = &[
+        "config-gen",
+        "http://example.com",
+    ];
+    api_get(args.to_vec(), "/__bs/loaders.js", |result| {
+        let (_sys, _url, mut res) = result.expect("api returned");
+        let t = &res.text().expect("unwrap text response");
         let ct = &res
             .headers()
             .get(http::header::CONTENT_TYPE)
             .expect("has content-type");
         assert_eq!(ct.to_str().expect("header->str"), "application/javascript");
+        assert!(t.len() > 0);
     });
 }
 
