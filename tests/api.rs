@@ -41,10 +41,7 @@ fn test_config_json() {
 
 #[test]
 fn test_loaders_js() {
-    let args = &[
-        "config-gen",
-        "http://example.com",
-    ];
+    let args = &["config-gen", "http://example.com"];
     api_get(args.to_vec(), "/__bs/loaders.js", |result| {
         let (_sys, _url, mut res) = result.expect("api returned");
         let t = &res.text().expect("unwrap text response");
