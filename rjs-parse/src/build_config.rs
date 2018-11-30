@@ -1,12 +1,12 @@
 use bundle_config::BundleConfig;
 use modules;
 use modules::BuildModuleId;
+use modules::ModuleData;
 use parse::ConfigParseError;
 use serde_json;
 use std::collections::HashMap;
 use BuildModule;
 use RequireJsClientConfig;
-use modules::ModuleData;
 
 ///
 /// This struct is a combination of RequireJsClientConfig
@@ -159,7 +159,7 @@ impl RequireJsBuildConfig {
     pub fn create_modules(
         mut self,
         bundle_config: &BundleConfig,
-        req_log: &Vec<ModuleData>
+        req_log: &Vec<ModuleData>,
     ) -> RequireJsBuildConfig {
         self.modules = Some(modules::generate_modules(req_log, bundle_config));
         self

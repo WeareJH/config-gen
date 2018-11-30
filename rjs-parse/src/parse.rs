@@ -126,9 +126,7 @@ fn process_shim(xs: &Vec<ObjectMember>, output: &mut ParsedConfig) {
                     } => {
                         match value {
                             Expression::Array(vs) => {
-                                let as_serde: Vec<
-                                    serde_json::Value,
-                                > = vs
+                                let as_serde: Vec<serde_json::Value> = vs
                                     .into_iter()
                                     .filter_map(|e: Expression| match e {
                                         Expression::Literal(Value::String(s)) => {
@@ -164,13 +162,11 @@ fn process_shim(xs: &Vec<ObjectMember>, output: &mut ParsedConfig) {
                                         } => {
                                             let as_serde: Vec<serde_json::Value> = items
                                                 .into_iter()
-                                                .filter_map(|e: Expression| {
-                                                    match e {
-                                                        Expression::Literal(Value::String(s)) => {
-                                                            Some(strip_literal(s).to_string())
-                                                        }
-                                                        _ => None
+                                                .filter_map(|e: Expression| match e {
+                                                    Expression::Literal(Value::String(s)) => {
+                                                        Some(strip_literal(s).to_string())
                                                     }
+                                                    _ => None,
                                                 })
                                                 .map(|s| serde_json::Value::String(s))
                                                 .collect();

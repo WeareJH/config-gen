@@ -36,7 +36,7 @@ pub struct ModuleData {
 
 #[derive(Debug)]
 pub enum ModuleDataError {
-    SerdeError(serde_json::Error)
+    SerdeError(serde_json::Error),
 }
 
 impl ModuleDataError {
@@ -58,10 +58,7 @@ impl ModuleData {
 /// generate just the 'modules' part of the RequireJS Optimizer configuration.
 /// It requires just 2 things - the request log & the bundle_config provided by the user
 ///
-pub fn generate_modules(
-    req_log: &Vec<ModuleData>,
-    config: &BundleConfig,
-) -> Vec<BuildModule> {
+pub fn generate_modules(req_log: &Vec<ModuleData>, config: &BundleConfig) -> Vec<BuildModule> {
     let mut modules: Vec<BuildModule> = vec![BuildModule {
         name: "requirejs/require".into(),
         include: vec![],
@@ -190,7 +187,8 @@ fn test_create_modules() {
           }
         ]
     }
-    "#.into();
+    "#
+    .into();
     let reqs: Vec<ModuleData> =
         serde_json::from_str(include_str!("../test/fixtures/example-reqs.json")).unwrap();
     let out = generate_modules(&reqs, &c);
@@ -217,9 +215,10 @@ fn test_create_modules() {
             "bundles/checkout",
             "bundles/checkout-success",
             "bundles/basket-other",
-        ].iter()
-            .map(|x| x.to_string())
-            .collect::<Vec<String>>()
+        ]
+        .iter()
+        .map(|x| x.to_string())
+        .collect::<Vec<String>>()
     );
 
     assert_eq!(out[5].exclude, vec!["requirejs/require", "bundles/main"]);
