@@ -10,6 +10,8 @@ serde_yaml = "0.8"
 serde_derive = "1.0"
 serde_json = "1.0"
 
+from_file_derive = { path = "../from_file_derive" }
+
 [lib]
 name = "from_file"
 path = "src/lib.rs"

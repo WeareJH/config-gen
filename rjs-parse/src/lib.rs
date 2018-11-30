@@ -1,3 +1,5 @@
+#[macro_use]
+extern crate from_file_derive;
 extern crate from_file;
 extern crate ratel;
 extern crate serde;

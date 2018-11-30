@@ -3,7 +3,7 @@ extern crate serde_yaml;
 
 use from_file::FromFile;
 
-#[derive(Serialize, Deserialize, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, FromFile, Debug, PartialEq)]
 pub struct BundleConfig {
     pub bundles: Vec<ConfigItem>,
     pub module_blacklist: Option<Vec<String>>,
@@ -88,7 +88,6 @@ pub struct ConfigItem {
     pub children: Vec<ConfigItem>,
 }
 
-impl FromFile for BundleConfig {}
 impl Default for BundleConfig {
     fn default() -> BundleConfig {
         BundleConfig {

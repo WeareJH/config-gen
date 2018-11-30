@@ -8,7 +8,7 @@ use options::ConfigError;
 use serde_json::Value;
 use std;
 
-#[derive(Deserialize, Debug, Clone)]
+#[derive(Deserialize, FromFile, Debug, Clone)]
 pub struct ProgramConfig {
     pub presets: Vec<PresetConfig>,
 }
@@ -18,8 +18,6 @@ impl Default for ProgramConfig {
         ProgramConfig { presets: vec![] }
     }
 }
-
-impl FromFile for ProgramConfig {}
 
 impl ProgramConfig {
     pub fn get_opts(&self, name: &str) -> Option<serde_json::Value> {

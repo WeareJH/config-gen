@@ -1,0 +1,11 @@
+[package]
+name = "from_file_derive"
+version = "0.1.0"
+authors = ["Shane Osbourne <shane.osbourne8@gmail.com>"]
+
+[dependencies]
+syn = "0.15.22"
+quote = "0.6.10"
+
+[lib]
+proc-macro = true

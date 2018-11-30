@@ -38,3 +38,4 @@ tempdir = "0.3.7"
 reqwest = "0.9.2"
 rjs = { path = "rjs-parse" }
 from_file = { path = "from-file" }
+from_file_derive = { path = "from_file_derive" }

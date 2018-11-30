@@ -153,11 +153,10 @@ mod tests {
 
     #[test]
     fn test_from_file() {
-        #[derive(Deserialize, Debug, PartialEq)]
+        #[derive(Deserialize, FromFile, Debug, PartialEq)]
         struct Person {
             name: String,
         }
-        impl FromFile for Person {}
 
         let p1 = Person::from_file("test/fixtures/person.json").expect("file->Person");
         assert_eq!(

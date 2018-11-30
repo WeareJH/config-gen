@@ -4,7 +4,11 @@ extern crate actix_web;
 extern crate base64;
 extern crate bytes;
 extern crate clap;
+
+#[macro_use]
+extern crate from_file_derive;
 extern crate from_file;
+
 extern crate futures;
 extern crate http;
 extern crate mime;
