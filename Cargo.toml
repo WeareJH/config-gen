@@ -3,6 +3,7 @@
 members = [
     "from-file",
     "from_file_derive",
-    "rjs-parse",
-    "proxy",
+    "bs",
+    "config-gen",
+    "rjs-parse"
 ]

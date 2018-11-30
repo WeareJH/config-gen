@@ -7,10 +7,10 @@ use tempdir::TempDir;
 
 const TMP_DIR_NAME: &'static str = "config-gen";
 
-const TMP_KEY: &'static [u8] = include_bytes!("../key.pem");
+const TMP_KEY: &'static [u8] = include_bytes!("./key.pem");
 const TMP_KEY_NAME: &'static str = "key.pem";
 
-const TMP_CERT: &'static [u8] = include_bytes!("../cert.pem");
+const TMP_CERT: &'static [u8] = include_bytes!("./cert.pem");
 const TMP_CERT_NAME: &'static str = "cert.pem";
 
 ///
