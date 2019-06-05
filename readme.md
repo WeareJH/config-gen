@@ -155,7 +155,7 @@ exists etc - but I'm not providing a full script here since requirements will di
 
 ## Loading additional bundles
 
-When you access `/__bs/loaders.json`, it will provide Javascript snippets that will allow the additional bundles
+When you access `/__bs/loaders.js`, it will provide Javascript snippets that will allow the additional bundles
 to be loaded when needed - exactly how you implement this part is up to you, however we will soon be providing a reference
 implementation that shows how to add/remove the additional bundles based on some admin flags.
 
