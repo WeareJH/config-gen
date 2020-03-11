@@ -19,7 +19,7 @@ https://config-gen-web.netlify.com/
 
 ---
 
-## Step 1 - Download the binary
+## Step 1a - Download the binary
 
 To enable easy usage, `config-gen` is packaged as a single binary (currently only osx) - just check
 the [releases](https://github.com/shakyShane/config-gen/releases) page and download the latest version.
@@ -30,7 +30,28 @@ To make it executable, run
 chmod +x config-gen
 ```
 
+
 **Note**: Some easier installation methods will be released in the coming weeks. :)
+
+## Step 1b - Compile the binary
+
+If you're using Linux, you'll need to compile the binary.
+
+To compile the binary you need a few programs installed.
+- `cargo`
+- `rust`
+- `openssl-dev` (debian/ubuntu) or `openssl-devel` (centos/fedora/rhel)
+
+Compiling the binary is easy:
+
+``` shell
+git clone https://github.com/WeareJH/config-gen.git
+cd config-gen
+cargo build --release
+```
+
+After compiling, you'll find the binary in `target/release/config-gen`.
+
 
 ## Step 2 - create a configuration file (either `json` or `yaml`)
 
